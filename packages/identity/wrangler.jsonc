@@ -48,7 +48,7 @@
     "SITE_URL": "https://meltemi.dev",
     "SESSION_PUBLIC_KEYS": "[{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"Rr3O3tO5I7R2uq1dVEbL44sWupOa934JM0kGh1008AU\",\"y\":\"vMYCnb0dkheP6lVOtMkFE3uq9H90LA7a5CWaBxdhyh4\",\"use\":\"sig\",\"alg\":\"ES256\",\"kid\":\"aP8XRjIOMLA-8PTP9E9QFWk9uLgjC7SMNCbH4nqfrQY\"}]",
     "PRODUCTS": "[{\"name\":\"diagrams\",\"events\":\"https://diagrams.meltemi.dev/_identity/events\"}]",
-    "GITHUB_CLIENT_ID": "",
-    "GOOGLE_CLIENT_ID": "",
+    "GITHUB_CLIENT_ID": "Ov23li8FxWjpCAP549dm",
+    "GOOGLE_CLIENT_ID": "707287062976-3g5hvb6cpbc0m38p4u3iu9c70tfe59lk.apps.googleusercontent.com",
   },
 }
