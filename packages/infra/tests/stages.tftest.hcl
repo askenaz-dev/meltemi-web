@@ -47,7 +47,7 @@ run "first_apply" {
     error_message = "www.meltemi.dev stays an unproxied CNAME to GitHub Pages before the swap."
   }
   assert {
-    condition     = length(cloudflare_web_analytics_site.zone) == 2 && alltrue([for site in cloudflare_web_analytics_site.zone : site.auto_install == false])
+    condition     = length(cloudflare_web_analytics_site.zone) == 2 && alltrue([for site in cloudflare_web_analytics_site.zone : site.auto_install == true && site.enabled == false])
     error_message = "Both zones have a Web Analytics site that injects no beacon."
   }
   assert {

@@ -93,13 +93,16 @@ resource "cloudflare_zone_setting" "family" {
 }
 
 # On 2026-10-21 Cloudflare injected its Web Analytics beacon into the Workers' HTML on both zones,
-# with no Web Analytics site listed: a free zone gets it unless a site says otherwise. The family
+# with no Web Analytics site listed: a free zone gets it unless its site says otherwise. The family
 # measures nothing in its visitors' browsers and every page's Content Security Policy refuses the
-# script, so each zone has a site with the automatic installation off.
+# script, so each zone's site is the dashboard's "Disable": automatic installation with measuring
+# off. (Automatic installation off alone means "the snippet is installed by hand" and Cloudflare
+# kept injecting it.)
 resource "cloudflare_web_analytics_site" "zone" {
   for_each = local.zone_ids
 
   account_id   = var.cloudflare_account_id
   zone_tag     = each.value
-  auto_install = false
+  auto_install = true
+  enabled      = false
 }
