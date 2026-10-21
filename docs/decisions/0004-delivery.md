@@ -67,8 +67,11 @@ apply; no Terraform provider exists for Dynadot.
 
 - The rollout has stages, each a pull request whose plan shows it: the first apply without
   domains, the registrar step, the products' first deploys, `attach_domains`, then
-  `apex_on_github_pages = false`, which hands the apex to the family site and lets the IDE
-  repository retire its Pages site.
+  `apex_on_github_pages = false` and, in the next commit, `site_on_apex = true`, which hand the
+  apex to the family site and let the IDE repository retire its Pages site. Two commits, because
+  Cloudflare refuses a Custom Domain on a hostname that still has records and one apply cannot
+  order the removal first; the apex answered nothing for the few minutes between them on
+  2026-10-21.
 - Secrets live in the Terraform state, which lives in a private bucket whose keys are two secrets
   of the `infrastructure` environment.
 - Dynadot stays the registrar; the nameserver step is the one action run outside a pipeline, from

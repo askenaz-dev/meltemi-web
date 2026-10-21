@@ -20,21 +20,36 @@ read the files and assert the backend, the lock file and the version constraints
 
 ### Requirement: The zones and their records
 The root SHALL create `cloudflare_zone` for `meltemi.dev` and `meltemi.page` (both registered at
-Dynadot), declare every record either zone holds as `cloudflare_dns_record` (on 2026-10-20 only
-the four apex `A` records of `meltemi.dev`, to GitHub Pages, unproxied, behind the variable
-`apex_on_github_pages`, `true` until the site answers from its Worker), and output each zone's
-nameservers and status. Both domains SHALL stay registered at Dynadot, with Cloudflare serving
+Dynadot), declare every record either zone holds as `cloudflare_dns_record` (until the swap, the four apex
+`A` records of `meltemi.dev` and its `www` CNAME, to GitHub Pages, unproxied, behind the variable
+`apex_on_github_pages`), and output each zone's nameservers and status. Both zones SHALL answer
+over HTTPS only (`always_use_https`), from TLS 1.2, with no email obfuscation, as
+`cloudflare_zone_setting`; and each SHALL have a `cloudflare_web_analytics_site` that injects no
+beacon (automatic installation with measuring off), since Cloudflare injects one into a free zone's
+HTML otherwise. Both domains SHALL stay registered at Dynadot, with Cloudflare serving
 their DNS only. A zone already on the account (added in the dashboard) SHALL be imported by its id
 (`existing_zone_ids`), with the GitHub Pages records it copied (`existing_apex_record_ids`), not
 created twice.
 
 #### Scenario: Before the swap
 - **WHEN** the stages are planned with `apex_on_github_pages = true`
-- **THEN** the plan holds four unproxied `A` records of `meltemi.dev` and no Custom Domain for `meltemi.dev`
+- **THEN** the plan holds four unproxied `A` records of `meltemi.dev`, the unproxied `www` CNAME, and no Custom Domain for `meltemi.dev` or `www`
 
-#### Scenario: The swap
-- **WHEN** `apex_on_github_pages` is `false` and `attach_domains` is `true`
-- **THEN** the plan has no GitHub Pages record and attaches `meltemi.dev` to `meltemi-site`
+#### Scenario: The swap's first commit
+- **WHEN** `apex_on_github_pages` is `false`, `site_on_apex` is `false` and `attach_domains` is `true`
+- **THEN** the plan has no GitHub Pages record and attaches neither `meltemi.dev` nor `www.meltemi.dev`
+
+#### Scenario: The swap's second commit
+- **WHEN** `site_on_apex` is also `true`
+- **THEN** the plan attaches `meltemi.dev` to `meltemi-site` and `www.meltemi.dev` to `meltemi-www`, which answers 301 to the apex with the path and query kept
+
+#### Scenario: The site before GitHub Pages lets go
+- **WHEN** `site_on_apex` is `true` while `apex_on_github_pages` is `true`
+- **THEN** the variable's validation refuses the plan
+
+#### Scenario: The zones' settings
+- **WHEN** the stages are planned
+- **THEN** both zones have `always_use_https = on`, `min_tls_version = 1.2`, `email_obfuscation = off` and a Web Analytics site with `auto_install = true` and `enabled = false`
 
 #### Scenario: A record retyped instead of imported
 - **WHEN** a `cloudflare_dns_record` is added for a record the zone already has
@@ -46,8 +61,11 @@ The root SHALL declare the D1 databases `meltemi-identity` and `meltemi-diagrams
 `meltemi-diagrams-cloud` and `meltemi-diagrams-publish` as `cloudflare_worker` with
 `subdomain.enabled = false`, `subdomain.previews_enabled = false` and observability on, and,
 when `attach_domains` is `true`, the Custom Domains `id.meltemi.dev`, `diagrams.meltemi.dev` and
-`meltemi.page` on their Workers, and `meltemi.dev` on `meltemi-site` once `apex_on_github_pages`
-is `false`. The nameservers, zone status, database ids, the bucket name, the Store id, the
+`meltemi.page` on their Workers, and `meltemi.dev` on `meltemi-site` once `site_on_apex` is
+`true` (the commit after the one that turned `apex_on_github_pages` `false`: Cloudflare refuses a
+Custom Domain on a hostname that still has records). It SHALL also declare and upload
+`meltemi-www`, a redirect Worker with no address of its own, attached to `www.meltemi.dev` with the
+apex. The nameservers, zone status, database ids, the bucket name, the Store id, the
 Worker names and the attached domains SHALL be outputs.
 
 #### Scenario: The outputs

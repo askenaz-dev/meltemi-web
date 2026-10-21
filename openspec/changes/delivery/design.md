@@ -264,9 +264,10 @@ Neither provider offers an API for this.
    both domains' nameservers; the IDE's landing keeps answering.
 4. This repository's `deploy.yml` uploads identity and the site; Diagrams' delivery uploads its
    two Workers. Both read the ids from their `production` environments.
-5. `apex_on_github_pages = false`, `attach_domains = true`: the four domains attach, the family
-   site answers at the apex, `id.meltemi.dev` and `diagrams.meltemi.dev` resolve; the manual
-   sign-in in production; the IDE repository's clean-up.
+5. `attach_domains = true`: three domains attach. Then `apex_on_github_pages = false` (the GitHub
+   Pages records go) and, in the next commit, `site_on_apex = true`: the family site answers at
+   the apex and `www` redirects to it. The manual sign-in in production; the IDE repository's
+   clean-up.
 6. The tag `v0.1.0`; `@meltemi/identity@0.1.0` on npm; Diagrams replaces its `link:`.
 
 What runs locally: everything as before (`wrangler dev` with `.dev.vars`, the suites); the
@@ -294,5 +295,6 @@ never reach the network; `terraform validate` runs offline after `init` cached t
   the GitHub App is the upgrade.
 - [A plan comment leaks a value] → every secret is a sensitive variable or resource attribute;
   the plan test asserts `(sensitive value)` for them.
-- [`apex_on_github_pages` flipped before the site is ready] → the swap is one commit the plan
-  shows; reverting it restores the records in the next apply.
+- [`apex_on_github_pages` flipped before the site is ready] → the swap is two commits the plan
+  shows; reverting the first restores the records in the next apply, and `site_on_apex` is
+  refused while GitHub Pages holds the apex.
