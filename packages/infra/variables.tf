@@ -1,4 +1,4 @@
-# The settings of the family's infrastructure. The two switches below are code: the commit that
+# The settings of the family's infrastructure. The three switches below are code: the commit that
 # changes a default is the change, and its plan is reviewed on the pull request. The account and
 # the secret values come from the pipeline's environment as TF_VAR_<name>.
 
@@ -19,15 +19,26 @@ variable "github_owner" {
 }
 
 variable "apex_on_github_pages" {
-  description = "Whether meltemi.dev still answers from the IDE's GitHub Pages site (its four A records). Turned false in the commit that hands the apex to the family site's Worker."
+  description = "Whether meltemi.dev still answers from the IDE's GitHub Pages site (its four A records and www). Turned false in the commit before the one that hands the apex to the family site's Worker (site_on_apex), on 2026-10-21."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "attach_domains" {
   description = "Whether the Workers' Custom Domains exist. False for the first apply, before any Worker has a version (a Custom Domain needs one); true from the product pipelines' first deploys on (2026-10-21)."
   type        = bool
   default     = true
+}
+
+variable "site_on_apex" {
+  description = "Whether the family site's Custom Domains, meltemi.dev and www.meltemi.dev, exist. Turned true in the commit after the one that turns apex_on_github_pages false: Cloudflare refuses a Custom Domain on a hostname that still has records, and one apply cannot order the records' removal before the domains' creation."
+  type        = bool
+  default     = false
+
+  validation {
+    condition     = !var.site_on_apex || !var.apex_on_github_pages
+    error_message = "site_on_apex needs apex_on_github_pages false first: the GitHub Pages records must be gone."
+  }
 }
 
 variable "existing_zone_ids" {

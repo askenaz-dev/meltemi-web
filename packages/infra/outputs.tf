@@ -39,5 +39,8 @@ output "workers" {
 
 output "domains" {
   description = "The Custom Domains attached, by Worker."
-  value       = { for key, domain in cloudflare_workers_custom_domain.family : key => domain.hostname }
+  value = merge(
+    { for key, domain in cloudflare_workers_custom_domain.family : key => domain.hostname },
+    { for domain in cloudflare_workers_custom_domain.www : "www" => domain.hostname },
+  )
 }

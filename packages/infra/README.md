@@ -6,15 +6,15 @@ never from a machine. The decision is [`docs/decisions/0004`](../../docs/decisio
 
 ## What it declares
 
-| File           | What                                                                                                                                                                                                                                                             |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zones.tf`     | The zones `meltemi.dev` and `meltemi.page`, every record they hold (today the four GitHub Pages `A` records of the apex and `www`, behind `apex_on_github_pages`), their HTTPS, TLS and email settings, and a Web Analytics site per zone that injects no beacon |
-| `workers.tf`   | The D1 databases `meltemi-identity` and `meltemi-diagrams`, the R2 bucket `meltemi-diagrams-blobs`, the four Workers as entities with no `workers.dev` and no preview address, and their Custom Domains                                                          |
-| `secrets.tf`   | The account's Secrets Store and the eight secrets of the two products, three of them generated here                                                                                                                                                              |
-| `tokens.tf`    | One deploy token per product repository (the owner's user token; the Secrets Store refuses account-owned tokens' bindings): upload Workers, bind Store secrets, migrate D1, nothing else                                                                         |
-| `github.tf`    | The repositories `meltemi-web` and `meltemi-diagrams`, their `production` environments with the token and the ids, the release tokens, vulnerability alerts and the rules of `main`                                                                              |
-| `outputs.tf`   | Nameservers, zone status, ids, Worker names and attached domains; never a secret                                                                                                                                                                                 |
-| `variables.tf` | The two switches of the rollout and the values only people can obtain                                                                                                                                                                                            |
+| File           | What                                                                                                                                                                                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zones.tf`     | The zones `meltemi.dev` and `meltemi.page`, every record they hold (today the four GitHub Pages `A` records of the apex and `www`, behind `apex_on_github_pages`), their HTTPS, TLS and email settings, and a Web Analytics site per zone that injects no beacon                |
+| `workers.tf`   | The D1 databases `meltemi-identity` and `meltemi-diagrams`, the R2 bucket `meltemi-diagrams-blobs`, the four Workers as entities with no `workers.dev` and no preview address, their Custom Domains, and `meltemi-www`, the Worker that redirects `www.meltemi.dev` to the apex |
+| `secrets.tf`   | The account's Secrets Store and the eight secrets of the two products, three of them generated here                                                                                                                                                                             |
+| `tokens.tf`    | One deploy token per product repository (the owner's user token; the Secrets Store refuses account-owned tokens' bindings): upload Workers, bind Store secrets, migrate D1, nothing else                                                                                        |
+| `github.tf`    | The repositories `meltemi-web` and `meltemi-diagrams`, their `production` environments with the token and the ids, the release tokens, vulnerability alerts and the rules of `main`                                                                                             |
+| `outputs.tf`   | Nameservers, zone status, ids, Worker names and attached domains; never a secret                                                                                                                                                                                                |
+| `variables.tf` | The three switches of the rollout and the values only people can obtain                                                                                                                                                                                                         |
 
 The Workers' code is not here. Each product repository uploads its versions with `wrangler deploy`
 onto the entities declared here (code, static assets and Durable Object migrations are Wrangler's),
@@ -108,8 +108,12 @@ has a version.
 2. Each product repository's `deploy.yml` uploads its Workers' first versions.
 3. A commit sets `attach_domains` to `true`: `id.meltemi.dev`, `diagrams.meltemi.dev` and
    `meltemi.page` attach.
-4. A commit sets `apex_on_github_pages` to `false`: the five records go and the family site takes
-   `meltemi.dev`, in one apply. The IDE repository then retires its Pages site.
+4. A commit sets `apex_on_github_pages` to `false`: the five GitHub Pages records go.
+5. The next commit sets `site_on_apex` to `true`: the family site takes `meltemi.dev`, and
+   `www.meltemi.dev` attaches to `meltemi-www`, a redirect Worker declared and uploaded here.
+   Cloudflare refuses a Custom Domain on a hostname that still has records, and one apply cannot
+   order the records' removal before the domains' creation, so the apex answers nothing for the
+   few minutes between the two applies. The IDE repository then retires its Pages site.
 
 Each step is a pull request whose plan shows exactly that.
 

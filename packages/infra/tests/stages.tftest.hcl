@@ -31,7 +31,8 @@ run "first_apply" {
   command = plan
 
   variables {
-    attach_domains = false
+    attach_domains       = false
+    apex_on_github_pages = true
   }
 
   assert {
@@ -116,7 +117,8 @@ run "domains_attach" {
   command = plan
 
   variables {
-    attach_domains = true
+    attach_domains       = true
+    apex_on_github_pages = true
   }
 
   assert {
@@ -129,8 +131,9 @@ run "domains_attach" {
   }
 }
 
-# The swap hands the apex to the family site.
-run "apex_swap" {
+# The swap's first commit lets GitHub Pages go: its records leave and nothing takes the apex yet,
+# since Cloudflare refuses a Custom Domain on a hostname that still has records.
+run "apex_released" {
   command = plan
 
   variables {
@@ -143,6 +146,22 @@ run "apex_swap" {
     error_message = "The GitHub Pages records go."
   }
   assert {
+    condition     = !contains(keys(cloudflare_workers_custom_domain.family), "site") && length(cloudflare_workers_custom_domain.www) == 0
+    error_message = "The apex and www wait for the next commit."
+  }
+}
+
+# Its second commit hands the apex and www to the family site.
+run "apex_swap" {
+  command = plan
+
+  variables {
+    attach_domains       = true
+    apex_on_github_pages = false
+    site_on_apex         = true
+  }
+
+  assert {
     condition     = cloudflare_workers_custom_domain.family["site"].hostname == "meltemi.dev" && cloudflare_workers_custom_domain.family["site"].service == "meltemi-site"
     error_message = "The family site takes the apex."
   }
@@ -150,6 +169,31 @@ run "apex_swap" {
     condition     = length(cloudflare_workers_custom_domain.family) == 4
     error_message = "All four domains are attached."
   }
+  assert {
+    condition     = cloudflare_workers_custom_domain.www[0].hostname == "www.meltemi.dev" && cloudflare_workers_custom_domain.www[0].service == "meltemi-www"
+    error_message = "www.meltemi.dev is the redirect Worker's."
+  }
+  assert {
+    condition     = strcontains(base64decode(one(cloudflare_worker_version.www.modules).content_base64), "url.hostname = \"meltemi.dev\"") && strcontains(base64decode(one(cloudflare_worker_version.www.modules).content_base64), "301")
+    error_message = "The www Worker redirects permanently to the apex."
+  }
+  assert {
+    condition     = cloudflare_worker.www.subdomain.enabled == false && cloudflare_worker.www.subdomain.previews_enabled == false
+    error_message = "The www Worker has no workers.dev or preview address."
+  }
+}
+
+# The site cannot take the apex while GitHub Pages still holds it.
+run "site_before_release" {
+  command = plan
+
+  variables {
+    attach_domains       = true
+    apex_on_github_pages = true
+    site_on_apex         = true
+  }
+
+  expect_failures = [var.site_on_apex]
 }
 
 # The release tokens reach the repositories once the owner has them.
