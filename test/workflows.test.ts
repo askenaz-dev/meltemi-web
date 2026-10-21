@@ -170,8 +170,6 @@ describe("the infrastructure's workflows", () => {
           "OAUTH_GITHUB_CLIENT_SECRET",
           "OAUTH_GOOGLE_CLIENT_SECRET",
           "OVSX_PAT",
-          "R2_ACCESS_KEY_ID",
-          "R2_SECRET_ACCESS_KEY",
           "SESSION_PRIVATE_KEY",
           "VSCE_PAT",
         ].sort(),
@@ -212,15 +210,11 @@ describe("the infrastructure's workflows", () => {
     expect(text).not.toMatch(/terraform apply/);
   });
 
-  it("move the nameservers only when asked, with the registrar's key alone", () => {
+  it("move the nameservers only when asked, with the registrar's key and the state's token", () => {
     const text = read("registrar.yml");
     expect(text).toMatch(/^on:\n {2}workflow_dispatch:/m);
     expect(text).not.toMatch(/^\s+(push|pull_request|schedule):/m);
-    expect(secretsOf(text)).toEqual([
-      "DYNADOT_API_KEY",
-      "R2_ACCESS_KEY_ID",
-      "R2_SECRET_ACCESS_KEY",
-    ]);
+    expect(secretsOf(text)).toEqual(["CLOUDFLARE_API_TOKEN", "DYNADOT_API_KEY"]);
     at(text, "terraform output -json nameservers");
     at(text, "packages/infra/scripts/dynadot-nameservers.mjs");
   });

@@ -29,8 +29,6 @@ jobs:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
       # The state in R2 (backend.tf).
-      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
       AWS_ENDPOINT_URL_S3: https://${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
       # The providers.
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -53,7 +51,7 @@ jobs:
         with:
           terraform_version: "~1.15"
           terraform_wrapper: false
-      - name: The Cloudflare token, as this runner sees it
+      - name: The Cloudflare token and the state bucket, as this runner sees them
         run: |
           answer="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)"
           status="$(echo "$answer" | jq -r '.result.status // empty')"
@@ -62,7 +60,20 @@ jobs:
             echo "A token restricted to some client IP addresses cannot be used from GitHub's runners."
             exit 1
           fi
-          echo "The token is active from this runner."
+          # R2's S3 credentials are the token's id and the SHA-256 of its value (Cloudflare's R2 docs),
+          # derived here so that they always belong to the token the environment holds.
+          key_id="$(echo "$answer" | jq -r '.result.id')"
+          secret="$(printf %s "$CLOUDFLARE_API_TOKEN" | sha256sum | cut -d' ' -f1)"
+          echo "::add-mask::$secret"
+          echo "AWS_ACCESS_KEY_ID=$key_id" >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=$secret" >> "$GITHUB_ENV"
+          if AWS_ACCESS_KEY_ID="$key_id" AWS_SECRET_ACCESS_KEY="$secret" aws s3api list-objects-v2 \
+            --bucket meltemi-terraform-state --endpoint-url "$AWS_ENDPOINT_URL_S3" --region auto --max-items 1 > /dev/null; then
+            echo "The token is active and R2 accepts the state bucket's credentials."
+          else
+            echo "::error::R2 refuses the state bucket's credentials derived from the token (it needs Workers R2 Storage)."
+            exit 1
+          fi
       - run: terraform fmt -check -recursive
       - run: terraform init
       - run: terraform validate
