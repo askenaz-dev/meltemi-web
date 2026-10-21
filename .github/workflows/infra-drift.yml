@@ -77,13 +77,26 @@ jobs:
         id: compare
         run: |
           set +e
-          terraform plan -no-color -lock-timeout=5m -detailed-exitcode > plan.txt 2>&1
+          terraform plan -no-color -lock-timeout=5m -detailed-exitcode -out=drift.tfplan > plan.txt 2>&1
           code=$?
           set -e
           cat plan.txt
-          echo "code=$code" >> "$GITHUB_OUTPUT"
           # 0: no difference; 2: a difference; anything else: the plan failed.
           if [ "$code" != 0 ] && [ "$code" != 2 ]; then exit "$code"; fi
+          if [ "$code" = 2 ]; then
+            # The provider's noise is not drift: an update whose known values all equal the
+            # state's (scripts/plan-changes.mjs). The JSON holds secrets in clear and never leaves
+            # the runner; the script prints addresses and attribute names only.
+            terraform show -json drift.tfplan > drift.json
+            set +e
+            node scripts/plan-changes.mjs drift.json | tee -a plan.txt
+            code=${PIPESTATUS[0]}
+            set -e
+            rm -f drift.json
+            if [ "$code" != 0 ] && [ "$code" != 2 ]; then exit "$code"; fi
+          fi
+          rm -f drift.tfplan
+          echo "code=$code" >> "$GITHUB_OUTPUT"
       - name: The drift issue
         uses: actions/github-script@v7
         env:

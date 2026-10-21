@@ -206,6 +206,10 @@ describe("the infrastructure's workflows", () => {
     const text = read("infra-drift.yml");
     expect(text).toMatch(/schedule:\n\s+- cron: "0 6 \* \* 1"/);
     at(text, "-detailed-exitcode");
+    // The provider's noise is filtered from the JSON plan, which is removed before anything else.
+    expect(at(text, "node scripts/plan-changes.mjs drift.json")).toBeLessThan(
+      at(text, "rm -f drift.json"),
+    );
     at(text, 'const title = "Infrastructure drift"');
     expect(text).not.toMatch(/terraform apply/);
   });
