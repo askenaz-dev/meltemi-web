@@ -8,7 +8,7 @@ never from a machine. The decision is [`docs/decisions/0004`](../../docs/decisio
 
 | File           | What                                                                                                                                                                                                    |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zones.tf`     | The zones `meltemi.dev` and `meltemi.page` and every record they hold: today the four GitHub Pages `A` records of the apex, behind `apex_on_github_pages`                                               |
+| `zones.tf`     | The zones `meltemi.dev` and `meltemi.page` and every record they hold: today the four GitHub Pages `A` records of the apex and `www`, behind `apex_on_github_pages`                                     |
 | `workers.tf`   | The D1 databases `meltemi-identity` and `meltemi-diagrams`, the R2 bucket `meltemi-diagrams-blobs`, the four Workers as entities with no `workers.dev` and no preview address, and their Custom Domains |
 | `secrets.tf`   | The account's Secrets Store and the eight secrets of the two products, three of them generated here                                                                                                     |
 | `tokens.tf`    | One deploy token per product repository (the owner's user token; the Secrets Store refuses account-owned tokens' bindings): upload Workers, bind Store secrets, migrate D1, nothing else                |
@@ -105,7 +105,7 @@ has a version.
 2. Each product repository's `deploy.yml` uploads its Workers' first versions.
 3. A commit sets `attach_domains` to `true`: `id.meltemi.dev`, `diagrams.meltemi.dev` and
    `meltemi.page` attach.
-4. A commit sets `apex_on_github_pages` to `false`: the four records go and the family site takes
+4. A commit sets `apex_on_github_pages` to `false`: the five records go and the family site takes
    `meltemi.dev`, in one apply. The IDE repository then retires its Pages site.
 
 Each step is a pull request whose plan shows exactly that.

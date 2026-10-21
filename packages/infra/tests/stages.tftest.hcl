@@ -39,6 +39,10 @@ run "first_apply" {
     error_message = "The GitHub Pages records are unproxied A records."
   }
   assert {
+    condition     = length(cloudflare_dns_record.dev_www_github_pages) == 1 && cloudflare_dns_record.dev_www_github_pages[0].content == "askenaz-dev.github.io" && cloudflare_dns_record.dev_www_github_pages[0].proxied == false
+    error_message = "www.meltemi.dev stays an unproxied CNAME to GitHub Pages before the swap."
+  }
+  assert {
     condition     = length(cloudflare_workers_custom_domain.family) == 0
     error_message = "No Custom Domain exists before attach_domains."
   }
@@ -118,7 +122,7 @@ run "apex_swap" {
   }
 
   assert {
-    condition     = length(cloudflare_dns_record.dev_apex_github_pages) == 0
+    condition     = length(cloudflare_dns_record.dev_apex_github_pages) == 0 && length(cloudflare_dns_record.dev_www_github_pages) == 0
     error_message = "The GitHub Pages records go."
   }
   assert {

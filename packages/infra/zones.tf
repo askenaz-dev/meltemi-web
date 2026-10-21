@@ -29,10 +29,10 @@ import {
   id       = each.value
 }
 
-# The IDE's landing on GitHub Pages: the apex's four A records, which were the zone's only records
-# at Dynadot on 2026-10-20 (no mail, no TXT). Unproxied, so GitHub keeps serving its certificate.
-# They go away in the commit that turns `apex_on_github_pages` false, and the family site's Custom
-# Domain takes the apex in the same apply.
+# The IDE's landing on GitHub Pages: the apex's four A records and `www`, which were the domain's
+# only records at Dynadot on 2026-10-21 (an ANAME and a CNAME to askenaz-dev.github.io; no mail, no
+# TXT). Unproxied, so GitHub keeps serving its certificate. They go away in the commit that turns
+# `apex_on_github_pages` false, and the family site's Custom Domain takes the apex in the same apply.
 locals {
   github_pages_addresses = ["185.199.108.153", "185.199.109.153", "185.199.110.153", "185.199.111.153"]
 }
@@ -47,6 +47,18 @@ resource "cloudflare_dns_record" "dev_apex_github_pages" {
   proxied = false
   ttl     = 1
   comment = "GitHub Pages: the IDE's landing, until the family site takes the apex"
+}
+
+resource "cloudflare_dns_record" "dev_www_github_pages" {
+  count = var.apex_on_github_pages ? 1 : 0
+
+  zone_id = cloudflare_zone.dev.id
+  name    = "www.meltemi.dev"
+  type    = "CNAME"
+  content = "askenaz-dev.github.io"
+  proxied = false
+  ttl     = 1
+  comment = "GitHub Pages: redirects www to the IDE's landing, until the family site takes the apex"
 }
 
 # The GitHub Pages records a dashboard-added zone copied from Dynadot (its scan), imported by
