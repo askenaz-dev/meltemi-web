@@ -25,9 +25,9 @@ variable "apex_on_github_pages" {
 }
 
 variable "attach_domains" {
-  description = "Whether the Workers' Custom Domains exist. False for the first apply, before any Worker has a version (a Custom Domain needs one); true from the product pipelines' first deploys on."
+  description = "Whether the Workers' Custom Domains exist. False for the first apply, before any Worker has a version (a Custom Domain needs one); true from the product pipelines' first deploys on (2026-10-21)."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "existing_zone_ids" {

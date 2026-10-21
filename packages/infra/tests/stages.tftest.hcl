@@ -30,6 +30,10 @@ variables {
 run "first_apply" {
   command = plan
 
+  variables {
+    attach_domains = false
+  }
+
   assert {
     condition     = length(cloudflare_dns_record.dev_apex_github_pages) == 4
     error_message = "meltemi.dev keeps its four GitHub Pages records before the swap."
