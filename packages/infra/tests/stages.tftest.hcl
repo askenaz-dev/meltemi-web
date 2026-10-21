@@ -47,6 +47,19 @@ run "first_apply" {
     error_message = "www.meltemi.dev stays an unproxied CNAME to GitHub Pages before the swap."
   }
   assert {
+    condition     = length(cloudflare_web_analytics_site.zone) == 2 && alltrue([for site in cloudflare_web_analytics_site.zone : site.auto_install == false])
+    error_message = "Both zones have a Web Analytics site that injects no beacon."
+  }
+  assert {
+    condition = alltrue([
+      for zone in ["dev", "page"] :
+      cloudflare_zone_setting.family["${zone}.always_use_https"].value == "on" &&
+      cloudflare_zone_setting.family["${zone}.min_tls_version"].value == "1.2" &&
+      cloudflare_zone_setting.family["${zone}.email_obfuscation"].value == "off"
+    ])
+    error_message = "Both zones answer over HTTPS only, from TLS 1.2, and leave the pages' email links alone."
+  }
+  assert {
     condition     = length(cloudflare_workers_custom_domain.family) == 0
     error_message = "No Custom Domain exists before attach_domains."
   }

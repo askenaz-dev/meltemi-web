@@ -68,3 +68,38 @@ import {
   to       = cloudflare_dns_record.dev_apex_github_pages[each.key]
   id       = "${lookup(var.existing_zone_ids, "meltemi.dev", "")}/${each.value}"
 }
+
+# What Cloudflare does to the zones' traffic, so that both answer as the products expect.
+locals {
+  # HTTPS only, from TLS 1.2. No email obfuscation: it rewrites the legal pages' mailto links into
+  # a script the pages' Content Security Policy refuses.
+  zone_settings = {
+    always_use_https  = "on"
+    min_tls_version   = "1.2"
+    email_obfuscation = "off"
+  }
+  zone_setting_pairs = {
+    for pair in setproduct(keys(local.zone_ids), keys(local.zone_settings)) :
+    "${pair[0]}.${pair[1]}" => { zone = pair[0], setting = pair[1] }
+  }
+}
+
+resource "cloudflare_zone_setting" "family" {
+  for_each = local.zone_setting_pairs
+
+  zone_id    = local.zone_ids[each.value.zone]
+  setting_id = each.value.setting
+  value      = local.zone_settings[each.value.setting]
+}
+
+# On 2026-10-21 Cloudflare injected its Web Analytics beacon into the Workers' HTML on both zones,
+# with no Web Analytics site listed: a free zone gets it unless a site says otherwise. The family
+# measures nothing in its visitors' browsers and every page's Content Security Policy refuses the
+# script, so each zone has a site with the automatic installation off.
+resource "cloudflare_web_analytics_site" "zone" {
+  for_each = local.zone_ids
+
+  account_id   = var.cloudflare_account_id
+  zone_tag     = each.value
+  auto_install = false
+}

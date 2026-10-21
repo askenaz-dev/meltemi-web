@@ -6,15 +6,15 @@ never from a machine. The decision is [`docs/decisions/0004`](../../docs/decisio
 
 ## What it declares
 
-| File           | What                                                                                                                                                                                                    |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `zones.tf`     | The zones `meltemi.dev` and `meltemi.page` and every record they hold: today the four GitHub Pages `A` records of the apex and `www`, behind `apex_on_github_pages`                                     |
-| `workers.tf`   | The D1 databases `meltemi-identity` and `meltemi-diagrams`, the R2 bucket `meltemi-diagrams-blobs`, the four Workers as entities with no `workers.dev` and no preview address, and their Custom Domains |
-| `secrets.tf`   | The account's Secrets Store and the eight secrets of the two products, three of them generated here                                                                                                     |
-| `tokens.tf`    | One deploy token per product repository (the owner's user token; the Secrets Store refuses account-owned tokens' bindings): upload Workers, bind Store secrets, migrate D1, nothing else                |
-| `github.tf`    | The repositories `meltemi-web` and `meltemi-diagrams`, their `production` environments with the token and the ids, the release tokens, vulnerability alerts and the rules of `main`                     |
-| `outputs.tf`   | Nameservers, zone status, ids, Worker names and attached domains; never a secret                                                                                                                        |
-| `variables.tf` | The two switches of the rollout and the values only people can obtain                                                                                                                                   |
+| File           | What                                                                                                                                                                                                                                                             |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `zones.tf`     | The zones `meltemi.dev` and `meltemi.page`, every record they hold (today the four GitHub Pages `A` records of the apex and `www`, behind `apex_on_github_pages`), their HTTPS, TLS and email settings, and a Web Analytics site per zone that injects no beacon |
+| `workers.tf`   | The D1 databases `meltemi-identity` and `meltemi-diagrams`, the R2 bucket `meltemi-diagrams-blobs`, the four Workers as entities with no `workers.dev` and no preview address, and their Custom Domains                                                          |
+| `secrets.tf`   | The account's Secrets Store and the eight secrets of the two products, three of them generated here                                                                                                                                                              |
+| `tokens.tf`    | One deploy token per product repository (the owner's user token; the Secrets Store refuses account-owned tokens' bindings): upload Workers, bind Store secrets, migrate D1, nothing else                                                                         |
+| `github.tf`    | The repositories `meltemi-web` and `meltemi-diagrams`, their `production` environments with the token and the ids, the release tokens, vulnerability alerts and the rules of `main`                                                                              |
+| `outputs.tf`   | Nameservers, zone status, ids, Worker names and attached domains; never a secret                                                                                                                                                                                 |
+| `variables.tf` | The two switches of the rollout and the values only people can obtain                                                                                                                                                                                            |
 
 The Workers' code is not here. Each product repository uploads its versions with `wrangler deploy`
 onto the entities declared here (code, static assets and Durable Object migrations are Wrangler's),
@@ -65,11 +65,14 @@ These exist before the first apply and are made by hand, once, because the state
 manage them lives in them or the pipeline that would make them needs them:
 
 1. The repository `askenaz-dev/meltemi-web` (Terraform imports it on the first apply).
-2. In Cloudflare, the R2 bucket `meltemi-terraform-state` and an R2 API token with object read
-   and write on that bucket only.
-3. A Cloudflare API token for Terraform, on the account: Zone (edit), DNS (edit), Workers Scripts
-   (edit), Workers Routes (edit), D1 (edit), Workers R2 Storage (edit), Secrets Store (edit),
-   Account API Tokens (edit), Account Settings (read).
+2. In Cloudflare, the R2 bucket `meltemi-terraform-state`.
+3. A Cloudflare API token for Terraform, the owner's user token (never the Global API Key), with
+   no client IP filter (GitHub's runners use it). Zone permissions on all zones of the account:
+   Zone, Zone Settings, DNS and Workers Routes (edit). Account permissions: Workers Scripts, D1,
+   Workers R2 Storage, Secrets Store and Account API Tokens (edit), Account Settings (read and
+   edit: the Web Analytics API reads with read only). User permission: API Tokens (edit), for the
+   deploy tokens. The state bucket's S3 credentials are derived from it on the runner (key id: the
+   token's id; secret: the SHA-256 of its value), so it needs no R2 token of its own.
 4. A fine-grained GitHub token of the `askenaz-dev` organisation for the repositories
    `meltemi-web` and `meltemi-diagrams` (all repositories, to create the second): Administration,
    Environments, Secrets, Variables (read and write), Contents and Metadata (read). Its expiry is
@@ -77,18 +80,18 @@ manage them lives in them or the pipeline that would make them needs them:
 5. The environment `infrastructure` in `meltemi-web`, with no deployment branch rule (the plan of a
    pull request needs it), holding:
 
-| Kind     | Name                                       | From                                                                             |
-| -------- | ------------------------------------------ | -------------------------------------------------------------------------------- |
-| Variable | `CLOUDFLARE_ACCOUNT_ID`                    | The account's id (the dashboard's right column)                                  |
-| Variable | `EXISTING_SECRETS_STORE_ID`                | Only if the account already has a Secrets Store: its id, to import it            |
-| Secret   | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Step 2                                                                           |
-| Secret   | `CLOUDFLARE_API_TOKEN`                     | Step 3                                                                           |
-| Secret   | `GH_ADMIN_TOKEN`                           | Step 4                                                                           |
-| Secret   | `SESSION_PRIVATE_KEY`                      | `pnpm identity:keys`, the private JWK (its public half goes in `wrangler.jsonc`) |
-| Secret   | `OAUTH_GITHUB_CLIENT_SECRET`               | The production GitHub OAuth App of `askenaz-dev`                                 |
-| Secret   | `OAUTH_GOOGLE_CLIENT_SECRET`               | The production Google OAuth client                                               |
-| Secret   | `ADMIN_SUBS`                               | Meltemi Diagrams' administrators' `sub`s; may be absent until the first sign-in  |
-| Secret   | `NPM_TOKEN`, `VSCE_PAT`, `OVSX_PAT`        | npm, the Visual Studio Marketplace, Open VSX; each may be absent until it exists |
+| Kind     | Name                                       | From                                                                                        |
+| -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Variable | `CLOUDFLARE_ACCOUNT_ID`                    | The account's id (the dashboard's right column)                                             |
+| Variable | `EXISTING_SECRETS_STORE_ID`                | Only if the account already has a Secrets Store: its id, to import it                       |
+| Secret   | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | Derived from step 3 by `pnpm infra:bootstrap`; the pipelines derive their own on the runner |
+| Secret   | `CLOUDFLARE_API_TOKEN`                     | Step 3                                                                                      |
+| Secret   | `GH_ADMIN_TOKEN`                           | Step 4                                                                                      |
+| Secret   | `SESSION_PRIVATE_KEY`                      | `pnpm identity:keys`, the private JWK (its public half goes in `wrangler.jsonc`)            |
+| Secret   | `OAUTH_GITHUB_CLIENT_SECRET`               | The production GitHub OAuth App of `askenaz-dev`                                            |
+| Secret   | `OAUTH_GOOGLE_CLIENT_SECRET`               | The production Google OAuth client                                                          |
+| Secret   | `ADMIN_SUBS`                               | Meltemi Diagrams' administrators' `sub`s; may be absent until the first sign-in             |
+| Secret   | `NPM_TOKEN`, `VSCE_PAT`, `OVSX_PAT`        | npm, the Visual Studio Marketplace, Open VSX; each may be absent until it exists            |
 
 Nothing else is ever set by hand: every other secret, token, variable, record and domain is a
 resource here.
