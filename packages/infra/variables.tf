@@ -31,9 +31,9 @@ variable "attach_domains" {
 }
 
 variable "site_on_apex" {
-  description = "Whether the family site's Custom Domains, meltemi.dev and www.meltemi.dev, exist. Turned true in the commit after the one that turns apex_on_github_pages false: Cloudflare refuses a Custom Domain on a hostname that still has records, and one apply cannot order the records' removal before the domains' creation."
+  description = "Whether the family site's Custom Domains, meltemi.dev and www.meltemi.dev, exist. Turned true in the commit after the one that turned apex_on_github_pages false (2026-10-21): Cloudflare refuses a Custom Domain on a hostname that still has records, and one apply cannot order the records' removal before the domains' creation."
   type        = bool
-  default     = false
+  default     = true
 
   validation {
     condition     = !var.site_on_apex || !var.apex_on_github_pages

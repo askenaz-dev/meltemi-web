@@ -33,6 +33,7 @@ run "first_apply" {
   variables {
     attach_domains       = false
     apex_on_github_pages = true
+    site_on_apex         = false
   }
 
   assert {
@@ -119,6 +120,7 @@ run "domains_attach" {
   variables {
     attach_domains       = true
     apex_on_github_pages = true
+    site_on_apex         = false
   }
 
   assert {
@@ -139,6 +141,7 @@ run "apex_released" {
   variables {
     attach_domains       = true
     apex_on_github_pages = false
+    site_on_apex         = false
   }
 
   assert {
