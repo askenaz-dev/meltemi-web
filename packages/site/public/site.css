@@ -1,0 +1,392 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* The site's only stylesheet beyond the tokens. No framework, no build step, no
+ * JavaScript: what is in the repository is byte for byte what gets published
+ * (sitio-web-producto D1). Density, radii, hairlines and the single overlay
+ * shadow come from the same design system the desktop client wears. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* No smooth-scroll animation: motion is opt-in, never imposed. */
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  width: min(1040px, 100% - 2 * var(--sp-6));
+  margin-inline: auto;
+}
+
+/* ---- header ---------------------------------------------------------------- */
+
+.top {
+  border-bottom: 1px solid var(--hair);
+  background: var(--panel);
+}
+
+.top .wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-height: 56px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand img {
+  width: 26px;
+  height: 26px;
+}
+
+.top nav {
+  display: flex;
+  gap: var(--sp-3);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.top nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: var(--fs-dense);
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius-control);
+}
+
+.top nav a:hover,
+.top nav a[aria-current="page"] {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.lang {
+  font-size: var(--fs-caption);
+  color: var(--text-faint);
+}
+
+/* ---- hero ------------------------------------------------------------------ */
+
+.hero {
+  padding: var(--sp-8) 0 var(--sp-6);
+  border-bottom: 1px solid var(--hair);
+}
+
+.hero h1 {
+  margin: 0 0 var(--sp-2);
+  font-size: clamp(1.6rem, 1.2rem + 2vw, 2.4rem);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.hero .motto {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--fs-view);
+  color: var(--text-muted);
+}
+
+.hero p {
+  max-width: 68ch;
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-4);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--touch-min);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  font-size: var(--fs-dense);
+  font-weight: 500;
+}
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.btn:hover {
+  border-color: var(--focus);
+}
+
+/* ---- sections -------------------------------------------------------------- */
+
+main {
+  padding: var(--sp-6) 0 var(--sp-8);
+}
+
+section {
+  margin-bottom: var(--sp-8);
+}
+
+h2 {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-view);
+  font-weight: 600;
+}
+
+h3 {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-section);
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 var(--sp-3);
+  max-width: 74ch;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:focus-visible,
+.btn:focus-visible,
+summary:focus-visible {
+  /* Focus is always visible: keyboard operation is not a second-class path. */
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.grid {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.card {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  padding: var(--panel-pad);
+}
+
+.card p:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- tables ---------------------------------------------------------------- */
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-panel);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--fs-dense);
+}
+
+th,
+td {
+  text-align: left;
+  padding: var(--cell-pad);
+  height: var(--row-h);
+  border-bottom: 1px solid var(--hair);
+  vertical-align: middle;
+}
+
+th {
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--panel);
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+code,
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-dense);
+}
+
+pre {
+  margin: 0 0 var(--sp-3);
+  padding: var(--cell-pad) var(--panel-pad);
+  overflow-x: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-panel);
+}
+
+/* ---- status vocabulary ----------------------------------------------------- */
+
+/* Every state carries a symbol AND a word: color is never the only carrier. */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-caption);
+  white-space: nowrap;
+}
+
+.state .sym {
+  font-family: var(--font-mono);
+}
+
+.state.ok {
+  color: var(--ok);
+}
+
+.state.pending {
+  color: var(--warn);
+}
+
+.state.absent {
+  color: var(--text-faint);
+}
+
+.pill {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
+/* A notice band states something; it never animates its layout. */
+.notice {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--radius-control);
+  background: var(--tint-warn);
+  color: var(--text);
+  padding: var(--cell-pad) var(--panel-pad);
+  margin-bottom: var(--sp-4);
+  transition: none;
+}
+
+.notice.info {
+  border-left-color: var(--info);
+  background: var(--tint-info);
+}
+
+/* ---- figures --------------------------------------------------------------- */
+
+figure {
+  margin: 0 0 var(--sp-4);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-panel);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+figure img,
+figure object,
+figure svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+figcaption {
+  padding: var(--cell-pad) var(--panel-pad);
+  border-top: 1px solid var(--hair);
+  font-size: var(--fs-caption);
+  color: var(--text-faint);
+}
+
+details {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-panel);
+  padding: var(--cell-pad) var(--panel-pad);
+  margin-bottom: var(--sp-3);
+  background: var(--surface);
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* ---- footer ---------------------------------------------------------------- */
+
+.foot {
+  border-top: 1px solid var(--hair);
+  background: var(--panel);
+  padding: var(--sp-6) 0;
+  font-size: var(--fs-caption);
+  color: var(--text-faint);
+}
+
+.foot .wrap {
+  display: flex;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.foot a {
+  color: var(--text-muted);
+}
+
+/* ---- accessibility preferences --------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .card,
+  .tableWrap,
+  figure,
+  details {
+    border-color: var(--text);
+  }
+}
+
+@media (forced-colors: active) {
+  .btn,
+  .card,
+  .pill {
+    border: 1px solid ButtonBorder;
+  }
+  .btn.primary {
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}

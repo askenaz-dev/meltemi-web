@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meltemi Diagrams — diagramas como código, ajustados en un lienzo</title>
+    <meta
+      name="description"
+      content="Escribe diagramas como archivos de texto .meltemi, ajústalos en un lienzo, anímalos y expórtalos a SVG, PNG, PDF, video y un reproductor HTML. En VS Code y en el navegador, sin necesidad de cuenta."
+    />
+    <link rel="alternate" hreflang="en" href="/diagrams/" />
+    <link rel="alternate" hreflang="es" href="/es/diagrams/" />
+    <link rel="alternate" hreflang="x-default" href="/diagrams/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/es/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Sitio">
+          <a href="/es/">Inicio</a>
+          <a href="/es/ide/">IDE</a>
+          <a href="/es/diagrams/" aria-current="page">Diagrams</a>
+          <a class="lang" href="/diagrams/" hreflang="en" lang="en">English</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>Diagramas como código, ajustados en un lienzo</h1>
+        <p class="motto">Código, disposición y movimiento, en archivos que revisas.</p>
+        <p>
+          Meltemi Diagrams forma parte de la familia Meltemi. Escribes archivos de texto
+          <code>.meltemi</code>; el editor los dibuja junto al código, y cada arrastre, cambio de
+          tamaño o cambio de etiqueta en el lienzo se convierte en una pequeña edición del mismo
+          texto. Diagramas de flujo, de secuencia, C4 y libres, con movimiento, exportados a SVG,
+          PNG, PDF, video y un reproductor HTML.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="https://diagrams.meltemi.dev/">Abrir la app</a>
+          <a class="btn" href="#install">Instalar</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi-diagrams/tree/main/docs">Leer la documentación</a>
+        </div>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="what">
+        <h2 id="what">Texto que escribes, un lienzo que arrastras</h2>
+        <p>
+          Un diagrama es un archivo de texto plano en el lenguaje <code>.meltemi</code>. El código,
+          la disposición y el movimiento viven en él, así que revisas y versionas un diagrama como
+          el resto de tu trabajo.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Código</h3>
+            <p>
+              En VS Code el texto tiene diagnósticos, autocompletado, cambio de nombre, formato y
+              correcciones rápidas. En la línea de comandos, <code>validate</code> revisa proyectos
+              completos y termina con código 1 si hay errores.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Lienzo</h3>
+            <p>
+              Junto al código hay un lienzo con cuadrícula, guías, trazado de rutas e inspector.
+              Arrastra una caja, haz doble clic en una etiqueta o conecta dos cajas: cada gesto es
+              una pequeña edición del texto, así que el diff de un cambio muestra exactamente qué
+              se movió.
+            </p>
+          </div>
+          <div class="card">
+            <h3>VS Code y el navegador</h3>
+            <p>
+              El mismo lienzo funciona en la extensión de VS Code y en la app, que la documentación
+              llama playground. La app no necesita instalación; la extensión abre el lienzo junto a
+              cualquier archivo <code>.meltemi</code>.
+            </p>
+          </div>
+        </div>
+        <p>Este es el pequeño diagrama de flujo que escribe <code>meltemi-diagrams init</code>:</p>
+        <pre><code>language "0.2"
+
+diagram overview: flow {
+  title "Overview"
+  description "How a request reaches the data"
+  direction LR
+
+  client["Client"]
+  api["API"] { description "Handles requests" }
+  db[("Database")]
+
+  client -&gt; api: "HTTPS" as request
+  api -&gt; db: "Reads and writes" as store
+}</code></pre>
+      </section>
+
+      <section aria-labelledby="profiles">
+        <h2 id="profiles">Cuatro perfiles, un lenguaje</h2>
+        <p>
+          Cada diagrama declara su perfil, como en <code>diagram overview: flow</code>. Los cuatro
+          se escriben en el mismo lenguaje y se dibujan en el mismo lienzo.
+        </p>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Perfiles de diagrama</caption>
+            <thead>
+              <tr>
+                <th scope="col">Perfil</th>
+                <th scope="col">Qué dibuja</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>flow</code></td>
+                <td>
+                  Diagramas de flujo: cajas y conectores con notas, marcas, cilindros de datos,
+                  rombos de decisión, bandas de grupo y etiquetas de paso, con una disposición
+                  automática que respeta las posiciones que fijas.
+                </td>
+              </tr>
+              <tr>
+                <td><code>sequence</code></td>
+                <td>
+                  Diagramas de secuencia: participantes, llamadas, respuestas, mensajes asíncronos,
+                  activaciones, notas y todos los fragmentos (<code>alt</code>, <code>opt</code>,
+                  <code>loop</code>, <code>par</code>, <code>break</code>, <code>critical</code>,
+                  <code>region</code>), con escenarios que se exportan por separado.
+                </td>
+              </tr>
+              <tr>
+                <td><code>c4</code></td>
+                <td>
+                  Vistas C4 de un modelo compartido: personas, sistemas, contenedores, almacenes de
+                  datos y componentes, en vistas de contexto, de contenedores y de componentes. Un
+                  cambio de nombre llega a todas las vistas.
+                </td>
+              </tr>
+              <tr>
+                <td><code>free</code></td>
+                <td>
+                  Composiciones libres para diapositivas: cajas en seis formas, texto, iconos e
+                  imágenes, grupos y capas.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="export">
+        <h2 id="export">Movimiento y formatos de exportación</h2>
+        <p>
+          Los efectos recorren los conectores: partículas, trazos en movimiento y pulsos. Las
+          historias encadenan escenas que muestran, ocultan, resaltan y enfocan partes de un
+          diagrama, mueven una cámara y cambian de vista con un corte, un fundido o una
+          transformación. Ambos usan un reloj determinista, y se puede exportar cualquier
+          fotograma.
+        </p>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Exportaciones</caption>
+            <thead>
+              <tr>
+                <th scope="col">Formato</th>
+                <th scope="col">Qué obtienes</th>
+                <th scope="col">Notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>SVG</td>
+                <td>Un solo archivo con sus fuentes, estático o animado con una alternativa estática.</td>
+                <td>La app y la línea de comandos.</td>
+              </tr>
+              <tr>
+                <td>PNG</td>
+                <td>Una imagen a la escala que elijas, con fondo transparente opcional.</td>
+                <td>La app y la línea de comandos.</td>
+              </tr>
+              <tr>
+                <td>PDF</td>
+                <td>Páginas vectoriales con texto seleccionable y enlaces.</td>
+                <td>
+                  La línea de comandos escribe el archivo; la app usa el diálogo de impresión del
+                  navegador, donde <strong>Guardar como PDF</strong> conserva los vectores.
+                </td>
+              </tr>
+              <tr>
+                <td>Reproductor HTML</td>
+                <td>
+                  Una página sin conexión, o un fragmento para incrustar, que reproduce una historia
+                  o los efectos de un diagrama.
+                </td>
+                <td>
+                  Pausa, progreso, escenas, control con el teclado, movimiento reducido y un resumen
+                  en texto.
+                </td>
+              </tr>
+              <tr>
+                <td>GIF, WebM, MP4</td>
+                <td>Una historia o los efectos de un diagrama grabados fotograma a fotograma.</td>
+                <td>
+                  El video es de 1080p a 30 fps de forma predeterminada; el GIF, de 960 × 540 a
+                  15 fps. En la app, WebM y MP4 dependen de los codificadores del navegador y
+                  aparecen desactivados donde no hay ninguno.
+                </td>
+              </tr>
+              <tr>
+                <td>Catálogo HTML</td>
+                <td>
+                  Una página sin conexión para todo un proyecto: sus diagramas e historias por
+                  carpeta, con búsqueda y el reproductor.
+                </td>
+                <td><code>meltemi-diagrams build catalog</code>, o Descargar en la app.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          En la línea de comandos, PNG, PDF y video los dibuja un Edge, un Chrome o un Chromium
+          instalado, y el video lo codifica un FFmpeg instalado. No se descarga nada. La app no
+          necesita ninguno de los dos.
+        </p>
+      </section>
+
+      <section aria-labelledby="import">
+        <h2 id="import">Si vienes de Mermaid o PlantUML</h2>
+        <p>
+          Los importadores leen Mermaid (<code>flowchart</code>, <code>sequenceDiagram</code>, los
+          diagramas <code>C4</code>, <code>architecture-beta</code> y <code>block-beta</code>),
+          PlantUML (diagramas de componentes, de despliegue, de casos de uso, de secuencia y
+          C4-PlantUML, con el preprocesador) y los bloques de diagrama de los archivos Markdown.
+          Cada construcción se informa como convertida, aproximada o descartada, y el origen nunca
+          se modifica. Los demás tipos de diagrama y los archivos de editores como draw.io,
+          Lucidchart o Visio no se importan.
+        </p>
+      </section>
+
+      <section aria-labelledby="install">
+        <h2 id="install">Instalación</h2>
+        <p>
+          La app no necesita instalación. La línea de comandos y el editor sirven para trabajar con
+          archivos de tus propias carpetas.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Línea de comandos</h3>
+            <p>Necesita Node 22.12 o posterior.</p>
+            <pre><code>npm install --global @meltemi/diagrams-cli</code></pre>
+            <p>
+              El paquete es <code>@meltemi/diagrams-cli</code>; el comando que instala es
+              <code>meltemi-diagrams</code>, también disponible como <code>mdg</code>. Un primer
+              diagrama:
+            </p>
+            <pre><code>meltemi-diagrams init shop
+meltemi-diagrams export shop --format png</code></pre>
+          </div>
+          <div class="card">
+            <h3>VS Code</h3>
+            <p>
+              La extensión es Meltemi Diagrams, con el id <code>meltemi.meltemi-diagrams</code>.
+              Necesita Visual Studio Code 1.95 o posterior.
+            </p>
+            <pre><code>code --install-extension meltemi.meltemi-diagrams</code></pre>
+            <p>
+              O busca Meltemi Diagrams en la vista Extensiones. Abre un archivo
+              <code>.meltemi</code> y el lienzo se abre junto al código.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="account">
+        <h2 id="account">No hace falta una cuenta</h2>
+        <p>
+          La app no necesita una cuenta. Funciona por completo en tu navegador, y tu trabajo se
+          guarda ahí entre visitas; sin una cuenta, nada de lo que escribes se envía a un servidor.
+          Iniciar sesión con GitHub o Google es opcional, y es la manera de tener proyectos
+          guardados entre dispositivos, versiones, compartir por enlace (ver no requiere cuenta;
+          editar sí), edición en conjunto, publicar un catálogo, y push y pull desde la línea de
+          comandos. La tabla dice cuáles de estas capacidades existen hoy.
+        </p>
+        <div class="notice info">
+          <strong><span aria-hidden="true">◆</span> Especificado, sin publicar.</strong>
+          La app, la línea de comandos y el editor funcionan hoy sin cuenta. Lo que agrega iniciar
+          sesión está especificado en la documentación del proyecto y todavía no se ha publicado.
+        </div>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Lo que depende de una cuenta</caption>
+            <thead>
+              <tr>
+                <th scope="col">Capacidad</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Dibujar, editar, importar y exportar en la app</td>
+                <td>
+                  <span class="state ok"><span class="sym" aria-hidden="true">●</span> Disponible</span>
+                </td>
+                <td>
+                  Sin cuenta. El proyecto se guarda en tu navegador; Compartir copia un enlace que
+                  lleva el proyecto después del <code>#</code> de la dirección, una parte que nunca
+                  llega a un servidor.
+                </td>
+              </tr>
+              <tr>
+                <td>Proyectos guardados entre dispositivos, con versiones</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Todavía no</span>
+                </td>
+                <td>
+                  Requiere una cuenta. Una copia de cada proyecto en tu cuenta, una copia local que
+                  también funciona sin conexión, y versiones que puedes nombrar y restaurar.
+                </td>
+              </tr>
+              <tr>
+                <td>Compartir por enlace y con personas concretas</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Todavía no</span>
+                </td>
+                <td>
+                  El enlace de un proyecto puede ser privado, de solo lectura o editable, y se invita
+                  por correo a personas concretas con el rol de lector o de editor. Cualquiera a
+                  quien el enlace admita puede ver sin cuenta; editar sí requiere una.
+                </td>
+              </tr>
+              <tr>
+                <td>Edición en conjunto</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Todavía no</span>
+                </td>
+                <td>
+                  Requiere una cuenta. Ves quién está en el proyecto, escribes en el mismo archivo al
+                  mismo tiempo y deshaces solo tus propias ediciones. Hasta veinte personas en un
+                  proyecto.
+                </td>
+              </tr>
+              <tr>
+                <td>Publicar un catálogo</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Todavía no</span>
+                </td>
+                <td>
+                  Requiere una cuenta. El catálogo HTML del proyecto en una dirección pública de su
+                  propio dominio, aparte de la app.
+                </td>
+              </tr>
+              <tr>
+                <td>Push y pull desde la línea de comandos</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Todavía no</span>
+                </td>
+                <td>
+                  Requiere una cuenta. <code>mdg login</code> guarda un token; <code>push</code>,
+                  <code>pull</code> y <code>publish</code> mantienen una carpeta sincronizada con un
+                  proyecto en la nube. Todos los demás comandos funcionan sin ella.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          El IDE de Meltemi no usa esta cuenta. Sigue sin pedir ninguna.
+        </p>
+      </section>
+
+      <section aria-labelledby="docs">
+        <h2 id="docs">Documentación y código</h2>
+        <p>
+          La documentación cubre los primeros pasos, el lenguaje, la línea de comandos, el editor,
+          la app y los importadores. El código tiene licencia MIT.
+        </p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi-diagrams/tree/main/docs">Documentación</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi-diagrams">Repositorio</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi Diagrams — licencia MIT. Este sitio no usa cookies ni analítica.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi-diagrams">Repositorio</a> ·
+          <a href="/es/privacy/">Privacidad</a> ·
+          <a href="/es/terms/">Términos</a> ·
+          <a href="/diagrams/" hreflang="en" lang="en">English</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

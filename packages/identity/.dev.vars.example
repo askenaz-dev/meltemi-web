@@ -1,0 +1,38 @@
+# Copy to .dev.vars (ignored by Git) and fill in. `wrangler dev` reads .dev.vars from this folder.
+# Every value here is for development only. In production the variables are in wrangler.jsonc and
+# the secrets are the family's Secrets Store (packages/infra), bound as <NAME>_STORE; a string here
+# always wins over a binding.
+
+# Development mode: allows DEV_ORIGINS as return addresses and form targets, and sets cookies
+# without Domain (and without Secure on http). Never set DEV in wrangler.jsonc.
+DEV=true
+
+# The development addresses: this service, the site and the Meltemi Diagrams Worker.
+ISSUER=http://localhost:8787
+SITE_URL=http://localhost:8789
+DEV_ORIGINS=http://localhost:8788,http://localhost:8789
+PRODUCTS='[{"name":"diagrams","events":"http://localhost:8788/_identity/events"}]'
+
+# The registrable domain of the family's hosts (as in wrangler.jsonc). In development mode the
+# cookie has no Domain, but return addresses and the form-action policy still name it.
+COOKIE_DOMAIN=meltemi.dev
+
+# The development OAuth apps (one per provider, owner-registered). Callback addresses:
+#   GitHub: http://localhost:8787/callback/github
+#   Google: http://localhost:8787/callback/google
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# `pnpm identity:keys` prints a new pair: the private JWK goes to SESSION_PRIVATE_KEY, the public
+# one to SESSION_PUBLIC_KEYS (a JSON array, current first).
+SESSION_PRIVATE_KEY=
+SESSION_PUBLIC_KEYS=[]
+
+# Any long random text: it signs the OAuth state cookie and the account forms' tokens.
+STATE_SECRET=
+
+# The key that signs the deletion events sent to Meltemi Diagrams; Diagrams' IDENTITY_EVENTS_SECRET
+# holds the same value.
+EVENTS_SECRET_DIAGRAMS=

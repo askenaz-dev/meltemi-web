@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your agents, your accounts — Meltemi</title>
+    <meta
+      name="description"
+      content="Bring your own agent: Meltemi runs the official binaries you install, at the integration level each one supports, and lets several subscriptions of the same provider run side by side."
+    />
+    <link rel="alternate" hreflang="en" href="/ide/agents/" />
+    <link rel="alternate" hreflang="es" href="/es/ide/agents/" />
+    <link rel="alternate" hreflang="x-default" href="/ide/agents/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Site">
+          <a href="/ide/">Product</a>
+          <a href="/ide/method/">Method</a>
+          <a href="/ide/agents/" aria-current="page">Agents</a>
+          <a href="/ide/downloads/">Downloads</a>
+          <a class="lang" href="/es/ide/agents/" hreflang="es" lang="es">Español</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>Your agents, your accounts</h1>
+        <p>
+          Meltemi orchestrates the agents you already installed and pay for. It
+          launches their official binaries, with the authentication each vendor
+          provides, and never touches a credential. Nothing is bundled: if you have
+          no agent installed, Meltemi tells you what is missing and how to install
+          it — it does not install it behind your back.
+        </p>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="levels">
+        <h2 id="levels">Four integration levels, stated honestly</h2>
+        <p>
+          Not every agent can be piloted the same way, so Meltemi declares the level
+          each one reaches instead of pretending they are equivalent. The fleet view
+          shows the level, whether the binary was detected, and what to install when
+          it was not.
+        </p>
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Level</th>
+                <th scope="col">What it means</th>
+                <th scope="col">What you get</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Speaks the agent-client protocol natively</td>
+                <td>Full piloting: streamed turns, permission prompts, resume.</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Reached through a protocol adapter</td>
+                <td>
+                  The same piloting, once both layers are present: the agent's own
+                  command-line tool and the adapter that bridges it.
+                </td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Headless run with structured output</td>
+                <td>
+                  One-shot turns whose structured output is mapped into the session
+                  log — including usage counters when the output reports them.
+                </td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Context projection only</td>
+                <td>
+                  No process is piloted: Meltemi writes the context file the tool
+                  reads, and the tool stays in your hands.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          A level-2 agent needs <em>two</em> things installed, which is the most
+          common reason detection looks wrong. The fleet view names the missing layer
+          and prints the exact command that installs it.
+        </p>
+      </section>
+
+      <section aria-labelledby="subscriptions">
+        <h2 id="subscriptions">Several subscriptions at once</h2>
+        <p>
+          Launch profiles let you run more than one account of the same provider —
+          work and personal, or two seats of the same plan — by redirecting the
+          authentication context the official binary reads. Meltemi never reads,
+          stores or forwards credentials: it passes the context you named and the
+          binary authenticates itself.
+        </p>
+        <p>
+          Each session records which agent and which subscription ran it, so a
+          project can hold several sessions across several accounts and you can still
+          tell them apart — in the project tree, in the session list and in the usage
+          accounting.
+        </p>
+        <div class="notice info">
+          <strong><span aria-hidden="true">◆</span> Configuration lives in your project.</strong>
+          Profiles are a few lines in the project's own configuration file, with
+          environment references rather than secrets. The exact keys, the canonical
+          two-account example and the per-agent notes are in the agents guide.
+        </div>
+        <p>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/agentes.md">Read the agents guide</a>
+        </p>
+      </section>
+
+      <section aria-labelledby="model">
+        <h2 id="model">Your own model</h2>
+        <p>
+          Meltemi keeps no catalog of models and has no engine of its own yet. Today
+          a model of your own — on your machine or behind your own endpoint — comes
+          through an agent of your fleet that talks to local and self-hosted
+          providers by its own configuration, selected with a launch profile like
+          any subscription. The recipes, verified and dated, are in the local
+          models guide.
+        </p>
+        <p>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/local-models.md">Read the local models guide</a>
+        </p>
+      </section>
+
+      <section aria-labelledby="fair">
+        <h2 id="fair">Fair play, by rule</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Official binaries only</h3>
+            <p>
+              Meltemi executes what the vendor published, with the vendor's own
+              authentication. It never impersonates another client's traffic or
+              identity.
+            </p>
+          </div>
+          <div class="card">
+            <h3>No credentials, ever</h3>
+            <p>
+              Reading, storing or reusing an agent's credentials is forbidden by the
+              constitution, not by convention. Profiles carry a context name, never
+              a secret.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Nothing bundled</h3>
+            <p>
+              No third-party agent is packaged or redistributed. Where an
+              integration path is tolerated rather than sanctioned by its vendor,
+              the fleet view says so in plain words.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="start">
+        <h2 id="start">Getting your first agent running</h2>
+        <p>
+          Install Meltemi, ask it what it can see, and let it tell you what is
+          missing. The fleet view is the answer to “why is my agent not detected”,
+          and it carries the remedy with it.
+        </p>
+        <p>
+          <a class="btn primary" href="/ide/downloads/">Download Meltemi</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi#readme">Quickstart</a>
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — Apache-2.0. No telemetry, no tracking, no cookies.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi">Repository</a> ·
+          <a href="/ide/">Product</a> ·
+          <a href="/ide/method/">Method</a> ·
+          <a href="/ide/downloads/">Downloads</a> ·
+          <a href="/es/ide/agents/" hreflang="es" lang="es">Español</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

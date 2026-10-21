@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meltemi — the spec-driven control plane for agentic development</title>
+    <meta
+      name="description"
+      content="Open-source control plane that orchestrates the coding agents you already use, under a discipline where no line of code is written without a reviewed specification. Desktop and terminal, Windows, macOS and Linux."
+    />
+    <link rel="alternate" hreflang="en" href="/ide/" />
+    <link rel="alternate" hreflang="es" href="/es/ide/" />
+    <link rel="alternate" hreflang="x-default" href="/ide/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Site">
+          <a href="/ide/" aria-current="page">Product</a>
+          <a href="/ide/method/">Method</a>
+          <a href="/ide/agents/">Agents</a>
+          <a href="/ide/downloads/">Downloads</a>
+          <a class="lang" href="/es/ide/" hreflang="es" lang="es">Español</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>The spec-driven control plane for agentic development</h1>
+        <p class="motto">One heading, many sails.</p>
+        <p>
+          Meltemi orchestrates the coding agents you already pay for, through open
+          standards, under a discipline where no line of code is written without a
+          reviewed specification. It is not another agent and not a cloud service:
+          it is the plane where you steer them.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="/ide/downloads/">Download</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi#readme">Read the quickstart</a>
+        </div>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="what">
+        <h2 id="what">One product, two surfaces, three platforms</h2>
+        <p>
+          A headless daemon holds every capability. Two thin clients consume it over
+          a local socket, and core parity is a rule with a blocking test behind it:
+          no capability may reach one surface and not the other.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Desktop client</h3>
+            <p>
+              A dense, keyboard-first application: sessions and their transcripts,
+              the permission tray, the project view, the fleet of agents, local
+              usage accounting and a utilitarian code surface with review of every
+              diff before it lands.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Terminal client</h3>
+            <p>
+              The same capabilities in the terminal, plus a scriptable command
+              layer with machine-readable output — the surface that fits a
+              pipeline, an SSH session or a keyboard-only workflow.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Windows, macOS, Linux</h3>
+            <p>
+              All three are first class and all three are tested on every change.
+              Windows is not a later port: the daemon speaks a named pipe there and
+              a user-only socket elsewhere.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="byo">
+        <h2 id="byo">Bring your own agent, key and model</h2>
+        <p>
+          No credits, no fees, no lock-in. Meltemi runs the official binaries of the
+          agents you install, each authenticating itself the way its vendor
+          intends. It never reads, stores or forwards your credentials, and it never
+          impersonates another client. If you hold two subscriptions of the same
+          provider, launch profiles let both run at once, in separate projects and
+          sessions.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>No telemetry</h3>
+            <p>
+              Every metric is computed locally. There is no network port in the
+              daemon and nothing to opt out of, because there is nothing being
+              sent.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Local usage accounting</h3>
+            <p>
+              Sessions, prompts, permissions, edits and commits folded from your own
+              records — and tokens only where an agent's official output reports
+              them. What was never measured is shown as not reported, never as a
+              zero, and never as an estimate.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Apache 2.0, permanently</h3>
+            <p>
+              The daemon, both clients and the future SDK are Apache-2.0 and will
+              not change licence.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="surfaces">
+        <h2 id="surfaces">The surfaces, as they actually render</h2>
+        <figure>
+          <img
+            src="/media/tui-sessions.svg"
+            alt="Terminal client showing the sessions view grouped by project: two projects, an active session and a finished one, each row carrying its agent and the subscription that ran it, with the permission counter in the header."
+          />
+          <figcaption>
+            Terminal surface · sessions grouped by project · captured from the
+            renderer over a temporary fixture repository with the simulated agent ·
+            Meltemi pre-1.0 · Linux/macOS/Windows (identical text grid).
+          </figcaption>
+        </figure>
+        <figure>
+          <img
+            src="/media/desktop-sessions.png"
+            width="1600"
+            height="1034"
+            alt="Desktop client on the sessions view: the sidebar lists the project with its five sessions nested underneath, each tagged with the agent and the launch profile that ran it, while the table shows session id, agent, subscription, state, duration and start time, and the footer reports the connection, the version and the local socket."
+          />
+          <figcaption>
+            Desktop surface · sessions of one project, two subscriptions of the same
+            agent · captured from the window over a temporary fixture repository with
+            the simulated agent · Meltemi pre-1.0 · Windows 11 (the same layout on
+            macOS and Linux).
+          </figcaption>
+        </figure>
+      </section>
+
+      <section aria-labelledby="state">
+        <h2 id="state">Honest state, before 1.0</h2>
+        <div class="notice">
+          <strong><span aria-hidden="true">▲</span> Pre-1.0.</strong> The contract
+          between the daemon and its clients may still change between minor
+          versions. Phase 1 (daemon, terminal surface, spec engine) is complete;
+          the desktop client is in active development.
+        </div>
+        <p>What does not exist yet, stated plainly:</p>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Capability status</caption>
+            <thead>
+              <tr>
+                <th scope="col">Capability</th>
+                <th scope="col">Status</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Daemon, terminal surface, spec engine</td>
+                <td>
+                  <span class="state ok"><span class="sym" aria-hidden="true">●</span> Published</span>
+                </td>
+                <td>Signed releases with per-platform archives.</td>
+              </tr>
+              <tr>
+                <td>Desktop client</td>
+                <td>
+                  <span class="state pending"><span class="sym" aria-hidden="true">◔</span> In development</span>
+                </td>
+                <td>Installers ship with each release; the shell is being polished.</td>
+              </tr>
+              <tr>
+                <td>Public SDK</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>Planned for phase 2, after the contract settles.</td>
+              </tr>
+              <tr>
+                <td>Mobile companion</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>Specified for phase 3; nothing is shipped.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="not">
+        <h2 id="not">What Meltemi is not</h2>
+        <p>
+          Not a general-purpose editor: the code surface is utilitarian, in service
+          of the agent loop, and sustained authoring stays in the editor you already
+          love. Not another coding agent. Not a cloud service, not CI/CD, and not a
+          marketplace.
+        </p>
+        <p>
+          The full argument lives in the foundational document and the constitution,
+          both readable in full:
+          <a href="https://github.com/askenaz-dev/meltemi/blob/main/meltemi.md">the manifesto</a>
+          and
+          <a href="https://github.com/askenaz-dev/meltemi/blob/main/.meltemi/constitution.md">the constitution</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — Apache-2.0. No telemetry, no tracking, no cookies.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi">Repository</a> ·
+          <a href="/ide/method/">Method</a> ·
+          <a href="/ide/agents/">Agents</a> ·
+          <a href="/ide/downloads/">Downloads</a> ·
+          <a href="/es/ide/" hreflang="es" lang="es">Español</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

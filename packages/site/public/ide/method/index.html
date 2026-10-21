@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The method as a tool — Meltemi</title>
+    <meta
+      name="description"
+      content="Spec-first as a tool that gives you leverage, not a toll: proposal, design, spec deltas and tasks, folded into a living truth only once every scenario is verified."
+    />
+    <link rel="alternate" hreflang="en" href="/ide/method/" />
+    <link rel="alternate" hreflang="es" href="/es/ide/method/" />
+    <link rel="alternate" hreflang="x-default" href="/ide/method/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Site">
+          <a href="/ide/">Product</a>
+          <a href="/ide/method/" aria-current="page">Method</a>
+          <a href="/ide/agents/">Agents</a>
+          <a href="/ide/downloads/">Downloads</a>
+          <a class="lang" href="/es/ide/method/" hreflang="es" lang="es">Español</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>The method is a tool, not a toll</h1>
+        <p>
+          A specification is not paperwork you owe the process. It is the thing that
+          lets one clear heading drive any number of agents, from any vendor,
+          without you re-explaining your intent every session — and the thing that
+          makes their output reviewable instead of merely plausible.
+        </p>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="loop">
+        <h2 id="loop">The loop</h2>
+        <p>
+          Every change moves through the same short arc. Trivial work takes the fast
+          path — all artifacts at once — but never the null path.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>1 · Propose</h3>
+            <p>
+              An idea becomes a change with a name: why it matters, what it touches
+              and what it deliberately leaves out.
+            </p>
+          </div>
+          <div class="card">
+            <h3>2 · Design</h3>
+            <p>
+              The decisions worth defending, each with the alternatives that were
+              rejected and why. This is where an agent's suggestion earns or loses
+              its place.
+            </p>
+          </div>
+          <div class="card">
+            <h3>3 · Spec deltas</h3>
+            <p>
+              Requirements written as testable behaviour, expressed as deltas
+              against the capabilities you already have — added, modified, removed —
+              rather than a document rewritten in place.
+            </p>
+          </div>
+          <div class="card">
+            <h3>4 · Tasks</h3>
+            <p>
+              A sequence small enough to review, each task pointing back at the
+              requirement that justifies it.
+            </p>
+          </div>
+          <div class="card">
+            <h3>5 · Verify</h3>
+            <p>
+              Each scenario is linked to a test or to a documented verification.
+              Nothing is folded while a requirement is neither verified nor
+              explicitly excepted with a reason.
+            </p>
+          </div>
+          <div class="card">
+            <h3>6 · Archive</h3>
+            <p>
+              The deltas fold into the living truth and the change becomes history.
+              The truth is what the code does now, not what someone once planned.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="ears">
+        <h2 id="ears">Requirements that can fail a build</h2>
+        <p>
+          Requirements are written in a constrained form — a trigger, a condition, a
+          shall — so that a scenario reads the same way to a person and to a test
+          name. A requirement whose scenarios cannot fail is a wish, and Meltemi
+          treats it as one.
+        </p>
+        <p>
+          Traceability is mechanical rather than aspirational: one commit per task,
+          the commit naming its change and task, and each line of code reachable back
+          to the requirement that caused it.
+        </p>
+      </section>
+
+      <section aria-labelledby="agentic">
+        <h2 id="agentic">Where the agents fit</h2>
+        <p>
+          The method is the same whether you write the change yourself or delegate
+          it. Meltemi projects the constitution, the product heading and the active
+          specification into the context the agent receives, so the agent argues
+          inside your constraints instead of inventing its own. Then it holds the
+          gates: permissions you decide, isolated worktrees per task, checkpoints
+          before each turn, and a diff you review before anything lands.
+        </p>
+        <p>
+          Several agents can race the same task in separate worktrees, and you pick
+          the result. That is the point of the heading: it does not care which sail
+          catches the wind.
+        </p>
+      </section>
+
+      <section aria-labelledby="read">
+        <h2 id="read">Read the sources in full</h2>
+        <p>
+          Nothing here replaces the primary documents, and this site does not
+          paraphrase them into a second truth:
+        </p>
+        <ul>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/meltemi.md">The foundational manifesto</a>
+            — the vision and its numbered decisions.
+          </li>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/.meltemi/constitution.md">The constitution</a>
+            — the non-negotiable principles, ratified and versioned.
+          </li>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/README.md">The quickstart</a>
+            — install it and run the loop yourself.
+          </li>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/docs/referencia-cli.md">The CLI reference</a>
+            — generated from the grammar, never hand-written.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — Apache-2.0. No telemetry, no tracking, no cookies.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi">Repository</a> ·
+          <a href="/ide/">Product</a> ·
+          <a href="/ide/agents/">Agents</a> ·
+          <a href="/ide/downloads/">Downloads</a> ·
+          <a href="/es/ide/method/" hreflang="es" lang="es">Español</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

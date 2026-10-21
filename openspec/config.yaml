@@ -1,0 +1,63 @@
+schema: spec-driven
+
+# Project context shown to AI when creating artifacts.
+context: |
+  Repository: "Meltemi Web" (working name; folder C:\meltemi), the web of the Meltemi family:
+  the product site at meltemi.dev and the shared identity service at id.meltemi.dev. Decided on
+  2026-10-13 (decision 0001): the family has three repositories: the Meltemi IDE
+  (github.com/askenaz-dev/meltemi, folder C:\forge\agentic-ide, Rust; it promises no accounts
+  and no cloud service), Meltemi Diagrams (folder C:\development\dac, TypeScript; the diagrams
+  tool and its hosted service at diagrams.meltemi.dev) and this one. docs/repositories.md maps
+  them; docs/decisions/ records why.
+
+  Owner: the author of both products, who writes Spanish. Artifacts, code, identifiers and
+  commit messages are in English; words shown to people exist in English and Spanish.
+
+  Fixed decisions:
+  - Identity (decision 0002): sign-in with GitHub and Google only; no passwords; no Auth0, Clerk
+    or Supabase. One account for the family. The session is an ES256 JWT in the cookie
+    `meltemi_session` on `.meltemi.dev`, verified by products with the public keys at
+    https://id.meltemi.dev/.well-known/jwks.json; revocation is checked lazily through
+    GET /sessions/:sid; account deletion reaches products as signed `user.deleted` events.
+    Products never receive provider tokens. The service holds: user id, name, avatar URL, the
+    emails and ids the providers gave, sessions, pending events. No analytics, no telemetry.
+  - Hosting (decision 0003): Cloudflare's free plan. The site is static assets of a Worker (no
+    JavaScript in pages; `_headers` and `_redirects`); identity is a Worker with D1 and a cron
+    trigger. Everything runs locally with `wrangler dev`; nothing needs the cloud to be built
+    or tested.
+  - Products are consumers: Meltemi Diagrams hosts its own API, storage and collaboration in
+    its repository (`packages/cloud`); this repository gives it the session contract and the
+    site page that links to it. The IDE keeps its promise of no accounts.
+  - Delivery order (owner, 2026-10-13): functionality first, implemented and tested locally;
+    GitHub repositories, pipelines, DNS, the registration of the production OAuth apps and the
+    secrets come after, as the delivery change of each repository (the development OAuth apps
+    are the owner's). Proposals never plan migrations or compatibility shims: there are no
+    users yet.
+
+  Engineering conventions: TypeScript strict, ESM, pnpm workspace under packages/*, vitest,
+  Node 22.12+; the toolchain of Meltemi Diagrams (typescript, vitest, eslint, prettier, tsx).
+  Downloads need the owner's approval; approved for this repository on 2026-10-13: `wrangler`
+  and `@cloudflare/workers-types`. Handlers are plain functions of (request, env, deps) so
+  tests run in Node with in-memory stores and stub providers; no test reaches the network.
+  Words for people live in typed catalogs `src/messages/en.ts` and `es.ts` (the Spanish object
+  has the English one's type). Every page carries a Content-Security-Policy and escapes what it
+  shows. No leaked secret and no data loss are the quality bars: a secret never appears in a
+  log, a page, a fixture or a commit; deleting an account deletes everything and tells every
+  product.
+
+# Per-artifact rules.
+rules:
+  proposal:
+    - Always include a "Non-goals" section; it may only list what belongs to another repository (the products' own data, APIs and storage) or to the delivery change (repositories, pipelines, DNS, production OAuth app registration, secrets), naming it; never "later" or "second phase"
+    - No migration, deprecation or backward-compatibility content
+    - List every new dependency with its licence
+  design:
+    - Record every unresolved choice as a decision with alternatives and a recommendation
+    - Name the packages/modules touched and their public interfaces, and the contract products consume
+    - State what runs locally and how tests avoid the network
+  specs:
+    - One capability per spec folder; requirements must be testable
+    - Include at least one failure/diagnostic scenario per requirement that validates input
+  tasks:
+    - Tasks must be small (under ~2 hours) and verifiable by a test or command
+    - Order tasks so a runnable vertical slice exists as early as possible

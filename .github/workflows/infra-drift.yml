@@ -1,0 +1,84 @@
+name: Infrastructure drift
+
+# Once a week the cloud is compared with the code. A difference (a record changed in a dashboard,
+# a secret removed by hand) opens the issue "Infrastructure drift" with the plan that would undo
+# it, or updates the open one; no difference closes it.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: infrastructure
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    environment: infrastructure
+    defaults:
+      run:
+        working-directory: packages/infra
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_ENDPOINT_URL_S3: https://${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+      TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      TF_VAR_existing_secrets_store_id: ${{ vars.EXISTING_SECRETS_STORE_ID }}
+      TF_VAR_existing_zone_ids: ${{ vars.EXISTING_ZONE_IDS || '{}' }}
+      TF_VAR_existing_apex_record_ids: ${{ vars.EXISTING_APEX_RECORD_IDS || '{}' }}
+      TF_VAR_session_private_key: ${{ secrets.SESSION_PRIVATE_KEY }}
+      TF_VAR_github_client_secret: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
+      TF_VAR_google_client_secret: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
+      TF_VAR_admin_subs: ${{ secrets.ADMIN_SUBS }}
+      TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
+      TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
+      TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.15"
+          terraform_wrapper: false
+      - run: terraform init
+      - name: Compare
+        id: compare
+        run: |
+          set +e
+          terraform plan -no-color -lock-timeout=5m -detailed-exitcode > plan.txt 2>&1
+          code=$?
+          set -e
+          cat plan.txt
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          # 0: no difference; 2: a difference; anything else: the plan failed.
+          if [ "$code" != 0 ] && [ "$code" != 2 ]; then exit "$code"; fi
+      - name: The drift issue
+        uses: actions/github-script@v7
+        env:
+          CODE: ${{ steps.compare.outputs.code }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const title = "Infrastructure drift";
+            const { owner, repo } = context.repo;
+            const open = (await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: "open" }))
+              .find((issue) => issue.title === title && !issue.pull_request);
+            if (process.env.CODE === "2") {
+              const text = fs.readFileSync("packages/infra/plan.txt", "utf8");
+              const shown = text.length > 60000 ? `…\n${text.slice(-60000)}` : text;
+              const body = `The cloud differs from \`packages/infra\`. Applying \`main\` again undoes the difference; a change that should stay belongs in the code.\n\n\`\`\`\n${shown}\n\`\`\``;
+              if (open) await github.rest.issues.update({ owner, repo, issue_number: open.number, body });
+              else await github.rest.issues.create({ owner, repo, title, body });
+            } else if (open) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: open.number, body: "No difference any more." });
+              await github.rest.issues.update({ owner, repo, issue_number: open.number, state: "closed" });
+            }

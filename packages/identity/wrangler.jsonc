@@ -1,0 +1,54 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "meltemi-identity",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-15",
+  "dev": { "port": 8787 },
+  "workers_dev": false,
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "meltemi-identity",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "secrets_store_secrets": [
+    {
+      "binding": "SESSION_PRIVATE_KEY_STORE",
+      "store_id": "00000000000000000000000000000000",
+      "secret_name": "SESSION_PRIVATE_KEY",
+    },
+    {
+      "binding": "STATE_SECRET_STORE",
+      "store_id": "00000000000000000000000000000000",
+      "secret_name": "STATE_SECRET",
+    },
+    {
+      "binding": "GITHUB_CLIENT_SECRET_STORE",
+      "store_id": "00000000000000000000000000000000",
+      "secret_name": "GITHUB_CLIENT_SECRET",
+    },
+    {
+      "binding": "GOOGLE_CLIENT_SECRET_STORE",
+      "store_id": "00000000000000000000000000000000",
+      "secret_name": "GOOGLE_CLIENT_SECRET",
+    },
+    {
+      "binding": "EVENTS_SECRET_DIAGRAMS_STORE",
+      "store_id": "00000000000000000000000000000000",
+      "secret_name": "EVENTS_SECRET_DIAGRAMS",
+    },
+  ],
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "vars": {
+    "ISSUER": "https://id.meltemi.dev",
+    "COOKIE_DOMAIN": "meltemi.dev",
+    "SITE_URL": "https://meltemi.dev",
+    "SESSION_PUBLIC_KEYS": "[]",
+    "PRODUCTS": "[{\"name\":\"diagrams\",\"events\":\"https://diagrams.meltemi.dev/_identity/events\"}]",
+    "GITHUB_CLIENT_ID": "",
+    "GOOGLE_CLIENT_ID": "",
+  },
+}

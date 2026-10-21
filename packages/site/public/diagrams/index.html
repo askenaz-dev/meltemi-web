@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meltemi Diagrams — diagrams as code, adjusted on a canvas</title>
+    <meta
+      name="description"
+      content="Write diagrams as .meltemi text files, adjust them on a canvas, animate them and export them to SVG, PNG, PDF, video and an HTML player. In VS Code and in the browser, with no account needed."
+    />
+    <link rel="alternate" hreflang="en" href="/diagrams/" />
+    <link rel="alternate" hreflang="es" href="/es/diagrams/" />
+    <link rel="alternate" hreflang="x-default" href="/diagrams/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Site">
+          <a href="/">Home</a>
+          <a href="/ide/">IDE</a>
+          <a href="/diagrams/" aria-current="page">Diagrams</a>
+          <a class="lang" href="/es/diagrams/" hreflang="es" lang="es">Español</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>Diagrams as code, adjusted on a canvas</h1>
+        <p class="motto">Code, layout and motion, in files you review.</p>
+        <p>
+          Meltemi Diagrams is part of the Meltemi family. You write <code>.meltemi</code> text files;
+          the editor draws them beside the code, and every drag, resize or label change on the
+          canvas becomes a small edit of the same text. Flow, sequence, C4 and free diagrams, with
+          motion, exported to SVG, PNG, PDF, video and an HTML player.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="https://diagrams.meltemi.dev/">Open the app</a>
+          <a class="btn" href="#install">Install</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi-diagrams/tree/main/docs">Read the documentation</a>
+        </div>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="what">
+        <h2 id="what">Text you write, a canvas you drag</h2>
+        <p>
+          A diagram is a plain text file in the <code>.meltemi</code> language. Code, layout and
+          motion all live in it, so you review and version a diagram like the rest of your work.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Code</h3>
+            <p>
+              In VS Code the text has diagnostics, completion, rename, formatting and quick fixes.
+              On the command line, <code>validate</code> checks whole projects and exits with 1 when
+              there are errors.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Canvas</h3>
+            <p>
+              Beside the code sits a canvas with a grid, guides, routing and an inspector. Drag a
+              box, double-click a label or connect two boxes: each gesture is one small edit of the
+              text, so the diff of a change shows exactly what moved.
+            </p>
+          </div>
+          <div class="card">
+            <h3>VS Code and the browser</h3>
+            <p>
+              The same canvas runs in the VS Code extension and in the app, which the documentation
+              calls the playground. The app needs no installation; the extension opens the canvas
+              beside any <code>.meltemi</code> file.
+            </p>
+          </div>
+        </div>
+        <p>This is the small flow diagram that <code>meltemi-diagrams init</code> writes:</p>
+        <pre><code>language "0.2"
+
+diagram overview: flow {
+  title "Overview"
+  description "How a request reaches the data"
+  direction LR
+
+  client["Client"]
+  api["API"] { description "Handles requests" }
+  db[("Database")]
+
+  client -&gt; api: "HTTPS" as request
+  api -&gt; db: "Reads and writes" as store
+}</code></pre>
+      </section>
+
+      <section aria-labelledby="profiles">
+        <h2 id="profiles">Four profiles, one language</h2>
+        <p>
+          Each diagram declares its profile, as in <code>diagram overview: flow</code>. All four are
+          written in the same language and drawn on the same canvas.
+        </p>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Diagram profiles</caption>
+            <thead>
+              <tr>
+                <th scope="col">Profile</th>
+                <th scope="col">What it draws</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>flow</code></td>
+                <td>
+                  Flow diagrams: boxes and connectors with notes, tags, data cylinders, decision
+                  diamonds, group bands and step labels, laid out automatically with the
+                  placements you make kept.
+                </td>
+              </tr>
+              <tr>
+                <td><code>sequence</code></td>
+                <td>
+                  Sequence diagrams: participants, calls, replies, async messages, activations,
+                  notes and every fragment (<code>alt</code>, <code>opt</code>, <code>loop</code>,
+                  <code>par</code>, <code>break</code>, <code>critical</code>,
+                  <code>region</code>), with scenarios you export on their own.
+                </td>
+              </tr>
+              <tr>
+                <td><code>c4</code></td>
+                <td>
+                  C4 views of one shared model: persons, systems, containers, datastores and
+                  components, in context, container and component views. A rename reaches every
+                  view.
+                </td>
+              </tr>
+              <tr>
+                <td><code>free</code></td>
+                <td>
+                  Free compositions for slides: boxes in six shapes, text, icons and images, groups
+                  and layers.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="export">
+        <h2 id="export">Motion, and what it exports to</h2>
+        <p>
+          Effects run along connectors: particles, moving dashes and pulses. Stories chain scenes
+          that reveal, hide, highlight and focus parts of a diagram, move a camera and change view
+          with a cut, a fade or a morph. Both run on a deterministic clock, and any frame can be
+          exported.
+        </p>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Exports</caption>
+            <thead>
+              <tr>
+                <th scope="col">Format</th>
+                <th scope="col">What you get</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>SVG</td>
+                <td>One file with its fonts, static or animated with a static fallback.</td>
+                <td>The app and the command line.</td>
+              </tr>
+              <tr>
+                <td>PNG</td>
+                <td>A picture at the scale you choose, with an optional transparent background.</td>
+                <td>The app and the command line.</td>
+              </tr>
+              <tr>
+                <td>PDF</td>
+                <td>Vector pages with selectable text and links.</td>
+                <td>
+                  The command line writes the file; the app uses the browser's print dialog, where
+                  <strong>Save as PDF</strong> keeps the vectors.
+                </td>
+              </tr>
+              <tr>
+                <td>HTML player</td>
+                <td>
+                  An offline page, or a fragment to embed, that plays a story or a diagram's effects.
+                </td>
+                <td>Pause, progress, scenes, keyboard control, reduced motion and a text summary.</td>
+              </tr>
+              <tr>
+                <td>GIF, WebM, MP4</td>
+                <td>A story or a diagram's effects recorded frame by frame.</td>
+                <td>
+                  Video is 1080p at 30 fps by default; GIF is 960 × 540 at 15 fps. In the app, WebM
+                  and MP4 depend on the browser's encoders and are disabled where there is none.
+                </td>
+              </tr>
+              <tr>
+                <td>HTML catalog</td>
+                <td>
+                  One offline page for a whole project: its diagrams and stories by folder, with
+                  search and the player.
+                </td>
+                <td><code>meltemi-diagrams build catalog</code>, or Download in the app.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          On the command line, PNG, PDF and video are drawn by an installed Edge, Chrome or
+          Chromium, and video is encoded by an installed FFmpeg. Nothing is downloaded. The app
+          needs neither.
+        </p>
+      </section>
+
+      <section aria-labelledby="import">
+        <h2 id="import">Coming from Mermaid or PlantUML</h2>
+        <p>
+          The importers read Mermaid (<code>flowchart</code>, <code>sequenceDiagram</code>, the
+          <code>C4</code> diagrams, <code>architecture-beta</code> and <code>block-beta</code>),
+          PlantUML (component, deployment, use case, sequence and C4-PlantUML diagrams, with the
+          preprocessor) and the diagram blocks of Markdown files. Every construct is reported as
+          mapped, approximated or dropped, and the source is never changed. Other diagram types, and
+          the files of editors such as draw.io, Lucidchart or Visio, are not imported.
+        </p>
+      </section>
+
+      <section aria-labelledby="install">
+        <h2 id="install">Install</h2>
+        <p>
+          The app needs no installation. The command line and the editor are for working on files in
+          your own folders.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Command line</h3>
+            <p>It needs Node 22.12 or later.</p>
+            <pre><code>npm install --global @meltemi/diagrams-cli</code></pre>
+            <p>
+              The package is <code>@meltemi/diagrams-cli</code>; the command it installs is
+              <code>meltemi-diagrams</code>, also available as <code>mdg</code>. A first diagram:
+            </p>
+            <pre><code>meltemi-diagrams init shop
+meltemi-diagrams export shop --format png</code></pre>
+          </div>
+          <div class="card">
+            <h3>VS Code</h3>
+            <p>
+              The extension is Meltemi Diagrams, with the id <code>meltemi.meltemi-diagrams</code>.
+              It needs Visual Studio Code 1.95 or later.
+            </p>
+            <pre><code>code --install-extension meltemi.meltemi-diagrams</code></pre>
+            <p>
+              Or search for Meltemi Diagrams in the Extensions view. Open a <code>.meltemi</code>
+              file and the canvas opens beside the code.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="account">
+        <h2 id="account">No account needed</h2>
+        <p>
+          The app needs no account. It works entirely in your browser, and your work is kept there
+          between visits; without an account, nothing you write is sent to a server. Signing in with
+          GitHub or Google is optional, and it is how you get projects kept between devices,
+          versions, sharing by link (viewing needs no account; editing needs one), editing together,
+          publishing a catalog, and push and pull from the command line. The table says which of
+          these exist today.
+        </p>
+        <div class="notice info">
+          <strong><span aria-hidden="true">◆</span> Specified, not released.</strong>
+          The app, the command line and the editor work today with no account. What signing in adds
+          is specified in the project's documentation and has not been released.
+        </div>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">What depends on an account</caption>
+            <thead>
+              <tr>
+                <th scope="col">Capability</th>
+                <th scope="col">Status</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Draw, edit, import and export in the app</td>
+                <td>
+                  <span class="state ok"><span class="sym" aria-hidden="true">●</span> Available</span>
+                </td>
+                <td>
+                  No account. The project is kept in your browser; Share copies a link that holds the
+                  project after the <code>#</code> of its address, a part that never reaches a
+                  server.
+                </td>
+              </tr>
+              <tr>
+                <td>Projects kept between devices, with versions</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>
+                  Needs an account. A copy of each project in your account, a local copy that also
+                  works offline, and versions you can name and restore.
+                </td>
+              </tr>
+              <tr>
+                <td>Sharing by link and with named people</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>
+                  A project's link can be private, view-only or editable, and named people are
+                  invited by email as viewers or editors. Anyone the link admits can view with no
+                  account; editing needs one.
+                </td>
+              </tr>
+              <tr>
+                <td>Editing together</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>
+                  Needs an account. See who is in the project, type in the same file at the same
+                  time, and undo only your own edits. Up to twenty people in a project.
+                </td>
+              </tr>
+              <tr>
+                <td>Publishing a catalog</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>
+                  Needs an account. The project's HTML catalog at a public address on its own
+                  domain, apart from the app.
+                </td>
+              </tr>
+              <tr>
+                <td>Push and pull from the command line</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>
+                  Needs an account. <code>mdg login</code> keeps a token; <code>push</code>,
+                  <code>pull</code> and <code>publish</code> keep a folder in step with a cloud
+                  project. Every other command works without it.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The Meltemi IDE does not use this account. It still asks for none.
+        </p>
+      </section>
+
+      <section aria-labelledby="docs">
+        <h2 id="docs">Documentation and source</h2>
+        <p>
+          The documentation covers getting started, the language, the command line, the editor, the
+          app and the importers. The code is MIT licensed.
+        </p>
+        <div class="actions">
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi-diagrams/tree/main/docs">Documentation</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi-diagrams">Repository</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi Diagrams — MIT licence. This site sets no cookies and runs no analytics.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi-diagrams">Repository</a> ·
+          <a href="/privacy/">Privacy</a> ·
+          <a href="/terms/">Terms</a> ·
+          <a href="/es/diagrams/" hreflang="es" lang="es">Español</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

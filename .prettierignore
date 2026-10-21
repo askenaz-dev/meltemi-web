@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.wrangler/
+.vitest/
+pnpm-lock.yaml
+openspec/
+.claude/
+.codex/
+
+# Copied byte for byte from the IDE repository (see packages/site/README.md).
+packages/site/public/

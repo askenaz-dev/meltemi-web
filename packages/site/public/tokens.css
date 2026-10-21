@@ -1,0 +1,91 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Site tokens — DERIVED from the desktop client (desktop/ui/src/app.css), whose
+ * normative source is design-system/. Name and value must match token for
+ * token: `pnpm site:tokens --ide <path to the IDE repository>` fails on any
+ * divergence, so the product and the web cannot drift apart. Do not edit a
+ * value here; change the client's token and copy it across.
+ *
+ * Copied from github.com/askenaz-dev/meltemi at commit
+ * 463c34e8cda2043536abd85ccab67314b3289cca. */
+
+:root {
+  /* Brand: reserved for marks and the shell's primary action. Never chrome. */
+  --mel-aegean: #2563eb;
+  --mel-wind: #22d3ee;
+
+  /* Semantic tokens — light. */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #eef2f7;
+  --panel: #f1f5f9;
+  --hair: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-faint: #64748b;
+  --border: #cbd5e1;
+  --accent: #2563eb;
+  --focus: #1d4ed8;
+  --ok: #15803d;
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --info: #0e7490;
+  --tint-ok: #dcfce7;
+  --tint-warn: #fef3c7;
+  --tint-danger: #fee2e2;
+  --tint-info: #cffafe;
+
+  /* Type. */
+  --font-ui: "Inter", "Segoe UI", "SF Pro Text", Roboto, system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", "SF Mono", "JetBrains Mono", Consolas, monospace;
+  --fs-caption: 0.75rem;
+  --fs-dense: 0.8125rem;
+  --fs-body: 0.875rem;
+  --fs-section: 1rem;
+  --fs-view: 1.25rem;
+
+  /* Space (4 px base). */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Density is the feature: 32 px rows, 8 px cells, 16 px panels. */
+  --row-h: 32px;
+  --cell-pad: var(--sp-2);
+  --panel-pad: var(--sp-4);
+  --touch-min: 44px;
+
+  /* Shape: 4 px controls, 8 px panels. No pill buttons. */
+  --radius-control: 4px;
+  --radius-panel: 8px;
+  /* Elevation: 1 px hairlines and a single shadow level, overlays only. */
+  --shadow-overlay: 0 4px 16px rgb(0 0 0 / 0.18);
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1220;
+    --surface: #111a2e;
+    --surface-2: #1a2540;
+    --panel: #0e1526;
+    --hair: #1a2540;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-faint: #5b6b8c;
+    --border: #2c3a57;
+    --accent: #60a5fa;
+    --focus: #22d3ee;
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --info: #67e8f9;
+    --tint-ok: #0f2e22;
+    --tint-warn: #3a2a12;
+    --tint-danger: #3b1618;
+    --tint-info: #0c3a45;
+  }
+}

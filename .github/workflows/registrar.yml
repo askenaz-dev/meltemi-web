@@ -1,0 +1,52 @@
+name: Registrar
+
+# Points meltemi.dev and meltemi.page, registered at Dynadot, at the nameservers Terraform gave their
+# Cloudflare zones. Dynadot has no Terraform provider, so this step stands in for one: run by hand,
+# once, after the first infrastructure apply. It changes a domain only when its nameservers differ,
+# and prints what it did, never the key.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only say what would change"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infrastructure
+  cancel-in-progress: false
+
+jobs:
+  nameservers:
+    runs-on: ubuntu-latest
+    environment: infrastructure
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_ENDPOINT_URL_S3: https://${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.15"
+          terraform_wrapper: false
+      - name: The zones' nameservers, from the state
+        working-directory: packages/infra
+        run: |
+          terraform init
+          terraform output -json nameservers > nameservers.json
+          cat nameservers.json
+      - name: Point the domains at them
+        env:
+          DYNADOT_API_KEY: ${{ secrets.DYNADOT_API_KEY }}
+          DRY_RUN: ${{ inputs.dry_run && '--dry-run' || '' }}
+        run: node packages/infra/scripts/dynadot-nameservers.mjs packages/infra/nameservers.json $DRY_RUN

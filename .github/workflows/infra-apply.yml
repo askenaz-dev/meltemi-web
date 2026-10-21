@@ -1,0 +1,67 @@
+name: Infrastructure apply
+
+# Every push to main that changes the infrastructure applies it: the plan is made, saved and that
+# very plan is applied, one run at a time. The outputs (ids, nameservers, domains; never a secret)
+# are the run's summary.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/infra/**"
+      - ".github/workflows/infra-apply.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infrastructure
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    environment: infrastructure
+    defaults:
+      run:
+        working-directory: packages/infra
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_ENDPOINT_URL_S3: https://${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+      TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      TF_VAR_existing_secrets_store_id: ${{ vars.EXISTING_SECRETS_STORE_ID }}
+      TF_VAR_existing_zone_ids: ${{ vars.EXISTING_ZONE_IDS || '{}' }}
+      TF_VAR_existing_apex_record_ids: ${{ vars.EXISTING_APEX_RECORD_IDS || '{}' }}
+      TF_VAR_session_private_key: ${{ secrets.SESSION_PRIVATE_KEY }}
+      TF_VAR_github_client_secret: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
+      TF_VAR_google_client_secret: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
+      TF_VAR_admin_subs: ${{ secrets.ADMIN_SUBS }}
+      TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
+      TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
+      TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.15"
+          terraform_wrapper: false
+      - run: terraform init
+      - name: Plan
+        run: terraform plan -no-color -lock-timeout=5m -out=apply.tfplan
+      - name: Apply that plan
+        run: terraform apply -no-color -lock-timeout=5m apply.tfplan
+      - name: Outputs
+        run: |
+          {
+            echo "### Outputs"
+            echo
+            echo '```json'
+            terraform output -json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

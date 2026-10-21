@@ -1,0 +1,13 @@
+{
+  "name": "@meltemi/site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The product site of the Meltemi family: static pages in English and Spanish, served as the assets of a Cloudflare Worker with no code.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "tokens": "node scripts/tokens.mjs",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

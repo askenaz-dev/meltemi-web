@@ -1,0 +1,26 @@
+node_modules/
+dist/
+.wrangler/
+.vitest/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+
+# The Worker configuration the deploy workflow writes from wrangler.jsonc and Terraform's ids.
+wrangler.deploy.json
+
+# Local secrets: every .dev.vars file of every package, except the examples.
+.dev.vars*
+!.dev.vars.example
+
+# Terraform's local files: the providers' cache, any state, plans and variable values. The lock
+# file of the providers (.terraform.lock.hcl) is committed.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!*.auto.tfvars.example

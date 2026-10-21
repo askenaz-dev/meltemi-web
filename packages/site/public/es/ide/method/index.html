@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>El método como herramienta — Meltemi</title>
+    <meta
+      name="description"
+      content="Spec-first como herramienta que te da poder, no como peaje: propuesta, design, deltas de spec y tareas, plegados a la verdad viva solo cuando cada escenario está verificado."
+    />
+    <link rel="alternate" hreflang="en" href="/ide/method/" />
+    <link rel="alternate" hreflang="es" href="/es/ide/method/" />
+    <link rel="alternate" hreflang="x-default" href="/ide/method/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/es/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Sitio">
+          <a href="/es/ide/">Producto</a>
+          <a href="/es/ide/method/" aria-current="page">Método</a>
+          <a href="/es/ide/agents/">Agentes</a>
+          <a href="/es/ide/downloads/">Descargas</a>
+          <a class="lang" href="/ide/method/" hreflang="en" lang="en">English</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>El método es una herramienta, no un peaje</h1>
+        <p>
+          Una especificación no es papeleo que le debes al proceso. Es lo que permite
+          que un rumbo claro impulse a cualquier número de agentes, de cualquier
+          fabricante, sin que tengas que reexplicar tu intención en cada sesión — y
+          lo que hace su resultado revisable en vez de solo verosímil.
+        </p>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="loop">
+        <h2 id="loop">El bucle</h2>
+        <p>
+          Todo cambio recorre el mismo arco corto. Lo trivial toma la vía rápida
+          —todos los artefactos de una vez—, nunca la vía nula.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>1 · Proponer</h3>
+            <p>
+              Una idea se convierte en un cambio con nombre: por qué importa, qué
+              toca y qué deja fuera a propósito.
+            </p>
+          </div>
+          <div class="card">
+            <h3>2 · Diseñar</h3>
+            <p>
+              Las decisiones que vale la pena defender, cada una con las
+              alternativas que se rechazaron y por qué. Aquí una sugerencia del
+              agente se gana su lugar o lo pierde.
+            </p>
+          </div>
+          <div class="card">
+            <h3>3 · Deltas de spec</h3>
+            <p>
+              Requisitos escritos como comportamiento testeable, expresados como
+              deltas contra las capacidades que ya tienes —añadida, modificada,
+              retirada— en vez de un documento reescrito en su sitio.
+            </p>
+          </div>
+          <div class="card">
+            <h3>4 · Tareas</h3>
+            <p>
+              Una secuencia lo bastante pequeña para revisarse, con cada tarea
+              apuntando al requisito que la justifica.
+            </p>
+          </div>
+          <div class="card">
+            <h3>5 · Verificar</h3>
+            <p>
+              Cada escenario queda ligado a un test o a una verificación
+              documentada. Nada se pliega mientras un requisito no esté verificado
+              ni exceptuado con su razón explícita.
+            </p>
+          </div>
+          <div class="card">
+            <h3>6 · Archivar</h3>
+            <p>
+              Los deltas se pliegan a la verdad viva y el cambio pasa a ser
+              histórico. La verdad es lo que el código hace ahora, no lo que alguien
+              planeó una vez.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="ears">
+        <h2 id="ears">Requisitos capaces de romper un build</h2>
+        <p>
+          Los requisitos se escriben en una forma acotada —un disparador, una
+          condición, un debe— para que un escenario se lea igual para una persona y
+          para el nombre de un test. Un requisito cuyos escenarios no pueden fallar
+          es un deseo, y Meltemi lo trata como tal.
+        </p>
+        <p>
+          La trazabilidad es mecánica, no aspiracional: un commit por tarea, el
+          commit nombrando su cambio y su tarea, y cada línea de código rastreable
+          hasta el requisito que la originó.
+        </p>
+      </section>
+
+      <section aria-labelledby="agentic">
+        <h2 id="agentic">Dónde encajan los agentes</h2>
+        <p>
+          El método es el mismo si escribes el cambio tú o si lo delegas. Meltemi
+          proyecta la constitución, el rumbo de producto y la especificación activa
+          al contexto que recibe el agente, para que argumente dentro de tus
+          restricciones en vez de inventarse las suyas. Después sostiene las puertas:
+          permisos que decides tú, worktrees aislados por tarea, checkpoints antes de
+          cada turno y un diff que revisas antes de que nada se aplique.
+        </p>
+        <p>
+          Varios agentes pueden competir por la misma tarea en worktrees separados y
+          tú eliges el resultado. De eso trata el rumbo: no le importa qué vela
+          atrape el viento.
+        </p>
+      </section>
+
+      <section aria-labelledby="read">
+        <h2 id="read">Lee las fuentes íntegras</h2>
+        <p>
+          Nada de esto sustituye a los documentos primarios, y este sitio no los
+          parafrasea hasta convertirlos en una segunda verdad:
+        </p>
+        <ul>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/meltemi.md">El manifiesto fundacional</a>
+            — la visión y sus decisiones numeradas.
+          </li>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/.meltemi/constitution.md">La constitución</a>
+            — los principios no negociables, ratificados y versionados.
+          </li>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/LEEME.md">El inicio rápido</a>
+            — instálalo y corre el bucle tú mismo.
+          </li>
+          <li>
+            <a href="https://github.com/askenaz-dev/meltemi/blob/main/docs/referencia-cli.md">La referencia CLI</a>
+            — generada de la gramática, nunca escrita a mano.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — Apache-2.0. Sin telemetría, sin rastreo, sin cookies.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi">Repositorio</a> ·
+          <a href="/es/ide/">Producto</a> ·
+          <a href="/es/ide/agents/">Agentes</a> ·
+          <a href="/es/ide/downloads/">Descargas</a> ·
+          <a href="/ide/method/" hreflang="en" lang="en">English</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meltemi — el plano de control spec-driven del desarrollo agéntico</title>
+    <meta
+      name="description"
+      content="Plano de control open source que orquesta los agentes de codificación que ya usas, bajo una disciplina donde ninguna línea de código se escribe sin una especificación revisada. Escritorio y terminal, en Windows, macOS y Linux."
+    />
+    <link rel="alternate" hreflang="en" href="/ide/" />
+    <link rel="alternate" hreflang="es" href="/es/ide/" />
+    <link rel="alternate" hreflang="x-default" href="/ide/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/es/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Sitio">
+          <a href="/es/ide/" aria-current="page">Producto</a>
+          <a href="/es/ide/method/">Método</a>
+          <a href="/es/ide/agents/">Agentes</a>
+          <a href="/es/ide/downloads/">Descargas</a>
+          <a class="lang" href="/ide/" hreflang="en" lang="en">English</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>El plano de control spec-driven del desarrollo agéntico</h1>
+        <p class="motto">Un rumbo, muchas velas.</p>
+        <p>
+          Meltemi orquesta los agentes de codificación que ya pagas, a través de
+          estándares abiertos, bajo una disciplina donde ninguna línea de código se
+          escribe sin una especificación revisada. No es otro agente ni un servicio
+          en la nube: es el plano desde el que los pilotas.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="/es/ide/downloads/">Descargar</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/LEEME.md">Leer el inicio rápido</a>
+        </div>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="what">
+        <h2 id="what">Un producto, dos superficies, tres plataformas</h2>
+        <p>
+          Un daemon headless concentra toda la capacidad. Dos clientes finos la
+          consumen por un socket local, y la paridad de núcleo es una regla con un
+          test bloqueante detrás: ninguna capacidad puede llegar a una superficie y
+          no a la otra.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Cliente de escritorio</h3>
+            <p>
+              Una aplicación densa y pensada para el teclado: sesiones con sus
+              transcripciones, la bandeja de permisos, la vista de proyecto, la
+              flota de agentes, la contabilidad local de consumo y una superficie de
+              código utilitaria que revisa cada diff antes de aplicarlo.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Cliente de terminal</h3>
+            <p>
+              Las mismas capacidades en la terminal, más una capa de comandos
+              scriptables con salida para máquinas: la superficie que encaja en un
+              pipeline, en una sesión SSH o en un flujo solo de teclado.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Windows, macOS, Linux</h3>
+            <p>
+              Las tres son de primera clase y las tres se testean en cada cambio.
+              Windows no es un puerto posterior: allí el daemon habla por named pipe
+              y en el resto por un socket exclusivo del usuario.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="byo">
+        <h2 id="byo">Trae tu agente, tu clave y tu modelo</h2>
+        <p>
+          Sin créditos, sin tarifas y sin lock-in. Meltemi ejecuta los binarios
+          oficiales de los agentes que instalas, cada uno autenticándose como su
+          fabricante quiso. Jamás lee, guarda ni reenvía tus credenciales, y jamás
+          suplanta a otro cliente. Si tienes dos suscripciones del mismo proveedor,
+          los perfiles de lanzamiento permiten usar ambas a la vez, en proyectos y
+          sesiones distintos.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>Sin telemetría</h3>
+            <p>
+              Toda métrica se calcula en local. El daemon no abre puertos de red y no
+              hay nada que desactivar, porque no hay nada que se envíe.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Contabilidad local de consumo</h3>
+            <p>
+              Sesiones, prompts, permisos, ediciones y commits plegados de tus
+              propios registros — y tokens solo donde la salida oficial de un agente
+              los reporta. Lo que nunca se midió se muestra como no reportado, jamás
+              como cero y jamás como estimación.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Apache 2.0, para siempre</h3>
+            <p>
+              El daemon, los dos clientes y el futuro SDK son Apache-2.0 y no
+              cambiarán de licencia.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="surfaces">
+        <h2 id="surfaces">Las superficies, tal como se dibujan</h2>
+        <figure>
+          <img
+            src="/media/tui-sessions.svg"
+            alt="Cliente de terminal con la vista de sesiones agrupada por proyecto: dos proyectos, una sesión activa y otra finalizada, cada fila con su agente y la suscripción que la ejecutó, y el contador de permisos en la cabecera."
+          />
+          <figcaption>
+            Superficie de terminal · sesiones agrupadas por proyecto · capturada del
+            renderizador sobre un repositorio fixture temporal con el agente
+            simulado · Meltemi previo a 1.0 · Linux/macOS/Windows (misma rejilla de
+            texto).
+          </figcaption>
+        </figure>
+        <figure>
+          <img
+            src="/media/desktop-sessions.png"
+            width="1600"
+            height="1034"
+            alt="Cliente de escritorio en la vista de sesiones: la barra lateral lista el proyecto con sus cinco sesiones anidadas debajo, cada una con el agente y el perfil de lanzamiento que la ejecutó, mientras la tabla muestra identificador, agente, suscripción, estado, duración e inicio, y el pie informa la conexión, la versión y el socket local."
+          />
+          <figcaption>
+            Superficie de escritorio · sesiones de un proyecto, dos suscripciones del
+            mismo agente · capturada de la ventana sobre un repositorio fixture
+            temporal con el agente simulado · Meltemi previo a 1.0 · Windows 11 (el
+            mismo diseño en macOS y Linux).
+          </figcaption>
+        </figure>
+      </section>
+
+      <section aria-labelledby="state">
+        <h2 id="state">Estado honesto, antes de la 1.0</h2>
+        <div class="notice">
+          <strong><span aria-hidden="true">▲</span> Previo a 1.0.</strong> El
+          contrato entre el daemon y sus clientes todavía puede cambiar entre
+          versiones menores. La fase 1 (daemon, superficie de terminal, motor de
+          specs) está completa; el cliente de escritorio está en desarrollo activo.
+        </div>
+        <p>Lo que aún no existe, dicho de frente:</p>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Estado por capacidad</caption>
+            <thead>
+              <tr>
+                <th scope="col">Capacidad</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Notas</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Daemon, superficie de terminal, motor de specs</td>
+                <td>
+                  <span class="state ok"><span class="sym" aria-hidden="true">●</span> Publicado</span>
+                </td>
+                <td>Releases firmadas con archivos por plataforma.</td>
+              </tr>
+              <tr>
+                <td>Cliente de escritorio</td>
+                <td>
+                  <span class="state pending"><span class="sym" aria-hidden="true">◔</span> En desarrollo</span>
+                </td>
+                <td>Los instaladores salen en cada release; el shell se está puliendo.</td>
+              </tr>
+              <tr>
+                <td>SDK público</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Todavía no</span>
+                </td>
+                <td>Planeado para la fase 2, cuando el contrato se asiente.</td>
+              </tr>
+              <tr>
+                <td>Compañero móvil</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Todavía no</span>
+                </td>
+                <td>Especificado para la fase 3; no se publica nada.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="not">
+        <h2 id="not">Lo que Meltemi no es</h2>
+        <p>
+          No es un editor de propósito general: la superficie de código es
+          utilitaria, al servicio del bucle agéntico, y la autoría sostenida sigue en
+          el editor que ya quieres. No es otro agente de codificación. No es un
+          servicio en la nube, ni CI/CD, ni un marketplace.
+        </p>
+        <p>
+          El argumento completo vive en el documento fundacional y en la
+          constitución, ambos legibles íntegros:
+          <a href="https://github.com/askenaz-dev/meltemi/blob/main/meltemi.md">el manifiesto</a>
+          y
+          <a href="https://github.com/askenaz-dev/meltemi/blob/main/.meltemi/constitution.md">la constitución</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — Apache-2.0. Sin telemetría, sin rastreo, sin cookies.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi">Repositorio</a> ·
+          <a href="/es/ide/method/">Método</a> ·
+          <a href="/es/ide/agents/">Agentes</a> ·
+          <a href="/es/ide/downloads/">Descargas</a> ·
+          <a href="/ide/" hreflang="en" lang="en">English</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

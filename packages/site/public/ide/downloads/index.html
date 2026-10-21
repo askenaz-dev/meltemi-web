@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Downloads — Meltemi</title>
+    <meta
+      name="description"
+      content="Signed releases for Windows, macOS and Linux: the core archive with both binaries, the desktop installer, and an auditable install script. Every link resolves to the latest signed release."
+    />
+    <link rel="alternate" hreflang="en" href="/ide/downloads/" />
+    <link rel="alternate" hreflang="es" href="/es/ide/downloads/" />
+    <link rel="alternate" hreflang="x-default" href="/ide/downloads/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Site">
+          <a href="/ide/">Product</a>
+          <a href="/ide/method/">Method</a>
+          <a href="/ide/agents/">Agents</a>
+          <a href="/ide/downloads/" aria-current="page">Downloads</a>
+          <a class="lang" href="/es/ide/downloads/" hreflang="es" lang="es">Español</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>Downloads</h1>
+        <p>
+          Every link below points at the latest signed release. No version appears on
+          this page, and nothing is hosted here: the files come from the release
+          itself, so what you download is what was signed.
+        </p>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="pick">
+        <h2 id="pick">Pick your platform</h2>
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Platform</th>
+                <th scope="col">Core (daemon + terminal)</th>
+                <th scope="col">Desktop client</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Windows 10 1809+ / 11</th>
+                <td>
+                  <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/meltemi-Windows.zip">meltemi-Windows.zip</a>
+                </td>
+                <td>
+                  <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/meltemi-desktop-Windows.msi">meltemi-desktop-Windows.msi</a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">macOS 13+</th>
+                <td>
+                  <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/meltemi-macOS.tar.gz">meltemi-macOS.tar.gz</a>
+                </td>
+                <td>
+                  <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/meltemi-desktop-macOS.dmg">meltemi-desktop-macOS.dmg</a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Linux (Debian/Ubuntu)</th>
+                <td>
+                  <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/meltemi-Linux.tar.gz">meltemi-Linux.tar.gz</a>
+                </td>
+                <td>
+                  <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/meltemi-desktop-Linux.deb">meltemi-desktop-Linux.deb</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The core archive carries both binaries: the daemon <code>meltemid</code>
+          and the terminal client <code>meltemi</code>. No desktop installer embeds a
+          browser: each one uses your operating system's own web view — bootstrapped
+          on Windows, already there on macOS, declared as a package dependency on
+          Linux. That is why there is no AppImage: the format is self-contained by
+          construction, so it would have to carry the engine, about 79&nbsp;MB of it.
+        </p>
+        <p>
+          Outside the Debian family there is no desktop installer yet. The terminal
+          client and the daemon run on any distribution from the core archive, and
+          the desktop app builds from source. An <code>.rpm</code> is the next step.
+        </p>
+      </section>
+
+      <section aria-labelledby="script">
+        <h2 id="script">Or use the install script</h2>
+        <p>
+          The scripts are short and meant to be read before they are run. Each one is
+          published as a release asset with its checksum inside the signed
+          <code>SHA256SUMS</code>, and each verifies the archive's checksum and
+          refuses on a mismatch. There is no blind pipe into a shell here:
+          <strong>download it, read it, then run it.</strong>
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>macOS and Linux</h3>
+            <pre><code>curl -fsSLO https://github.com/askenaz-dev/meltemi/releases/latest/download/install.sh
+less install.sh
+sh install.sh</code></pre>
+            <p>
+              <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/install.sh">install.sh</a>
+            </p>
+          </div>
+          <div class="card">
+            <h3>Windows</h3>
+            <pre><code>irm -OutFile install.ps1 https://github.com/askenaz-dev/meltemi/releases/latest/download/install.ps1
+notepad install.ps1
+./install.ps1</code></pre>
+            <p>
+              <a href="https://github.com/askenaz-dev/meltemi/releases/latest/download/install.ps1">install.ps1</a>
+            </p>
+          </div>
+        </div>
+        <p>
+          Both place <code>meltemi</code> and <code>meltemid</code> on your path and
+          create the short alias <code>mel</code>. Prefer to do it by hand? The
+          manual equivalent is written at the top of each script.
+        </p>
+      </section>
+
+      <section aria-labelledby="verify">
+        <h2 id="verify">Verify what you downloaded</h2>
+        <p>
+          Every release publishes a <code>SHA256SUMS</code> with a detached
+          signature made with the maintainer's key, plus a build attestation minted
+          by the release workflow itself. Three checks, ordered by what each one
+          buys: the checksum tells you the file arrived intact, the signature tells
+          you the maintainer vouched for it, and the attestation tells you which
+          repository, commit and workflow produced it. The commands — and what each
+          check can and cannot prove — are in the release documentation.
+        </p>
+        <p>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/releases/latest/download/SHA256SUMS">SHA256SUMS of the latest release</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/release.md">Checksum, signature and provenance procedure</a>
+        </p>
+        <div class="notice info">
+          <strong><span aria-hidden="true">◆</span> Nothing is mirrored here.</strong>
+          This site links the release assets and never serves a copy of them: a copy
+          under another domain would be a second truth with its own hash.
+        </div>
+      </section>
+
+      <section aria-labelledby="build">
+        <h2 id="build">Or build it from source</h2>
+        <p>
+          One toolchain, pinned in the repository, and no code generation step. The
+          repository's own quickstart carries the exact commands, the platform
+          prerequisites for the desktop client, and how to run the whole test suite.
+        </p>
+        <p>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi#readme">Build from source</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/plataformas.md">Platform notes</a>
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — Apache-2.0. No telemetry, no tracking, no cookies.</span>
+        <span>
+          <a href="https://github.com/askenaz-dev/meltemi">Repository</a> ·
+          <a href="/ide/">Product</a> ·
+          <a href="/ide/method/">Method</a> ·
+          <a href="/ide/agents/">Agents</a> ·
+          <a href="/es/ide/downloads/" hreflang="es" lang="es">Español</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

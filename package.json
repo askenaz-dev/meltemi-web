@@ -1,0 +1,44 @@
+{
+  "name": "meltemi-web-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Meltemi Web: the product site and the shared identity service of the Meltemi family.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "identity:dev": "pnpm --filter @meltemi/identity run dev",
+    "identity:migrate": "pnpm --filter @meltemi/identity run migrate",
+    "identity:keys": "node packages/identity/scripts/keys.mjs",
+    "site:dev": "pnpm --filter @meltemi/site --fail-if-no-match run dev",
+    "site:tokens": "pnpm --filter @meltemi/site --fail-if-no-match run tokens",
+    "infra:fmt": "pnpm --filter @meltemi/infra --fail-if-no-match run fmt",
+    "infra:validate": "pnpm --filter @meltemi/infra --fail-if-no-match run validate",
+    "infra:test": "pnpm --filter @meltemi/infra --fail-if-no-match run test:terraform",
+    "registrar:nameservers": "node packages/infra/scripts/dynadot-nameservers.mjs",
+    "infra:bootstrap": "node scripts/bootstrap.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260930.1",
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.12.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.13.0",
+    "prettier": "3.9.9",
+    "tsx": "4.23.15",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.1",
+    "vitest": "5.0.3",
+    "wrangler": "4.144.0"
+  }
+}

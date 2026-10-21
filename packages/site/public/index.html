@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meltemi — agentic development and diagrams as code</title>
+    <meta
+      name="description"
+      content="Meltemi is one brand with two open-source products: Meltemi IDE, a control plane for the coding agents you already use, and Meltemi Diagrams, diagrams written as code."
+    />
+    <link rel="alternate" hreflang="en" href="/" />
+    <link rel="alternate" hreflang="es" href="/es/" />
+    <link rel="alternate" hreflang="x-default" href="/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Site">
+          <a href="/" aria-current="page">Home</a>
+          <a href="/ide/">IDE</a>
+          <a href="/diagrams/">Diagrams</a>
+          <a class="lang" href="/es/" hreflang="es" lang="es">Español</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>Meltemi: two open-source tools, one family</h1>
+        <p class="motto">One steers coding agents. The other draws diagrams as code.</p>
+        <p>
+          Meltemi IDE is a control plane for the coding agents you already use. Meltemi Diagrams
+          turns text files into diagrams you can adjust on a canvas and export. They are separate
+          programs, released separately: you can use one without the other.
+        </p>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="products">
+        <h2 id="products">Two products</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Meltemi IDE</h3>
+            <p>
+              <span class="pill">Apache-2.0</span>
+              <span class="pill">Windows, macOS, Linux</span>
+              <span class="pill">Before 1.0</span>
+            </p>
+            <p>
+              The spec-driven control plane for agentic development. It orchestrates the coding
+              agents you already use, through open standards, under a discipline where no line of
+              code is written without a reviewed specification.
+            </p>
+            <p>
+              A desktop application and a terminal application. No accounts, no cloud service, no
+              telemetry: you bring your own agent, key and model.
+            </p>
+            <div class="actions">
+              <a class="btn primary" href="/ide/">Open the IDE page</a>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Meltemi Diagrams</h3>
+            <p>
+              <span class="pill">MIT</span>
+              <span class="pill">Command line, VS Code, browser</span>
+              <span class="pill">No account needed</span>
+            </p>
+            <p>
+              Diagrams written as code. You write <code>.meltemi</code> text files and the editor
+              draws them beside the code. Every move, resize or label change on the canvas becomes
+              a small edit of the same text, so a diagram is reviewed and versioned like the rest
+              of your work.
+            </p>
+            <p>
+              Flow, sequence, C4 and free compositions, exported to SVG, PNG, PDF, an offline HTML
+              player, MP4, WebM and GIF. The app in the browser works without an account.
+            </p>
+            <div class="actions">
+              <a class="btn primary" href="/diagrams/">Open Meltemi Diagrams</a>
+              <a class="btn" href="https://diagrams.meltemi.dev/">Open the app</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="share">
+        <h2 id="share">What the two share</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>One brand</h3>
+            <p>
+              Both carry the Meltemi mark and name, and Diagrams exports carry the family mark by
+              default. This site wears the design tokens of the IDE's desktop client.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Open source</h3>
+            <p>
+              Meltemi IDE is Apache-2.0. Meltemi Diagrams is MIT. The IDE's source is on
+              <a href="https://github.com/askenaz-dev/meltemi">GitHub</a>.
+            </p>
+          </div>
+          <div class="card">
+            <h3>One optional account</h3>
+            <p>
+              The family's online services will share a single account. You sign in with GitHub or
+              Google, and there are no passwords. Meltemi IDE never asks for one, and Meltemi
+              Diagrams works without one. What the account holds is written on the
+              <a href="/privacy/">privacy page</a>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="state">
+        <h2 id="state">Honest state of each product</h2>
+        <div class="notice">
+          <strong><span aria-hidden="true">▲</span> Different stages.</strong> Meltemi IDE is
+          before 1.0: the contract between its daemon and its clients may still change between
+          minor versions. Meltemi Diagrams is built and tested without an account; the account,
+          sharing and collaboration that are meant to sit on top of it do not exist yet.
+        </div>
+        <p>What does not exist yet, stated plainly:</p>
+        <div class="tableWrap">
+          <table>
+            <caption class="pill">Status by part</caption>
+            <thead>
+              <tr>
+                <th scope="col">Product</th>
+                <th scope="col">Part</th>
+                <th scope="col">Status</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Meltemi IDE</td>
+                <td>Daemon, terminal client, spec engine</td>
+                <td>
+                  <span class="state ok"><span class="sym" aria-hidden="true">●</span> Published</span>
+                </td>
+                <td>Signed releases with per-platform archives.</td>
+              </tr>
+              <tr>
+                <td>Meltemi IDE</td>
+                <td>Desktop client</td>
+                <td>
+                  <span class="state pending"><span class="sym" aria-hidden="true">◔</span> In development</span>
+                </td>
+                <td>Installers ship with each release; the shell is being polished.</td>
+              </tr>
+              <tr>
+                <td>Meltemi Diagrams</td>
+                <td>Language, command line, VS Code extension, app in the browser</td>
+                <td>
+                  <span class="state ok"><span class="sym" aria-hidden="true">●</span> Built</span>
+                </td>
+                <td>Every acceptance criterion passes on the reference machine.</td>
+              </tr>
+              <tr>
+                <td>Meltemi Diagrams</td>
+                <td>Account, projects kept between devices, sharing, live collaboration</td>
+                <td>
+                  <span class="state absent"><span class="sym" aria-hidden="true">○</span> Not yet</span>
+                </td>
+                <td>Specified, not built. The app works without them.</td>
+              </tr>
+              <tr>
+                <td>The family</td>
+                <td>Sign-in with GitHub or Google</td>
+                <td>
+                  <span class="state pending"><span class="sym" aria-hidden="true">◔</span> In development</span>
+                </td>
+                <td>One account for the online services. Meltemi IDE does not use it.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Each product's own page has the details:
+          <a href="/ide/">Meltemi IDE</a> and <a href="/diagrams/">Meltemi Diagrams</a>.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — no telemetry, no tracking, no cookies.</span>
+        <span>
+          <a href="/privacy/">Privacy</a> ·
+          <a href="/terms/">Terms</a> ·
+          <a href="/es/" hreflang="es" lang="es">Español</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

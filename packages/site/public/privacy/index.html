@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy notice — Meltemi</title>
+    <meta
+      name="description"
+      content="What the Meltemi site, the sign-in service and Meltemi Diagrams keep about you, which cookies they set, where the data is processed and how to delete your account."
+    />
+    <link rel="alternate" hreflang="en" href="/privacy/" />
+    <link rel="alternate" hreflang="es" href="/es/privacy/" />
+    <link rel="alternate" hreflang="x-default" href="/privacy/" />
+    <link rel="icon" href="/media/meltemi-mark-gradient.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/tokens.css" />
+    <link rel="stylesheet" href="/site.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <img src="/media/meltemi-mark-gradient.svg" alt="" />
+          Meltemi
+        </a>
+        <nav aria-label="Site">
+          <a href="/">Home</a>
+          <a href="/ide/">IDE</a>
+          <a href="/diagrams/">Diagrams</a>
+          <a class="lang" href="/es/privacy/" hreflang="es" lang="es">Español</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="hero">
+      <div class="wrap">
+        <h1>Privacy notice</h1>
+        <p>
+          What the Meltemi site, the sign-in service and Meltemi Diagrams keep about you, where it
+          is kept, and how to have it removed.
+        </p>
+        <p><span class="pill">Last updated: 14 October 2026</span></p>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <section aria-labelledby="short">
+        <h2 id="short">In short</h2>
+        <div class="notice info">
+          <ul>
+            <li>This site sets no cookie, runs no analytics and has no forms.</li>
+            <li>The Meltemi IDE sends nothing to Meltemi and has no account.</li>
+            <li>
+              Meltemi Diagrams works without an account. Then your work stays in your browser.
+            </li>
+            <li>Signing in is optional, with GitHub or Google. Meltemi has no passwords.</li>
+            <li>
+              You can see where you are signed in, and delete your account, at
+              <a href="https://id.meltemi.dev/account">id.meltemi.dev/account</a>.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section aria-labelledby="who">
+        <h2 id="who">Who runs this</h2>
+        <p>
+          Meltemi is run by its owner. The owner runs this site (<code>meltemi.dev</code>), the
+          sign-in service (<code>id.meltemi.dev</code>) and the online service of Meltemi Diagrams
+          (<code>diagrams.meltemi.dev</code>). The Meltemi IDE and the Meltemi Diagrams tools that
+          you install run on your own computer.
+        </p>
+        <p>
+          Contact for any question about this notice, and for requests to see or to delete your
+          data: <strong>OWNER-CONTACT</strong>
+        </p>
+      </section>
+
+      <section aria-labelledby="site">
+        <h2 id="site">This site</h2>
+        <p>
+          This site is made of static files. It has no code of its own that could collect anything.
+          It sets no cookie, runs no analytics and has no forms. Its pages load only their own
+          stylesheet and images, and the policy the site sends to your browser forbids scripts and
+          anything from other sites.
+        </p>
+        <p>
+          Some links lead to other sites, such as GitHub, which hosts the IDE's downloads. Their own
+          notices apply there. The files of this site are served by Cloudflare; see
+          <a href="#where">Where the data is processed</a>.
+        </p>
+      </section>
+
+      <section aria-labelledby="ide">
+        <h2 id="ide">The Meltemi IDE</h2>
+        <p>
+          The Meltemi IDE runs on your computer. It has no account and sends no telemetry: every
+          metric is computed locally and nothing is sent to Meltemi.
+        </p>
+        <p>
+          The coding agents you run from it are their vendors' own programs. They run under their
+          vendors' own terms and privacy notices, which this notice does not cover. More on the
+          <a href="/ide/">IDE page</a>.
+        </p>
+      </section>
+
+      <section aria-labelledby="signin">
+        <h2 id="signin">Signing in</h2>
+        <p>
+          Signing in is optional. It is needed only for the online features of Meltemi Diagrams. It
+          goes through the identity service at <code>id.meltemi.dev</code>, and only with GitHub or
+          Google. Meltemi has no passwords of its own.
+        </p>
+        <p>
+          When you choose a provider, the identity service reads your profile from it: your name,
+          your picture, your email address and whether the provider says it is verified, your id at
+          the provider, and your handle there if it has one (on GitHub, your username). It asks for
+          read access only: the scopes <code>read:user</code> and <code>user:email</code> at
+          GitHub, and <code>openid</code>, <code>email</code> and <code>profile</code> at Google.
+        </p>
+        <p>
+          The access token the provider gives is used once, to read that profile, and is then
+          dropped. The identity service never keeps a provider token.
+        </p>
+        <p>
+          Your email address is also used to recognise you. A new sign-in joins an existing account
+          only when the provider says the email is verified and an identity of that account had the
+          same email verified within the last 90 days. Unverified emails never match. Otherwise you
+          get a new account. You can also link and unlink providers yourself on the account page.
+        </p>
+      </section>
+
+      <section aria-labelledby="holds">
+        <h2 id="holds">What the identity service holds</h2>
+        <p>The identity service keeps four kinds of record, and nothing else:</p>
+        <div class="tableWrap">
+          <table>
+            <caption>Records of the identity service</caption>
+            <thead>
+              <tr>
+                <th scope="col">Record</th>
+                <th scope="col">What it holds</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>users</td>
+                <td>
+                  A random user id, your name, the web address of your picture and when the account
+                  was created.
+                </td>
+              </tr>
+              <tr>
+                <td>identities</td>
+                <td>
+                  One for each provider you linked: the provider, your id there, your email address
+                  and whether the provider vouched for it, when it last did, your handle there and
+                  when you linked it.
+                </td>
+              </tr>
+              <tr>
+                <td>sessions</td>
+                <td>
+                  One for each place you are signed in: a session id, a coarse label such as “Edge
+                  on Windows”, when it started, when it was last seen, when it expires and whether
+                  it was ended.
+                </td>
+              </tr>
+              <tr>
+                <td>events</td>
+                <td>
+                  Deletion events waiting to be delivered to the products after an account is
+                  deleted: an event id, the product, a short message with your user id and the
+                  time, and the delivery attempts.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="never">
+        <h2 id="never">What the identity service never holds</h2>
+        <ul>
+          <li>A password: there are none.</li>
+          <li>A provider token: the one a provider gives is used once and dropped.</li>
+          <li>
+            The raw identification your browser sends (the User-Agent): only the coarse label above
+            is kept.
+          </li>
+          <li>Analytics or telemetry of any kind.</li>
+        </ul>
+        <p>
+          It keeps no request log of its own with personal data, beyond the defaults of the
+          platform it runs on. It does not store your picture, only its web address: your browser
+          loads the picture from the provider's image host (GitHub or Google). A scheduled job
+          removes sessions that ended more than seven days ago.
+        </p>
+      </section>
+
+      <section aria-labelledby="cookies">
+        <h2 id="cookies">Cookies</h2>
+        <p>
+          This site sets no cookie. Signing in sets one cookie that stays and one that lasts only
+          minutes.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3><code>meltemi_session</code></h3>
+            <p>
+              Set when you sign in. It lasts 30 days at most, or until you sign out. It is HttpOnly
+              (scripts on a page cannot read it), Secure (sent over https only) and
+              <code>SameSite=Lax</code>.
+            </p>
+            <p>
+              It is a domain cookie: your browser sends it to every address under
+              <code>meltemi.dev</code>, which is how Meltemi Diagrams knows you are signed in. This
+              site has no code and does not read it.
+            </p>
+            <p>
+              It holds a signed token: your user id, a session id, your name, the web address of
+              your picture, your email address and whether it is verified, and when the token was
+              issued and when it expires.
+            </p>
+          </div>
+          <div class="card">
+            <h3><code>meltemi_oauth</code></h3>
+            <p>
+              Set for the few minutes a sign-in takes, and gone after ten minutes at most. It holds
+              which provider you chose, where to send you back and random values that check the
+              sign-in is yours. It is not used after you sign in.
+            </p>
+          </div>
+        </div>
+        <p>
+          These are the only two cookies that Meltemi's services set. Meltemi Diagrams also keeps
+          data in your browser's own storage (localStorage and IndexedDB), which is not made of
+          cookies: your work when you are not signed in, and a local copy of your online projects so
+          that they open offline. Clearing your browser's site data removes it.
+        </p>
+      </section>
+
+      <section aria-labelledby="account">
+        <h2 id="account">Your sessions and deleting your account</h2>
+        <p>
+          Open <a href="https://id.meltemi.dev/account">id.meltemi.dev/account</a> while signed in.
+          It shows the identities linked to your account (the provider, your handle or email there
+          and when you linked it) and your sessions (where you are signed in, when each started,
+          when it was last seen, and which one you are using now).
+        </p>
+        <p>
+          On that page you can link or unlink a provider, sign out of your other devices and delete
+          your account. Signing out of a device ends its session at the identity service at once.
+          Products check a session at most once an hour, so the change reaches them within an hour.
+        </p>
+        <h3>Deleting your account</h3>
+        <p>You confirm by typing the word the page shows. Then the identity service:</p>
+        <ul>
+          <li>deletes your user, your identities and your sessions in one step;</li>
+          <li>queues a deletion event for every product (today, Meltemi Diagrams);</li>
+          <li>clears your cookie.</li>
+        </ul>
+        <p>
+          Each product deletes the data it holds for you when it receives its event. The identity
+          service sends the events at once and tries again for up to seven days if a product does
+          not answer. The page that confirms the deletion says that the products delete their data
+          within seven days.
+        </p>
+        <p>
+          The events stay in the identity service only while they are being delivered. An event
+          holds a random event id, its type, your user id and the time, not your name or your email.
+        </p>
+      </section>
+
+      <section aria-labelledby="diagrams">
+        <h2 id="diagrams">What Meltemi Diagrams holds</h2>
+        <h3>Without an account</h3>
+        <p>
+          The page works with no account, and your work stays in your browser. Share links made
+          without an account carry the project in the part of the address after the # sign, which
+          browsers do not send to servers. The page makes no request outside its own address. It
+          asks the service once, at the start, whether you are signed in; with no session, the
+          service keeps no account data about you.
+        </p>
+        <h3>Signed in</h3>
+        <p>
+          The service identifies you by your user id, the same one the identity service uses. It
+          keeps:
+        </p>
+        <ul>
+          <li>
+            your profile as the sign-in gave it: name, picture address, email address and whether
+            it is verified, updated when it changes;
+          </li>
+          <li>
+            your projects: name, description, files (diagrams, other text files, images and fonts),
+            a small preview image, and the state of the project's shared document;
+          </li>
+          <li>
+            the versions of each project: the ones you name, and one automatic version per day when
+            something changed, with older automatic versions thinned out;
+          </li>
+          <li>
+            the sharing settings of each project: who can open it by its link, its members with
+            their roles, and the invitations you made, each with the invited email address, the
+            role, and when it was made;
+          </li>
+          <li>
+            your published catalogs, and the handle you chose for their addresses;
+          </li>
+          <li>
+            your API tokens, as a hash only, with the name you gave each one, when it was created
+            and when it was last used (the token itself is shown once and not kept);
+          </li>
+          <li>
+            your usage: how many projects you have and how much storage their files take, to apply
+            the limits;
+          </li>
+          <li>the ids of the deletion events it has already handled.</li>
+        </ul>
+        <p>
+          The service can read your projects. They are not end-to-end encrypted: the service reads
+          them to merge edits, to apply its limits and to show them to the people you choose.
+        </p>
+        <h3>Sharing and working together</h3>
+        <p>
+          New projects are private. The owner of a project chooses what its link allows: nothing
+          (only the owner and the members), viewing, or editing. Anyone who holds the link of a
+          project set to viewing or editing can open it, signed in or not; editing by link needs an
+          account. The link is hard to guess, but it is not a password: whoever has it can pass it
+          on.
+        </p>
+        <p>
+          Members of a project see each other's names and pictures. Only the owner sees the
+          invitations and the email addresses on them. While several people have a project open,
+          each sees the others' name, picture, open file and cursor. The service relays this
+          between them and does not save it.
+        </p>
+        <h3>Published catalogs</h3>
+        <p>
+          Publishing is the project owner's choice. A published catalog is public: anyone can open
+          it, without signing in, at an address made of your handle and the name you gave it. It is
+          served from a domain separate from the app, and that domain sets no cookie. You can
+          unpublish it at any time. If the owner of Meltemi takes a publication down, the service
+          records which one, when and why.
+        </p>
+        <h3>Deleting</h3>
+        <p>
+          You can delete a project or a publication from the app at any time. Deleting your account
+          deletes everything Meltemi Diagrams holds for you: when the deletion event arrives, the
+          service removes your user record and API tokens, your projects with their versions,
+          previews and shared documents, the memberships and invitations you created or that
+          address your verified email, and your publications. Projects you own are deleted even if
+          you shared them; if you are only a member of a project, you are removed from it and it
+          stays.
+        </p>
+        <p>
+          The contents of stored files that nothing else uses are removed by a clean-up that runs
+          weekly and touches only files older than seven days. They can therefore stay in storage
+          for up to about two weeks after the rows that referred to them are gone.
+        </p>
+      </section>
+
+      <section aria-labelledby="where">
+        <h2 id="where">Where the data is processed</h2>
+        <p>
+          This site, the identity service and the Meltemi Diagrams service are hosted on
+          Cloudflare: the site as static files, the identity service on a Worker with a D1
+          database, and Meltemi Diagrams on Workers with D1 databases, R2 storage and Durable
+          Objects. Cloudflare is the hosting provider, and the data described in this notice is
+          stored and processed there.
+        </p>
+        <p>
+          When you sign in, GitHub or Google also process your sign-in on their side, under their
+          own notices. The Meltemi IDE keeps everything on your computer.
+        </p>
+      </section>
+
+      <section aria-labelledby="rights">
+        <h2 id="rights">Your choices and rights</h2>
+        <p>
+          You can ask for a copy of the data Meltemi holds about you, or ask for it to be deleted,
+          by writing to the contact given under Who runs this.
+        </p>
+        <p>
+          You can also delete your account yourself at any time, as described above. You never need
+          an account to use the IDE or the Meltemi Diagrams web app.
+        </p>
+      </section>
+
+      <section aria-labelledby="changes">
+        <h2 id="changes">Changes to this notice</h2>
+        <p>
+          When this notice changes, the new text replaces this one on this page and the date at the
+          top changes. The <a href="/terms/">terms of use</a> are on their own page.
+        </p>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap">
+        <span>Meltemi — this site sets no cookies and runs no analytics.</span>
+        <span>
+          <a href="/privacy/" aria-current="page">Privacy</a> ·
+          <a href="/terms/">Terms</a> ·
+          <a href="/es/privacy/" hreflang="es" lang="es">Español</a>
+        </span>
+      </div>
+    </footer>
+  </body>
+</html>

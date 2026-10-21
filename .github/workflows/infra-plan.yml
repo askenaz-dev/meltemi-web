@@ -1,0 +1,85 @@
+name: Infrastructure plan
+
+# A pull request that changes the infrastructure gets its plan as a comment, replaced on every
+# push, so the change is reviewed as what it will do. A pull request from a fork has no access to
+# the environment's secrets and stops at `terraform init`.
+
+on:
+  pull_request:
+    paths:
+      - "packages/infra/**"
+      - ".github/workflows/infra-*.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: infra-plan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    environment: infrastructure
+    defaults:
+      run:
+        working-directory: packages/infra
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      # The state in R2 (backend.tf).
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_ENDPOINT_URL_S3: https://${{ vars.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      # The providers.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
+      # The variables (variables.tf).
+      TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      TF_VAR_existing_secrets_store_id: ${{ vars.EXISTING_SECRETS_STORE_ID }}
+      TF_VAR_existing_zone_ids: ${{ vars.EXISTING_ZONE_IDS || '{}' }}
+      TF_VAR_existing_apex_record_ids: ${{ vars.EXISTING_APEX_RECORD_IDS || '{}' }}
+      TF_VAR_session_private_key: ${{ secrets.SESSION_PRIVATE_KEY }}
+      TF_VAR_github_client_secret: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
+      TF_VAR_google_client_secret: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
+      TF_VAR_admin_subs: ${{ secrets.ADMIN_SUBS }}
+      TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
+      TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
+      TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.15"
+          terraform_wrapper: false
+      - run: terraform fmt -check -recursive
+      - run: terraform init
+      - run: terraform validate
+      - name: Plan
+        id: plan
+        run: |
+          set -o pipefail
+          terraform plan -no-color -lock-timeout=5m | tee plan.txt
+      - name: The plan as the pull request's comment
+        if: always() && steps.plan.outcome != 'skipped'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("node:fs");
+            const marker = "<!-- infrastructure-plan -->";
+            const path = "packages/infra/plan.txt";
+            const text = fs.existsSync(path) ? fs.readFileSync(path, "utf8") : "(no plan was written)";
+            const limit = 60000;
+            const shown = text.length > limit ? `…\n${text.slice(-limit)}` : text;
+            const outcome = "${{ steps.plan.outcome }}" === "success" ? "Plan" : "The plan failed";
+            const body = `${marker}\n### ${outcome}\n\n\`\`\`\n${shown}\n\`\`\``;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+            const previous = comments.find((comment) => comment.body?.startsWith(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

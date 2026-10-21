@@ -1,0 +1,13 @@
+{
+  "name": "@meltemi/infra",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The family's infrastructure as code: one Terraform root for Cloudflare and GitHub, applied only by this repository's pipelines.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "fmt": "terraform fmt -check -recursive",
+    "validate": "terraform init -backend=false -input=false && terraform validate",
+    "test:terraform": "terraform init -backend=false -input=false && terraform test"
+  }
+}
