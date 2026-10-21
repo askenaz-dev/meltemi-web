@@ -399,7 +399,7 @@ describe("the privacy notice and the terms", () => {
   });
 
   it("leaves no placeholder for the owner's contact address", () => {
-    const offenders = ALL_HTML.filter((f) => read(f).includes("OWNER-CONTACT")).map(pageUrl);
+    const offenders = ALL_HTML.filter((f) => /OWNER-(CONTACT|COUNTRY)/.test(read(f))).map(pageUrl);
     expect(
       offenders,
       "the pages that still say OWNER-CONTACT: replace it with the contact address (task 4.2)",

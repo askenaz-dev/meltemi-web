@@ -74,15 +74,17 @@ variable "session_private_key" {
 }
 
 variable "github_client_secret" {
-  description = "The secret of the production GitHub OAuth App (callback https://id.meltemi.dev/callback/github)."
+  description = "The secret of the production GitHub OAuth App (callback https://id.meltemi.dev/callback/github); empty until the app exists, which leaves that sign-in unavailable."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "google_client_secret" {
-  description = "The secret of the production Google OAuth client (redirect https://id.meltemi.dev/callback/google)."
+  description = "The secret of the production Google OAuth client (redirect https://id.meltemi.dev/callback/google); empty until the app exists, which leaves that sign-in unavailable."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "admin_subs" {
