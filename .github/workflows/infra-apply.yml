@@ -58,6 +58,8 @@ jobs:
             echo "A token restricted to some client IP addresses cannot be used from GitHub's runners."
             exit 1
           fi
+          account="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/${{ vars.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts" | jq -c '.success, .errors')"
+          echo "An account call from this runner answers: $account"
           # R2's S3 credentials are the token's id and the SHA-256 of its value (Cloudflare's R2 docs),
           # derived here so that they always belong to the token the environment holds.
           key_id="$(echo "$answer" | jq -r '.result.id')"
