@@ -49,6 +49,16 @@ jobs:
         with:
           terraform_version: "~1.15"
           terraform_wrapper: false
+      - name: The Cloudflare token, as this runner sees it
+        run: |
+          answer="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)"
+          status="$(echo "$answer" | jq -r '.result.status // empty')"
+          if [ "$status" != "active" ]; then
+            echo "::error::Cloudflare refuses the token from this runner: $(echo "$answer" | jq -c '.errors')."
+            echo "A token restricted to some client IP addresses cannot be used from GitHub's runners."
+            exit 1
+          fi
+          echo "The token is active from this runner."
       - run: terraform init
       - name: Compare
         id: compare
