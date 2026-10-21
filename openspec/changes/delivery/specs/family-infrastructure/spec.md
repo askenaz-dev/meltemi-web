@@ -72,8 +72,9 @@ The root SHALL declare the account's Secrets Store `meltemi` (importing an exist
 `workers`: `STATE_SECRET`, `FORMS_SECRET` and the pair `EVENTS_SECRET_DIAGRAMS` /
 `IDENTITY_EVENTS_SECRET` (one `random_password` each, the pair sharing one, each replaced when
 its entry of `rotations` changes), and `SESSION_PRIVATE_KEY`, `GITHUB_CLIENT_SECRET`,
-`GOOGLE_CLIENT_SECRET` and `ADMIN_SUBS` from sensitive variables; and two account-owned
-`cloudflare_account_token`s, one per product repository, holding Workers Scripts Write and D1
+`GOOGLE_CLIENT_SECRET` and `ADMIN_SUBS` from sensitive variables; and two
+`cloudflare_api_token`s (user tokens: the Secrets Store refuses account-owned tokens' bindings), one
+per product repository, holding Workers Scripts Write and D1
 Write (and Workers R2 Storage Read for Diagrams, and the Secrets Store's read group when the
 account lists one) and nothing else, refused by a precondition naming the groups when the account
 lists none of that name. No value SHALL appear in a file, a plan, an output or a log.

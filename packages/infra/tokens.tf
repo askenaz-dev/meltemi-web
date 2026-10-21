@@ -1,7 +1,9 @@
-# One deploy token per product repository, owned by the account (not by a person), allowed to
-# upload Workers and apply D1 migrations and nothing else: a product's pipeline cannot touch a
-# zone, a record or another token. Terraform puts each in its repository's `production`
-# environment (github.tf).
+# One deploy token per product repository, allowed to upload Workers, bind their Secrets Store
+# secrets and apply D1 migrations, and nothing else: a product's pipeline cannot touch a zone, a
+# record or another token. Terraform puts each in its repository's `production` environment
+# (github.tf). They are the owner's user tokens, not account-owned ones: on 2026-10-21 the Secrets
+# Store (open beta) refused an account-owned token's bindings at upload (10021) and accepted a user
+# token's, so creating them needs the user permission API Tokens Edit on Terraform's own token.
 
 data "cloudflare_account_api_token_permission_groups_list" "all" {
   count      = var.permission_group_ids == null ? 1 : 0
@@ -31,11 +33,10 @@ locals {
   account_resources = jsonencode({ "com.cloudflare.api.account.${var.cloudflare_account_id}" = "*" })
 }
 
-resource "cloudflare_account_token" "deploy" {
+resource "cloudflare_api_token" "deploy" {
   for_each = local.deploy_groups
 
-  account_id = var.cloudflare_account_id
-  name       = "deploy: ${each.key == "web" ? "meltemi-web" : "meltemi-diagrams"} (GitHub Actions)"
+  name = "deploy: ${each.key == "web" ? "meltemi-web" : "meltemi-diagrams"} (GitHub Actions)"
 
   policies = [{
     effect = "allow"

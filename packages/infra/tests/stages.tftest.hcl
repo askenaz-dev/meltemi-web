@@ -59,7 +59,7 @@ run "first_apply" {
     error_message = "Every secret is scoped to Workers."
   }
   assert {
-    condition     = length(cloudflare_account_token.deploy) == 2
+    condition     = length(cloudflare_api_token.deploy) == 2
     error_message = "One deploy token per product repository."
   }
   assert {
@@ -81,11 +81,11 @@ run "deploy_tokens" {
   command = plan
 
   assert {
-    condition     = toset([for group in cloudflare_account_token.deploy["web"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "secrets-store-write"])
+    condition     = toset([for group in cloudflare_api_token.deploy["web"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "secrets-store-write"])
     error_message = "The web token uploads Workers, migrates D1 and binds the Store's secrets."
   }
   assert {
-    condition     = toset([for group in cloudflare_account_token.deploy["diagrams"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "r2-read", "secrets-store-write"])
+    condition     = toset([for group in cloudflare_api_token.deploy["diagrams"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "r2-read", "secrets-store-write"])
     error_message = "The diagrams token also reads its R2 binding."
   }
 }
@@ -156,7 +156,7 @@ run "missing_permission_group" {
     }
   }
 
-  expect_failures = [cloudflare_account_token.deploy]
+  expect_failures = [cloudflare_api_token.deploy]
 }
 
 # An account id that is not one is refused.

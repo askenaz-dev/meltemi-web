@@ -177,9 +177,10 @@ environments; an expiry the owner renews) in the pipeline's secrets, declares:
 `github_repository` for `meltemi-web` (imported) and `meltemi-diagrams` (created: public, MIT
 is in its tree, issues on, wiki off, squash merges, `vulnerability_alerts`), a
 `github_repository_environment` `production` in each, `github_actions_environment_secret`
-`CLOUDFLARE_API_TOKEN` in each from a `cloudflare_account_token` Terraform mints per repository
-(account-owned, so no person's departure revokes it; Workers Scripts Write and D1 Write, R2 read
-for Diagrams, the Secrets Store's read group when the account lists one, nothing else; a
+`CLOUDFLARE_API_TOKEN` in each from a `cloudflare_api_token` Terraform mints per repository
+(a user token of the owner: on 2026-10-21 the Secrets Store, in open beta, refused an account-owned
+token's bindings at upload with 10021 and accepted a user token's; Workers Scripts Write and D1 Write, R2 read
+for Diagrams, the Secrets Store's write group (binding a secret needs it), nothing else; a
 precondition names any group the account does not list), `github_actions_environment_variable`
 `CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID` and `SECRETS_STORE_ID` in each, `github_actions_secret`
 `NPM_TOKEN` in both and `VSCE_PAT`, `OVSX_PAT` in `meltemi-diagrams` once their variables are

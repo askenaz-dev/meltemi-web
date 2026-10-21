@@ -74,7 +74,7 @@ resource "github_actions_environment_secret" "cloudflare_api_token" {
   repository  = github_repository.family[each.key].name
   environment = github_repository_environment.production[each.key].environment
   secret_name = "CLOUDFLARE_API_TOKEN"
-  value       = cloudflare_account_token.deploy[each.value.token].value
+  value       = cloudflare_api_token.deploy[each.value.token].value
 }
 
 locals {
