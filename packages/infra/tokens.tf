@@ -9,8 +9,14 @@ data "cloudflare_account_api_token_permission_groups_list" "all" {
 }
 
 locals {
+  # Account tokens take account-scoped groups. Some names exist for both the account and its zones
+  # ("Access: Apps and Policies Read"), so the list is narrowed to the account's and grouped by name.
+  account_groups = var.permission_group_ids != null ? {} : {
+    for group in data.cloudflare_account_api_token_permission_groups_list.all[0].result :
+    group.name => group.id... if contains(group.scopes, "com.cloudflare.api.account")
+  }
   permission_groups = var.permission_group_ids != null ? var.permission_group_ids : {
-    for group in data.cloudflare_account_api_token_permission_groups_list.all[0].result : group.name => group.id
+    for name, ids in local.account_groups : name => ids[0]
   }
 
   # What `wrangler deploy` and `wrangler d1 migrations apply --remote` need. The Secrets Store's
