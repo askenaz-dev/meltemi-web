@@ -21,7 +21,7 @@ variables {
     "Workers Scripts Write"   = "workers-scripts-write"
     "D1 Write"                = "d1-write"
     "Workers R2 Storage Read" = "r2-read"
-    "Secrets Store Read"      = "secrets-store-read"
+    "Secrets Store Write"     = "secrets-store-write"
     "Zone Write"              = "zone-write"
   }
 }
@@ -81,11 +81,11 @@ run "deploy_tokens" {
   command = plan
 
   assert {
-    condition     = toset([for group in cloudflare_account_token.deploy["web"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "secrets-store-read"])
-    error_message = "The web token uploads Workers, migrates D1 and reads the Store's bindings."
+    condition     = toset([for group in cloudflare_account_token.deploy["web"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "secrets-store-write"])
+    error_message = "The web token uploads Workers, migrates D1 and binds the Store's secrets."
   }
   assert {
-    condition     = toset([for group in cloudflare_account_token.deploy["diagrams"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "r2-read", "secrets-store-read"])
+    condition     = toset([for group in cloudflare_account_token.deploy["diagrams"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "r2-read", "secrets-store-write"])
     error_message = "The diagrams token also reads its R2 binding."
   }
 }

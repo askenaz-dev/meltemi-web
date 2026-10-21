@@ -19,13 +19,14 @@ locals {
     for name, ids in local.account_groups : name => ids[0]
   }
 
-  # What `wrangler deploy` and `wrangler d1 migrations apply --remote` need. The Secrets Store's
-  # group is taken when the account lists one (bindings to the store are checked at upload).
+  # What `wrangler deploy` and `wrangler d1 migrations apply --remote` need. Binding a Secrets Store
+  # secret to a Worker needs the store's write group (read alone fails the upload with 10021); it is
+  # taken when the account lists it.
   deploy_groups = {
     web      = ["Workers Scripts Write", "D1 Write"]
     diagrams = ["Workers Scripts Write", "D1 Write", "Workers R2 Storage Read"]
   }
-  optional_groups = [for name in ["Secrets Store Read"] : name if contains(keys(local.permission_groups), name)]
+  optional_groups = [for name in ["Secrets Store Write"] : name if contains(keys(local.permission_groups), name)]
 
   account_resources = jsonencode({ "com.cloudflare.api.account.${var.cloudflare_account_id}" = "*" })
 }

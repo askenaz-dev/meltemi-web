@@ -128,8 +128,8 @@ describe("the Terraform root", () => {
     ]);
   });
 
-  it("gives each product repository a deploy token that cannot touch DNS, zones or tokens", () => {
+  it("gives each product repository a deploy token that cannot touch DNS, zones or tokens (it may bind Store secrets)", () => {
     const groups = block(read("tokens.tf"), "deploy_groups = {");
-    expect(groups).not.toMatch(/Zone|DNS|Token|Account Settings Write|Secrets Store Write/);
+    expect(groups).not.toMatch(/Zone|DNS|Token|Account Settings Write/);
   });
 });
