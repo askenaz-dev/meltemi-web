@@ -19,6 +19,8 @@ import { parseJsonc } from "../scripts/deploy-config.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const config = readFileSync(join(ROOT, "packages", "identity", "wrangler.jsonc"), "utf8");
+/** The keys the committed configuration publishes already (the production key, once it is set). */
+const published = identitySettings(config).publicKeys;
 
 describe("r2Credentials", () => {
   it("is the token's id and the SHA-256 of its value, as R2 derives them", () => {
@@ -51,10 +53,10 @@ describe("withIdentitySettings", () => {
       googleClientId: "123-abc.apps.googleusercontent.com",
     });
     const vars = (parseJsonc(out) as { vars: Record<string, string> }).vars;
-    expect(JSON.parse(vars["SESSION_PUBLIC_KEYS"]!)).toEqual([publicJwk]);
+    expect(JSON.parse(vars["SESSION_PUBLIC_KEYS"]!)).toEqual([publicJwk, ...published]);
     expect(vars["GITHUB_CLIENT_ID"]).toBe("Iv1.0123456789abcdef");
     expect(vars["GOOGLE_CLIENT_ID"]).toBe("123-abc.apps.googleusercontent.com");
-    expect(identitySettings(out).publicKeys).toEqual([publicJwk]);
+    expect(identitySettings(out).publicKeys).toEqual([publicJwk, ...published]);
     // Everything else is as committed.
     expect(
       out.replace(
@@ -74,7 +76,7 @@ describe("withIdentitySettings", () => {
     const second = (await newSigningPair()).publicJwk;
     const once = withIdentitySettings(config, { publicJwk: first });
     const twice = withIdentitySettings(once, { publicJwk: second });
-    expect(identitySettings(twice).publicKeys).toEqual([second, first]);
+    expect(identitySettings(twice).publicKeys).toEqual([second, first, ...published]);
   });
 
   it("changes nothing when it is given nothing", () => {
