@@ -113,6 +113,17 @@ export interface CurrentSession {
 export async function currentSession(ctx: Ctx): Promise<CurrentSession | undefined> {
   const token = parseSessionCookie(ctx.request.headers.get("Cookie"));
   if (!token) return undefined;
+  return sessionFromToken(ctx, token);
+}
+
+/**
+ * The person behind a session token, wherever it came from (the cookie of a page, the bearer of a
+ * product's call), checked as `currentSession` checks the cookie's.
+ */
+export async function sessionFromToken(
+  ctx: Pick<Ctx, "deps" | "config">,
+  token: string,
+): Promise<CurrentSession | undefined> {
   const { deps, config } = ctx;
   const now = deps.now();
   const verifier = sessionVerifier({

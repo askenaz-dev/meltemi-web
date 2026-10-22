@@ -5,31 +5,68 @@ import { redirect } from "../http.js";
 import { messages } from "../messages/index.js";
 import { accountPage as accountView, deletedPage } from "../pages/account.js";
 import { errorPage } from "../pages/layout.js";
+import { resolveReturnTo } from "../return-to.js";
 import { clearSessionCookie, currentSession } from "../session.js";
 import { isProvider } from "../types.js";
+import { SID } from "./sessions.js";
 
 /** A page that refuses an action of the account page and says nothing was changed. */
-function refuse(ctx: Ctx, status: number, code: string, title: string, message: string): Response {
+function refuse(
+  ctx: Ctx,
+  status: number,
+  code: string,
+  title: string,
+  message: string,
+  returnTo?: string,
+): Response {
   return errorPage(ctx, {
     code,
     status,
     title,
     message,
     actions: [
-      { href: accountPath(ctx), label: messages(ctx.lang).account.backToAccount, primary: true },
+      {
+        href: accountPath(ctx, returnTo),
+        label: messages(ctx.lang).account.backToAccount,
+        primary: true,
+      },
     ],
   });
 }
 
 /** After an action that worked: back to the account page, which shows the new state. */
-function backToAccount(ctx: Ctx): Response {
-  return redirect(accountPath(ctx), [], 303);
+function backToAccount(ctx: Ctx, returnTo?: string): Response {
+  return redirect(accountPath(ctx, returnTo), [], 303);
 }
 
-/** `GET /account`: the person, what is linked and where they are signed in, with the actions. */
+/**
+ * The product a person came from, as `return_to` names it: undefined when none is named, the
+ * checked address when it is the family's, and `false` when it is not.
+ */
+function productAddress(ctx: Ctx, raw: unknown): string | undefined | false {
+  if (typeof raw !== "string" || raw === "") return undefined;
+  const resolved = resolveReturnTo(raw, ctx.config);
+  return resolved.ok ? resolved.url : false;
+}
+
+/** The product address a form carried; one that is not the family's is dropped, never followed. */
+function formReturnTo(ctx: Ctx, form: FormData): string | undefined {
+  return productAddress(ctx, form.get("return_to")) || undefined;
+}
+
+/**
+ * `GET /account`: the person, what is linked and where they are signed in, with the actions. With
+ * `?return_to=` naming a product of the family, the page links back to it and keeps it through its
+ * forms and link flows; any other address is refused as a return address is.
+ */
 export const accountPage: Route = async (ctx) => {
+  const returnTo = productAddress(ctx, ctx.url.searchParams.get("return_to"));
+  if (returnTo === false) {
+    const m = messages(ctx.lang).account;
+    return refuse(ctx, 400, "return_to.invalid", m.returnToInvalidTitle, m.returnToInvalidBody);
+  }
   const current = await currentSession(ctx);
-  if (!current) return signInRedirect(ctx.config);
+  if (!current) return signInRedirect(ctx.config, returnTo);
   const { store } = ctx.deps;
   const [identities, sessions, csrf] = await Promise.all([
     store.identitiesOf(current.user.id),
@@ -42,6 +79,7 @@ export const accountPage: Route = async (ctx) => {
     sessions,
     currentSid: current.session.sid,
     csrf,
+    returnTo,
   });
 };
 
@@ -56,17 +94,25 @@ export const unlinkPost: Route = async (ctx) => {
   const guarded = await accountAction(ctx);
   if ("response" in guarded) return guarded.response;
   const m = messages(ctx.lang).account;
+  const returnTo = formReturnTo(ctx, guarded.form);
 
   const provider = guarded.form.get("provider");
   if (!isProvider(provider)) {
-    return refuse(ctx, 400, "provider.unknown", m.providerUnknownTitle, m.providerUnknownBody);
+    return refuse(
+      ctx,
+      400,
+      "provider.unknown",
+      m.providerUnknownTitle,
+      m.providerUnknownBody,
+      returnTo,
+    );
   }
   const outcome = await ctx.deps.store.unlinkProvider(guarded.current.user.id, provider);
   if (outcome === "last") {
-    return refuse(ctx, 409, "identity.last", m.identityLastTitle, m.identityLastBody);
+    return refuse(ctx, 409, "identity.last", m.identityLastTitle, m.identityLastBody, returnTo);
   }
   // "removed", or "absent": already as the person wants it.
-  return backToAccount(ctx);
+  return backToAccount(ctx, returnTo);
 };
 
 /** `POST /account/sessions/revoke-others`: ends every session of the person but this one. */
@@ -79,26 +125,75 @@ export const revokeOthersPost: Route = async (ctx) => {
     guarded.current.session.sid,
     deps.now().toISOString(),
   );
-  return backToAccount(ctx);
+  return backToAccount(ctx, formReturnTo(ctx, guarded.form));
+};
+
+/**
+ * `POST /account/sessions/revoke` with `sid`: ends one other session of the person. The current
+ * one is refused (`409 session.current`: it signs out with `/logout`), a session that is not the
+ * person's, or none, is `404 session.not-found`, and one that already ended is already as asked.
+ */
+export const revokeOnePost: Route = async (ctx) => {
+  const guarded = await accountAction(ctx);
+  if ("response" in guarded) return guarded.response;
+  const m = messages(ctx.lang).account;
+  const returnTo = formReturnTo(ctx, guarded.form);
+  const { deps } = ctx;
+
+  const sid = guarded.form.get("sid");
+  if (sid === guarded.current.session.sid) {
+    return refuse(
+      ctx,
+      409,
+      "session.current",
+      m.sessionCurrentTitle,
+      m.sessionCurrentBody,
+      returnTo,
+    );
+  }
+  const session =
+    typeof sid === "string" && SID.test(sid) ? await deps.store.session(sid) : undefined;
+  if (!session || session.userId !== guarded.current.user.id) {
+    return refuse(
+      ctx,
+      404,
+      "session.not-found",
+      m.sessionNotFoundTitle,
+      m.sessionNotFoundBody,
+      returnTo,
+    );
+  }
+  if (session.revokedAt === null)
+    await deps.store.revokeSession(session.sid, deps.now().toISOString());
+  return backToAccount(ctx, returnTo);
 };
 
 /**
  * `POST /account/delete`: after the person types the word the page shows in its language, deletes
  * the user with its identities and sessions and queues the deletion events for every product, all
  * in one store call that is atomic: if it fails nothing is deleted and nothing is queued, the
- * person gets the error page with the cookie intact and can try again.
+ * person gets the error page with the cookie intact and can try again. A deletion started from a
+ * product ends on a page that links back to it.
  */
 export const deletePost: Route = async (ctx) => {
   const guarded = await accountAction(ctx);
   if ("response" in guarded) return guarded.response;
   const m = messages(ctx.lang).account;
+  const returnTo = formReturnTo(ctx, guarded.form);
 
   const typed = guarded.form.get("confirm");
   if (typeof typed !== "string" || typed.trim().toLowerCase() !== m.deleteWord.toLowerCase()) {
-    return refuse(ctx, 400, "confirm.mismatch", m.confirmMismatchTitle, m.confirmMismatchBody);
+    return refuse(
+      ctx,
+      400,
+      "confirm.mismatch",
+      m.confirmMismatchTitle,
+      m.confirmMismatchBody,
+      returnTo,
+    );
   }
   const { config, deps } = ctx;
   const userId = guarded.current.user.id;
   await deps.store.deleteUser(userId, buildDeletionEvents(config, deps, userId));
-  return deletedPage(ctx, [clearSessionCookie(config)]);
+  return deletedPage(ctx, [clearSessionCookie(config)], returnTo);
 };

@@ -1,6 +1,7 @@
 // The reference verifier of the Meltemi session: what a product (Meltemi Diagrams first) uses to
-// know who is asking. No Cloudflare API is used, so it runs in Node 22 and in Workers; the
-// package builds it to `dist/` and products link that build (`docs/repositories.md`).
+// know who is asking, and to sign its calls to the account API. No Cloudflare API is used, so it
+// runs in Node 22 and in Workers; the package builds it to `dist/` and products install that build
+// (`docs/repositories.md`).
 
 import { AUDIENCE, SESSION_COOKIE, type SessionClaims } from "./claims.js";
 import { fromHex, verifyHmacHex } from "./crypto.js";
@@ -9,6 +10,22 @@ import { importVerifyKey, parseJwt, verifyJwtSignature, type JsonWebKeySet } fro
 
 export type { SessionClaims } from "./claims.js";
 export type { JsonWebKeySet } from "./jwt.js";
+export {
+  PRODUCT_CALL_WINDOW_MS,
+  PRODUCT_HEADER,
+  SIGNATURE_HEADER,
+  TIMESTAMP_HEADER,
+  signProductRequest,
+  verifyProductRequest,
+  type ProductRequestToSign,
+} from "./product-call.js";
+export type {
+  AccountApiError,
+  AccountIdentity,
+  AccountProvider,
+  AccountSession,
+  AccountView,
+} from "./account-view.js";
 
 const DEFAULT_ISSUER = "https://id.meltemi.dev";
 const DEFAULT_CACHE_MS = 3_600_000;

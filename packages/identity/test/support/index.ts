@@ -6,6 +6,7 @@ import { readConfig } from "../../src/config.js";
 import type { Env } from "../../src/env.js";
 import { identity } from "../../src/handler.js";
 import { importSigningKeys } from "../../src/jwt.js";
+import { callLimits } from "../../src/limits.js";
 import { startSession } from "../../src/session.js";
 import { memoryStore } from "../../src/store/memory.js";
 import type { IdentityStore } from "../../src/store/types.js";
@@ -221,6 +222,8 @@ export async function harness(
     randomBytes: seededRandom(),
     store,
     keys: await importSigningKeys(keys.privateJwk, [keys.publicJwk]),
+    // A counter of the account API's calls of its own, so that tests do not share one.
+    limits: callLimits(),
   };
   return {
     env,

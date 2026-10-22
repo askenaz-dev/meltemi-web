@@ -360,12 +360,14 @@ describe("GET /account when signed in", () => {
 });
 
 describe("the forms of the account page", () => {
-  it("are the five actions, each a POST, and the ones that need it carry the session's csrf token", async () => {
+  it("are the six actions, each a POST, and the ones that need it carry the session's csrf token", async () => {
     const h = await harness();
-    const { person } = await seed(h);
+    const { person, phone } = await seed(h);
     const html = await page(h, person.cookie);
     const forms = formsOf(html);
-    expect(forms).toHaveLength(5);
+    // Unlink GitHub, Unlink Google, Sign out (this session's row), Sign out (the phone's row),
+    // Sign out of other devices, Delete.
+    expect(forms).toHaveLength(6);
     expect(forms.every((form) => form.method === "post")).toBe(true);
 
     const csrf = await csrfOf(h, person.session.sid);
@@ -380,6 +382,10 @@ describe("the forms of the account page", () => {
     expect(formByPath(html, "/account/sessions/revoke-others").button).toBe(
       "Sign out of other devices",
     );
+    expect(formByPath(html, "/account/sessions/revoke").fields).toEqual({
+      csrf,
+      sid: phone.session.sid,
+    });
     expect(formByPath(html, "/account/delete").fields).toEqual({ csrf });
     expect(html).toContain('name="confirm"');
   });

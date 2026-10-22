@@ -159,6 +159,8 @@ input[type="text"] {
   font: inherit;
 }
 .danger-zone { border-top: 1px solid var(--hair); margin-top: var(--sp-6); padding-top: var(--sp-2); }
+.back { margin: 0 0 var(--sp-4); }
+.list td.row-action { text-align: right; }
 `;
 
 /** The body of `GET /identity.css`. */

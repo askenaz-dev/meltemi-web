@@ -1,4 +1,5 @@
 import type { SigningKeys } from "./jwt.js";
+import type { CallLimits } from "./limits.js";
 import type { IdentityStore } from "./store/types.js";
 
 /** The providers the service signs people in with; there are no others. */
@@ -78,4 +79,9 @@ export interface Deps {
   readonly store: IdentityStore;
   /** The private key that signs sessions and the public keys the JWKS publishes. */
   readonly keys: SigningKeys;
+  /**
+   * The counter of the account API's calls. The Worker builds its dependencies per request, so it
+   * leaves this out and the API keeps one counter per isolate; a test harness gives its own.
+   */
+  readonly limits?: CallLimits;
 }

@@ -189,7 +189,15 @@ describe("the Worker bundle", () => {
 describe("the verifier", () => {
   const verifier = graphOf("verify.ts");
   /** The shared primitives, and nothing else: no store, no handler, no Cloudflare. */
-  const PRIMITIVES = ["claims.ts", "crypto.ts", "http.ts", "jwt.ts", "verify.ts"];
+  const PRIMITIVES = [
+    "account-view.ts",
+    "claims.ts",
+    "crypto.ts",
+    "http.ts",
+    "jwt.ts",
+    "product-call.ts",
+    "verify.ts",
+  ];
 
   it("is an entry that reaches the primitives (the walk is not empty)", () => {
     expect(verifier.modules.has("verify.ts")).toBe(true);
@@ -228,7 +236,13 @@ describe("the testing module", () => {
   const testing = graphOf("testing.ts");
 
   it("reaches only the shared primitives, so a product's tests need nothing of the Worker", () => {
-    expect([...testing.modules].sort()).toEqual(["claims.ts", "crypto.ts", "jwt.ts", "testing.ts"]);
+    expect([...testing.modules].sort()).toEqual([
+      "claims.ts",
+      "crypto.ts",
+      "jwt.ts",
+      "product-call.ts",
+      "testing.ts",
+    ]);
     expect([...testing.external]).toEqual([]);
     expect(testing.unresolved).toEqual([]);
   });

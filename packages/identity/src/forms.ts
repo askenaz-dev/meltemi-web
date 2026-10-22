@@ -17,15 +17,28 @@ export async function csrfToken(ctx: Pick<Ctx, "env">, sid: string): Promise<str
   return hmacHex(ctx.env.STATE_SECRET, sid);
 }
 
-/** `/account`, keeping the language a person chose with `?lang=`. */
-export function accountPath(ctx: Pick<Ctx, "url">): string {
+/**
+ * `/account`, keeping the language a person chose with `?lang=` and the product they came from
+ * (`returnTo`, an address already checked to be the family's).
+ */
+export function accountPath(ctx: Pick<Ctx, "url">, returnTo?: string): string {
+  const query = new URLSearchParams();
   const asked = ctx.url.searchParams.get("lang");
-  return asked === "en" || asked === "es" ? `/account?lang=${asked}` : "/account";
+  if (asked === "en" || asked === "es") query.set("lang", asked);
+  if (returnTo) query.set("return_to", returnTo);
+  const text = query.toString();
+  return text === "" ? "/account" : `/account?${text}`;
 }
 
-/** Where a person without a session goes: the chooser, returning to the account page. */
-export function signInRedirect(config: Config): Response {
-  return redirect(`/login?return_to=${encodeURIComponent(`${config.issuer}/account`)}`);
+/**
+ * Where a person without a session goes: the chooser, returning to the account page, and through
+ * it to the product they came from when there is one.
+ */
+export function signInRedirect(config: Config, returnTo?: string): Response {
+  const account = returnTo
+    ? `${config.issuer}/account?return_to=${encodeURIComponent(returnTo)}`
+    : `${config.issuer}/account`;
+  return redirect(`/login?return_to=${encodeURIComponent(account)}`);
 }
 
 /** The fields of a form post, or undefined when the body is not a form (never an exception). */

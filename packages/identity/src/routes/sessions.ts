@@ -1,7 +1,7 @@
 import type { Route } from "../context.js";
 
 /** A session id: 32 random bytes in base64url without padding. Anything else is not one. */
-const SID = /^[A-Za-z0-9_-]{43}$/;
+export const SID = /^[A-Za-z0-9_-]{43}$/;
 
 /** An answer with no body that nothing may cache: the session check changes with revocation. */
 function answer(status: 204 | 404): Response {

@@ -13,6 +13,8 @@ export const accountEn = {
   // Ways forward from a refusal
   backToAccount: "Back to your account",
   backToSite: "Go to the Meltemi site",
+  /** Before the host of the product a person came from: "Back to diagrams.meltemi.dev". */
+  backTo: "Back to",
 
   // Refusals (their stable codes are on the page)
   returnToInvalidTitle: "This return address is not allowed",
@@ -25,6 +27,11 @@ export const accountEn = {
   confirmMismatchTitle: "The confirmation does not match",
   confirmMismatchBody:
     "Type the word shown next to the field exactly as it appears. Nothing was deleted.",
+  sessionCurrentTitle: "This is the session you are using",
+  sessionCurrentBody:
+    "To sign out here, use Sign out on the row of this session. Nothing was changed.",
+  sessionNotFoundTitle: "Session not found",
+  sessionNotFoundBody: "None of your sessions has that id. Nothing was changed.",
 
   // The account page
   accountTitle: "Your account",
@@ -52,6 +59,8 @@ export const accountEn = {
   revokeOthersNote: "Ends every other session. You stay signed in here.",
   revokeOthersButton: "Sign out of other devices",
   signOutButton: "Sign out",
+  /** On the row of another session: ends that one only. */
+  signOutDevice: "Sign out",
   deleteHeading: "Delete your account",
   deleteBody:
     "This removes your account, its linked sign-ins and every session, and every Meltemi product deletes the data it holds about you within seven days. It cannot be undone.",
@@ -79,6 +88,7 @@ export const accountEs: typeof accountEn = {
 
   backToAccount: "Volver a tu cuenta",
   backToSite: "Ir al sitio de Meltemi",
+  backTo: "Volver a",
 
   returnToInvalidTitle: "Esta dirección de retorno no está permitida",
   returnToInvalidBody:
@@ -91,6 +101,11 @@ export const accountEs: typeof accountEn = {
   confirmMismatchTitle: "La confirmación no coincide",
   confirmMismatchBody:
     "Escribe exactamente la palabra que aparece junto al campo. No se eliminó nada.",
+  sessionCurrentTitle: "Es la sesión que estás usando",
+  sessionCurrentBody:
+    "Para cerrar la sesión aquí, usa Cerrar sesión en la fila de esta sesión. No se cambió nada.",
+  sessionNotFoundTitle: "Sesión no encontrada",
+  sessionNotFoundBody: "Ninguna de tus sesiones tiene ese identificador. No se cambió nada.",
 
   accountTitle: "Tu cuenta",
   accountIntro: "Una sola cuenta inicia sesión en todos los productos de Meltemi.",
@@ -116,6 +131,7 @@ export const accountEs: typeof accountEn = {
   revokeOthersNote: "Cierra todas las demás sesiones. En esta sigues con la sesión iniciada.",
   revokeOthersButton: "Cerrar sesión en los otros dispositivos",
   signOutButton: "Cerrar sesión",
+  signOutDevice: "Cerrar sesión",
   deleteHeading: "Eliminar tu cuenta",
   deleteBody:
     "Esto elimina tu cuenta, sus inicios de sesión vinculados y todas las sesiones, y cada producto de Meltemi borra los datos que guarda sobre ti en un plazo de siete días. No se puede deshacer.",

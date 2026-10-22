@@ -133,6 +133,59 @@ a failure) is retried after 1 minute, 5 minutes, 30 minutes, 2 hours and then ev
 seven days after the account was deleted, when the service gives up and logs the event's id and
 product. Deliveries run from a cron trigger every fifteen minutes, at most 100 per run.
 
+### The account API
+
+A product that shows the account in its own interface reads and changes it through its own Worker,
+never from the browser ([decision 0005](../../docs/decisions/0005-account-api-for-products.md)):
+
+| Call                                       | Answers                                                                         |
+| ------------------------------------------ | ------------------------------------------------------------------------------- |
+| `GET /api/account`                         | The account as it is now (`AccountView`)                                        |
+| `POST /api/account/unlink { provider }`    | The account; `409 identity.last` for the last provider; `400 provider.unknown`  |
+| `POST /api/account/sessions/revoke-others` | The account, with the current session alone                                     |
+| `POST /api/account/sessions/<sid>/revoke`  | The account; `409 session.current` for the token's own; `404 session.not-found` |
+
+`AccountView` is `{ user: { id, name, picture }, identities: [{ provider, email, emailVerified,
+handle, linkedAt }], sessions: [{ sid, label, createdAt, lastSeen, expiresAt, current }],
+canUnlink }`, newest session first; `current` marks the session of the token the call carried.
+Every answer is JSON with `Cache-Control: no-store`; a refusal is `{ "error": "<code>" }`.
+
+A call carries two credentials together: the person's session token, the cookie's value, as
+`Authorization: Bearer`, and the product's signature, made with the product's secret (the
+`EVENTS_SECRET_<PRODUCT>` that signs its events; the product's `IDENTITY_EVENTS_SECRET`):
+
+```ts
+import { signProductRequest, type AccountView } from "@meltemi/identity";
+
+const url = "https://id.meltemi.dev/api/account/sessions/revoke-others";
+const body = "{}";
+const response = await fetch(url, {
+  method: "POST",
+  body,
+  headers: {
+    ...(await signProductRequest({ product: "diagrams", secret, method: "POST", url, body })),
+    Authorization: `Bearer ${sessionToken}`,
+    "Content-Type": "application/json",
+  },
+});
+const account = (await response.json()) as AccountView;
+```
+
+`signProductRequest` writes `Meltemi-Product`, `Meltemi-Timestamp` (ISO 8601, UTC) and
+`Meltemi-Signature: v1=<hex HMAC-SHA256>` over `"<timestamp>\n<METHOD>\n<path and query>\n<hex
+SHA-256 of the body>"`. The service refuses a call with `401 product.unauthorized` when the product
+is not listed, the timestamp is more than five minutes from its clock or the signature does not
+verify (without saying which), with `401 session.invalid` when the token does not verify or its
+session ended, with `400 request.invalid` for a body over 8 KiB or one that is not a JSON object,
+and with `429 rate.limited` past sixty calls a minute for one product and person. Cookies count for
+nothing under `/api` and the service never writes a CORS header: a browser cannot call the API.
+
+Linking a provider and deleting the account are not in the API. Send the person to
+`/login?provider=<p>&link=1&return_to=<your address>` or to `/account?return_to=<your address>`: the
+account page then says "Back to <your host>", keeps the address through its forms, and the page
+after a deletion links back to it. A product's tests mint calls with `signedProductCall` of
+`@meltemi/identity/testing`, and a fake of the service checks them with `verifyProductRequest`.
+
 ### Testing a product without the service
 
 ```ts
@@ -160,8 +213,9 @@ from this repository's release workflow:
 pnpm add @meltemi/identity
 ```
 
-`@meltemi/identity` exports `parseSessionCookie`, `sessionVerifier`, `verifyEventSignature` and
-their types; `@meltemi/identity/testing` mints sessions and test keys for a product's own tests and
+`@meltemi/identity` exports `parseSessionCookie`, `sessionVerifier`, `verifyEventSignature`,
+`signProductRequest`, `verifyProductRequest` and their types, the account API's among them;
+`@meltemi/identity/testing` mints sessions, test keys and signed calls for a product's own tests and
 is never imported by a Worker. The package holds `dist/` only: no part of the service.
 
 While the verifier changes, a product can work against a checkout of this repository instead of
@@ -183,14 +237,17 @@ Run `pnpm build` here first, and again after each change: the package's `exports
 | `GET /logout`, `POST /logout`                                                | Confirmation page; ends the session and redirects                                                                                                                      |
 | `GET /sessions/<sid>`                                                        | `204` when the session is live (and bumps its last seen), else `404`                                                                                                   |
 | `GET /.well-known/jwks.json`                                                 | The public keys                                                                                                                                                        |
-| `GET /account`                                                               | Identities, sessions and the actions                                                                                                                                   |
+| `GET /account`                                                               | Identities, sessions and the actions; `return_to` (a product's address) adds "Back to" and is kept through the forms and link flows                                    |
 | `POST /account/unlink`, `/account/sessions/revoke-others`, `/account/delete` | The account's actions; each needs `Origin` = the issuer and the page's `csrf`                                                                                          |
+| `POST /account/sessions/revoke`                                              | Ends one other session (`sid`), under the same protection                                                                                                              |
+| `GET /api/account`, `POST /api/account/…`                                    | [The account API](#the-account-api) for products: signed calls, JSON                                                                                                   |
 | `GET /identity.css`                                                          | The stylesheet of the pages                                                                                                                                            |
 
 Pages come in English and Spanish and carry their own Content-Security-Policy. Every refusal shows a
 stable code: `provider.unknown`, `return_to.invalid`, `state.mismatch`, `provider.denied`,
 `provider.unavailable`, `identity.taken`, `identity.last`, `confirm.mismatch`, `request.forbidden`,
-`not-found` and `internal`.
+`session.current`, `session.not-found`, `not-found` and `internal`; the API answers its codes in
+JSON.
 
 ## Configuration
 
@@ -214,12 +271,12 @@ string. In development `.dev.vars` gives the strings, and a string always wins o
 Nobody runs `wrangler secret put`. A service with no `SESSION_PRIVATE_KEY` or no `STATE_SECRET`
 answers `500` and names the setting in the log, never on the page.
 
-| Name                                           | Meaning                                                                                                                                      |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET` | The OAuth apps' secrets                                                                                                                      |
-| `SESSION_PRIVATE_KEY`                          | The private JWK (with `kid`) that signs sessions                                                                                             |
-| `STATE_SECRET`                                 | Signs the `meltemi_oauth` cookie and the account forms' `csrf`                                                                               |
-| `EVENTS_SECRET_<PRODUCT>`                      | Signs one product's events; the name upper-cased (`EVENTS_SECRET_DIAGRAMS`). The product's own `IDENTITY_EVENTS_SECRET` holds the same value |
+| Name                                           | Meaning                                                                                                                                                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET` | The OAuth apps' secrets                                                                                                                                                                          |
+| `SESSION_PRIVATE_KEY`                          | The private JWK (with `kid`) that signs sessions                                                                                                                                                 |
+| `STATE_SECRET`                                 | Signs the `meltemi_oauth` cookie and the account forms' `csrf`                                                                                                                                   |
+| `EVENTS_SECRET_<PRODUCT>`                      | The product's secret: signs its events and checks its calls to the account API; the name upper-cased (`EVENTS_SECRET_DIAGRAMS`). The product's own `IDENTITY_EVENTS_SECRET` holds the same value |
 
 `pnpm identity:keys` prints a new signing pair and writes nothing to a file. To rotate, set the new
 private key as `SESSION_PRIVATE_KEY` and put its public key **first** in `SESSION_PUBLIC_KEYS`,

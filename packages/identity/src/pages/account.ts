@@ -135,6 +135,25 @@ export interface AccountView {
   readonly currentSid: string;
   /** The `csrf` token of the current session. */
   readonly csrf: string;
+  /**
+   * The address of the product the person came from (`?return_to=`, already checked to be the
+   * family's), which the page links back to and keeps through its forms and link flows.
+   */
+  readonly returnTo?: string | undefined;
+}
+
+/** The `return_to` field of the page's forms, when the page was entered from a product. */
+function returnField(view: AccountView): Record<string, string> {
+  return view.returnTo ? { return_to: view.returnTo } : {};
+}
+
+/** The host a person goes back to, for "Back to diagrams.meltemi.dev". */
+function hostOf(address: string): string {
+  try {
+    return new URL(address).host;
+  } catch {
+    return address;
+  }
 }
 
 function identitiesSection(ctx: Ctx, m: AccountMessages, view: AccountView, time: Clock): string {
@@ -145,7 +164,7 @@ function identitiesSection(ctx: Ctx, m: AccountMessages, view: AccountView, time
       const action = canUnlink
         ? postForm({
             action: `/account/unlink?lang=${ctx.lang}`,
-            fields: { csrf: view.csrf, provider: identity.provider },
+            fields: { csrf: view.csrf, provider: identity.provider, ...returnField(view) },
             label: `${m.unlinkButton} ${name}`,
             buttonClass: "btn danger",
           })
@@ -172,7 +191,8 @@ ${note}`;
 /** The links that start linking a provider the person has not linked yet. */
 function linkSection(ctx: Ctx, m: AccountMessages, view: AccountView): string {
   const linked = new Set<Provider>(view.identities.map((identity) => identity.provider));
-  const returnTo = encodeURIComponent(`${ctx.config.issuer}/account`);
+  // From a product, the flow ends back in the product; otherwise back on this page.
+  const returnTo = encodeURIComponent(view.returnTo ?? `${ctx.config.issuer}/account`);
   const links = PROVIDERS.filter((provider) => !linked.has(provider))
     .map((provider) => {
       const label = provider === "github" ? m.linkGithub : m.linkGoogle;
@@ -188,21 +208,37 @@ ${links}
 </div>`;
 }
 
-function sessionsSection(m: AccountMessages, view: AccountView, time: Clock): string {
+/**
+ * Each live session with what ends it: the current one signs out with `/logout`, as everywhere;
+ * any other ends on its own.
+ */
+function sessionsSection(ctx: Ctx, m: AccountMessages, view: AccountView, time: Clock): string {
   const rows = view.sessions
     .map((session) => {
-      const badge =
-        session.sid === view.currentSid ? ` <span class="badge">${esc(m.thisSession)}</span>` : "";
+      const current = session.sid === view.currentSid;
+      const badge = current ? ` <span class="badge">${esc(m.thisSession)}</span>` : "";
+      const action = current
+        ? postForm({
+            action: `/logout?lang=${ctx.lang}`,
+            fields: { return_to: view.returnTo ?? ctx.config.siteUrl },
+            label: m.signOutButton,
+          })
+        : postForm({
+            action: `/account/sessions/revoke?lang=${ctx.lang}`,
+            fields: { csrf: view.csrf, sid: session.sid, ...returnField(view) },
+            label: m.signOutDevice,
+          });
       return `<tr>
 <td>${esc(sessionLabel(session.label, m))}${badge}</td>
 <td>${esc(time.dateTime(session.createdAt))}</td>
 <td>${esc(time.dateTime(session.lastSeen))}</td>
+<td class="row-action">${action}</td>
 </tr>`;
     })
     .join("\n");
   return `<h2>${esc(m.sessionsHeading)}</h2>
 <table class="list">
-<thead><tr><th>${esc(m.colDevice)}</th><th>${esc(m.colSignedIn)}</th><th>${esc(m.colLastSeen)}</th></tr></thead>
+<thead><tr><th>${esc(m.colDevice)}</th><th>${esc(m.colSignedIn)}</th><th>${esc(m.colLastSeen)}</th><th></th></tr></thead>
 <tbody>
 ${rows}
 </tbody>
@@ -214,7 +250,7 @@ function deleteSection(ctx: Ctx, m: AccountMessages, view: AccountView): string 
 <h2>${esc(m.deleteHeading)}</h2>
 <p>${esc(m.deleteBody)}</p>
 <form class="stack" method="post" action="${esc(`/account/delete?lang=${ctx.lang}`)}">
-${hiddenFields({ csrf: view.csrf })}
+${hiddenFields({ csrf: view.csrf, ...returnField(view) })}
 <label for="confirm">${esc(m.deleteConfirmBefore)} <code>${esc(m.deleteWord)}</code> ${esc(m.deleteConfirmAfter)}</label>
 <input id="confirm" type="text" name="confirm" autocomplete="off" autocapitalize="off" spellcheck="false" required>
 <button class="btn danger" type="submit">${esc(m.deleteButton)}</button>
@@ -230,24 +266,22 @@ export function accountPage(ctx: Ctx, view: AccountView): Response {
   const avatar = picture
     ? `<img class="avatar" src="${esc(picture)}" alt="" width="48" height="48">`
     : "";
-  const body = `<h1>${esc(m.accountTitle)}</h1>
+  const back = view.returnTo
+    ? `<p class="back"><a class="btn" href="${esc(view.returnTo)}">${esc(m.backTo)} ${esc(hostOf(view.returnTo))}</a></p>\n`
+    : "";
+  const body = `${back}<h1>${esc(m.accountTitle)}</h1>
 <div class="who">
 ${avatar}
 <div><strong>${esc(view.user.name)}</strong><br><span class="muted">${esc(m.accountIntro)}</span></div>
 </div>
 ${identitiesSection(ctx, m, view, time)}
 ${linkSection(ctx, m, view)}
-${sessionsSection(m, view, time)}
+${sessionsSection(ctx, m, view, time)}
 <div class="actions">
 ${postForm({
   action: `/account/sessions/revoke-others?lang=${ctx.lang}`,
-  fields: { csrf: view.csrf },
+  fields: { csrf: view.csrf, ...returnField(view) },
   label: m.revokeOthersButton,
-})}
-${postForm({
-  action: `/logout?lang=${ctx.lang}`,
-  fields: { return_to: ctx.config.siteUrl },
-  label: m.signOutButton,
 })}
 </div>
 <p class="muted">${esc(m.revokeOthersNote)}</p>
@@ -258,13 +292,24 @@ ${deleteSection(ctx, m, view)}`;
 // ---------------------------------------------------------------------------------------------
 // After a deletion
 
-/** The page that says the account is gone; it also carries the cookie that ends the session. */
-export function deletedPage(ctx: Ctx, setCookies: readonly string[]): Response {
+/**
+ * The page that says the account is gone; it also carries the cookie that ends the session. A
+ * deletion started from a product links back to it.
+ */
+export function deletedPage(
+  ctx: Ctx,
+  setCookies: readonly string[],
+  returnTo?: string | undefined,
+): Response {
   const m = messages(ctx.lang).account;
+  const link = returnTo
+    ? `<a class="btn primary" href="${esc(returnTo)}">${esc(m.backTo)} ${esc(hostOf(returnTo))}</a>
+<a class="btn" href="${esc(ctx.config.siteUrl)}">${esc(m.deletedLink)}</a>`
+    : `<a class="btn primary" href="${esc(ctx.config.siteUrl)}">${esc(m.deletedLink)}</a>`;
   const body = `<h1>${esc(m.deletedTitle)}</h1>
 <p>${esc(m.deletedBody)}</p>
 <div class="actions">
-<a class="btn primary" href="${esc(ctx.config.siteUrl)}">${esc(m.deletedLink)}</a>
+${link}
 </div>`;
   return renderPage(ctx, { title: m.deletedTitle, body, personal: true, setCookies });
 }

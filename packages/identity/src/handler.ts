@@ -4,7 +4,20 @@ import type { Env } from "./env.js";
 import { deliverDueEvents } from "./events.js";
 import { messages, resolveLang } from "./messages/index.js";
 import { simpleError } from "./pages/layout.js";
-import { accountPage, deletePost, revokeOthersPost, unlinkPost } from "./routes/account.js";
+import {
+  accountPage,
+  deletePost,
+  revokeOnePost,
+  revokeOthersPost,
+  unlinkPost,
+} from "./routes/account.js";
+import {
+  apiAccount,
+  apiError,
+  apiRevokeOne,
+  apiRevokeOthers,
+  apiUnlink,
+} from "./routes/api-account.js";
 import { cssRoute, jwksRoute } from "./routes/assets.js";
 import { callbackRoute } from "./routes/callback.js";
 import { loginRoute } from "./routes/login.js";
@@ -36,9 +49,25 @@ const ROUTES: readonly RouteEntry[] = [
   { method: "GET", path: /^\/account$/, route: accountPage },
   { method: "POST", path: /^\/account\/unlink$/, route: unlinkPost },
   { method: "POST", path: /^\/account\/sessions\/revoke-others$/, route: revokeOthersPost },
+  { method: "POST", path: /^\/account\/sessions\/revoke$/, route: revokeOnePost },
   { method: "POST", path: /^\/account\/delete$/, route: deletePost },
   { method: "GET", path: /^\/identity\.css$/, route: cssRoute },
+  // The account API for products: signed calls, JSON, never a cookie, never CORS.
+  { method: "GET", path: /^\/api\/account$/, route: apiAccount },
+  { method: "POST", path: /^\/api\/account\/unlink$/, route: apiUnlink },
+  { method: "POST", path: /^\/api\/account\/sessions\/revoke-others$/, route: apiRevokeOthers },
+  {
+    method: "POST",
+    path: /^\/api\/account\/sessions\/([^/]+)\/revoke$/,
+    params: ["sid"],
+    route: apiRevokeOne,
+  },
 ];
+
+/** Whether a path is the API's: answered in JSON, refusals included. */
+function isApiPath(pathname: string): boolean {
+  return pathname === "/api" || pathname.startsWith("/api/");
+}
 
 function match(
   method: string,
@@ -96,8 +125,11 @@ export async function identity(request: Request, env: Env, deps: Deps): Promise<
   const lang = resolveLang(url, request.headers.get("Accept-Language"));
   const base = { request, url, env, deps, config, lang };
   const found = match(request.method, url.pathname);
+  // The API answers in JSON, a path or a method it does not know (`OPTIONS` among them) too.
+  const api = isApiPath(url.pathname);
   try {
     if (!found) {
+      if (api) return hardened(apiError("not-found", 404));
       const m = messages(lang).common;
       return hardened(
         simpleError({ ...base, params: {} }, 404, "not-found", m.notFoundTitle, m.notFoundBody),
@@ -111,6 +143,7 @@ export async function identity(request: Request, env: Env, deps: Deps): Promise<
       "identity: unexpected error:",
       error instanceof Error ? error.message : "unknown",
     );
+    if (api) return hardened(apiError("internal", 500));
     const m = messages(lang).common;
     return hardened(
       simpleError({ ...base, params: {} }, 500, "internal", m.internalTitle, m.internalBody),

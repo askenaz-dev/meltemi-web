@@ -11,9 +11,49 @@ import {
   type PrivateJwk,
   type PublicJwk,
 } from "./jwt.js";
+import { signProductRequest } from "./product-call.js";
 
 export type { PrivateJwk, PublicJwk, JsonWebKeySet } from "./jwt.js";
 export type { SessionClaims } from "./claims.js";
+
+export interface ProductCallOptions {
+  /** The product's name (`diagrams`). */
+  readonly product: string;
+  /** The product's secret. */
+  readonly secret: string;
+  /** The full address of the call, such as `https://id.meltemi.dev/api/account`. */
+  readonly url: string;
+  /** `GET` without a body, `POST` with one, unless given. */
+  readonly method?: string;
+  /** A value sent as JSON; none for a call without a body. */
+  readonly body?: unknown;
+  /** The person's session token, sent as `Authorization: Bearer`. */
+  readonly token: string;
+  /** When the call is signed; the current time by default. */
+  readonly now?: Date;
+}
+
+/**
+ * A call to the account API as a product's Worker makes it: signed with the product's secret and
+ * carrying the person's session token. A product's tests send it to a fake of the service, and a
+ * fake of the service checks what a product sent with `verifyProductRequest`.
+ */
+export async function signedProductCall(options: ProductCallOptions): Promise<Request> {
+  const method = options.method ?? (options.body === undefined ? "GET" : "POST");
+  const body = options.body === undefined ? undefined : JSON.stringify(options.body);
+  const signed = await signProductRequest({
+    product: options.product,
+    secret: options.secret,
+    method,
+    url: options.url,
+    ...(body !== undefined ? { body } : {}),
+    ...(options.now ? { now: options.now } : {}),
+  });
+  const headers = new Headers(signed);
+  headers.set("Authorization", `Bearer ${options.token}`);
+  if (body !== undefined) headers.set("Content-Type", "application/json");
+  return new Request(options.url, { method, headers, ...(body !== undefined ? { body } : {}) });
+}
 
 /** A generated ES256 pair as JWKs, both with the same `kid`. */
 export interface TestKeys {

@@ -1,6 +1,6 @@
 {
   "name": "@meltemi/identity",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The shared identity service of the Meltemi family: GitHub and Google sign-in, signed sessions, and the reference verifier products use.",
   "license": "Apache-2.0",
   "type": "module",
