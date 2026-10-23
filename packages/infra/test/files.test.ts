@@ -1,7 +1,8 @@
 // The invariants of the Terraform root that a plan cannot show and a reviewer could miss: where the
 // state lives and how it is locked, that every provider is pinned and locked, that no secret value
 // is written in a file, that no Worker gets a public address of its own, and that the IDE
-// repository stays outside. The behaviour of the plan itself is `terraform test` (tests/).
+// repository is reached only for what its release path relies on, never as a repository. The
+// behaviour of the plan itself is `terraform test` (tests/).
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -119,13 +120,37 @@ describe("the Terraform root", () => {
     );
   });
 
-  it("does not manage the IDE repository", () => {
-    expect(all).not.toMatch(/"meltemi"\s*=|repository\s*=\s*"meltemi"|askenaz-dev\/meltemi"/);
-    const repositories = block(read("github.tf"), "repositories = {");
+  it("manages of the IDE repository only what its release path relies on, never the repository", () => {
+    // The family's repositories are the two whose code lives with this root's; the IDE's is
+    // reached only through `local.ide_repository`, by these resources (change ide-releases).
+    const github = read("github.tf");
+    const repositories = block(github, "repositories = {");
     expect([...repositories.matchAll(/^\s{4}"([\w-]+)" = \{/gm)].map((m) => m[1])).toEqual([
       "meltemi-web",
       "meltemi-diagrams",
     ]);
+    expect(github).toMatch(/ide_repository\s*=\s*"meltemi"\n/);
+    expect(all).not.toMatch(/(?<!\w)repository\s*=\s*"meltemi"|askenaz-dev\/meltemi"/);
+    const resources = [...github.matchAll(/^resource "(\w+)" "(\w+)" \{/gm)].map(
+      (m) => `${m[1]}.${m[2]}`,
+    );
+    const naming = resources.filter((resource) => {
+      const [type, name] = resource.split(".");
+      return block(github, `resource "${type}" "${name}" {`).includes("local.ide_repository");
+    });
+    expect(naming).toEqual([
+      "github_repository_ruleset.ide_main",
+      "github_repository_ruleset.ide_version_tags",
+      "github_repository_environment.ide_release",
+      "github_repository_environment_deployment_policy.ide_release_main",
+      "github_actions_environment_secret.ide_web_dispatch",
+      "github_workflow_repository_permissions.ide",
+    ]);
+    const others = files
+      .filter((name) => name !== "github.tf")
+      .map(read)
+      .join("\n");
+    expect(others).not.toContain("ide_repository");
   });
 
   it("gives each product repository a deploy token that cannot touch DNS, zones or tokens (it may bind Store secrets)", () => {

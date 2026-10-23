@@ -94,6 +94,26 @@ run "first_apply" {
     error_message = "No release secret exists before the owner has the tokens."
   }
   assert {
+    condition     = github_repository_ruleset.ide_main.repository == "meltemi" && github_repository_ruleset.ide_main.target == "branch" && github_repository_ruleset.ide_main.conditions[0].ref_name[0].include == tolist(["~DEFAULT_BRANCH"]) && github_repository_ruleset.ide_main.rules[0].deletion == true && github_repository_ruleset.ide_main.rules[0].non_fast_forward == true
+    error_message = "The IDE's main is never deleted or rewritten."
+  }
+  assert {
+    condition     = github_repository_ruleset.ide_version_tags.repository == "meltemi" && github_repository_ruleset.ide_version_tags.target == "tag" && github_repository_ruleset.ide_version_tags.conditions[0].ref_name[0].include == tolist(["refs/tags/v*"]) && github_repository_ruleset.ide_version_tags.rules[0].update == true && github_repository_ruleset.ide_version_tags.rules[0].deletion == true && github_repository_ruleset.ide_version_tags.rules[0].creation != true
+    error_message = "The IDE's version tags are never moved or deleted, and their creation stays open."
+  }
+  assert {
+    condition     = github_repository_environment.ide_release.repository == "meltemi" && github_repository_environment.ide_release.environment == "release" && github_repository_environment.ide_release.deployment_branch_policy[0].custom_branch_policies == true && github_repository_environment.ide_release.deployment_branch_policy[0].protected_branches == false && github_repository_environment_deployment_policy.ide_release_main.branch_pattern == "main"
+    error_message = "The IDE's release environment admits the branch main only."
+  }
+  assert {
+    condition     = github_workflow_repository_permissions.ide.repository == "meltemi" && github_workflow_repository_permissions.ide.default_workflow_permissions == "read" && github_workflow_repository_permissions.ide.can_approve_pull_request_reviews == false
+    error_message = "The IDE's workflows start read-only."
+  }
+  assert {
+    condition     = length(github_actions_environment_secret.ide_web_dispatch) == 0
+    error_message = "No notice secret exists before the owner has the token."
+  }
+  assert {
     condition     = alltrue([for repository in github_repository.family : repository.visibility == "public"])
     error_message = "The family's repositories are public."
   }
@@ -211,6 +231,20 @@ run "release_tokens" {
   assert {
     condition     = toset(keys(github_actions_secret.release)) == toset(["meltemi-web/NPM_TOKEN", "meltemi-diagrams/NPM_TOKEN", "meltemi-diagrams/VSCE_PAT"])
     error_message = "NPM_TOKEN goes to both repositories and VSCE_PAT to Diagrams; OVSX_PAT waits."
+  }
+}
+
+# The IDE's notice token reaches its release environment once the owner has it.
+run "ide_notice_token" {
+  command = plan
+
+  variables {
+    web_dispatch_token = "dispatch-token"
+  }
+
+  assert {
+    condition     = length(github_actions_environment_secret.ide_web_dispatch) == 1 && github_actions_environment_secret.ide_web_dispatch[0].secret_name == "WEB_DISPATCH_TOKEN" && github_actions_environment_secret.ide_web_dispatch[0].environment == "release" && github_actions_environment_secret.ide_web_dispatch[0].repository == "meltemi"
+    error_message = "WEB_DISPATCH_TOKEN goes to the IDE's release environment."
   }
 }
 

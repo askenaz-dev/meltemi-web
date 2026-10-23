@@ -1,7 +1,8 @@
 # The family's repositories on GitHub, their `production` environments and what the pipelines
 # read there. `meltemi-web` holds this root and existed before it (its `infrastructure`
 # environment and that environment's secrets are the bootstrap, set by hand); it is imported.
-# The IDE repository (askenaz-dev/meltemi) is not managed here.
+# The IDE repository (askenaz-dev/meltemi) is not managed here as a repository: only what its
+# release path relies on is declared, at the end of this file (change ide-releases).
 
 locals {
   repositories = {
@@ -141,4 +142,90 @@ resource "github_repository_ruleset" "main" {
     deletion         = true
     non_fast_forward = true
   }
+}
+
+# The IDE's release path (change ide-releases; the IDE's change release-con-el-push). A commit that
+# carries a new version on the IDE's `main` publishes a release with nobody in between, so the
+# doors next to that one are closed here, as loose resources that name the repository. The
+# repository itself is not imported: that resource reconciles its description, topics, Pages and
+# features, none of which this path needs.
+locals {
+  ide_repository = "meltemi"
+}
+
+# `main`: never deleted, never rewritten.
+resource "github_repository_ruleset" "ide_main" {
+  repository  = local.ide_repository
+  name        = "main"
+  target      = "branch"
+  enforcement = "active"
+
+  conditions {
+    ref_name {
+      include = ["~DEFAULT_BRANCH"]
+      exclude = []
+    }
+  }
+
+  rules {
+    deletion         = true
+    non_fast_forward = true
+  }
+}
+
+# Version tags: never moved, never deleted. Creation stays open: restricting it would need GitHub
+# Actions as a bypass actor, which is unverified, and no IDE workflow listens to tags, so a tag
+# pushed by hand publishes nothing; immutable releases already lock every published tag.
+resource "github_repository_ruleset" "ide_version_tags" {
+  repository  = local.ide_repository
+  name        = "version tags"
+  target      = "tag"
+  enforcement = "active"
+
+  conditions {
+    ref_name {
+      include = ["refs/tags/v*"]
+      exclude = []
+    }
+  }
+
+  rules {
+    update   = true
+    deletion = true
+  }
+}
+
+# The environment of the jobs that publish and notify: deployable from `main` only, with no
+# reviewers (the owner chose a release with no human step; a reviewer here is the way back).
+resource "github_repository_environment" "ide_release" {
+  repository  = local.ide_repository
+  environment = "release"
+
+  deployment_branch_policy {
+    protected_branches     = false
+    custom_branch_policies = true
+  }
+}
+
+resource "github_repository_environment_deployment_policy" "ide_release_main" {
+  repository     = local.ide_repository
+  environment    = github_repository_environment.ide_release.environment
+  branch_pattern = "main"
+}
+
+# The notice token, once the owner has it: it can start meltemi-web's workflows and nothing else.
+resource "github_actions_environment_secret" "ide_web_dispatch" {
+  count = nonsensitive(var.web_dispatch_token != "") ? 1 : 0
+
+  repository  = local.ide_repository
+  environment = github_repository_environment.ide_release.environment
+  secret_name = "WEB_DISPATCH_TOKEN"
+  value       = var.web_dispatch_token
+}
+
+# Every IDE workflow starts read-only; the jobs that publish raise their own permissions.
+resource "github_workflow_repository_permissions" "ide" {
+  repository                       = local.ide_repository
+  default_workflow_permissions     = "read"
+  can_approve_pull_request_reviews = false
 }
