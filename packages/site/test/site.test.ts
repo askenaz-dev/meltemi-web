@@ -437,3 +437,43 @@ describe("the downloads page stays version-free", () => {
     });
   }
 });
+
+describe("the IDE's pages tell its release as it is", () => {
+  const BEGIN = "<!-- ide-release -->";
+  const END = "<!-- /ide-release -->";
+
+  for (const [file, url] of [
+    ["ide/index.html", "/ide/"],
+    ["es/ide/index.html", "/es/ide/"],
+  ] as const) {
+    it(`${url} carries the release block once, at rest: version-free, linking the latest release`, () => {
+      const html = read(file);
+      expect(html.split(BEGIN).length - 1, `${url}: ${BEGIN}`).toBe(1);
+      expect(html.split(END).length - 1, `${url}: ${END}`).toBe(1);
+      expect(html.indexOf(BEGIN), `${url}: the markers are in order`).toBeLessThan(
+        html.indexOf(END),
+      );
+      const block = html.slice(html.indexOf(BEGIN) + BEGIN.length, html.indexOf(END));
+      expect(block).toContain('href="https://github.com/askenaz-dev/meltemi/releases/latest"');
+      expect(block).not.toMatch(/v\d+\.\d+\.\d+/);
+    });
+  }
+});
+
+describe("the downloads page tells verification as it is", () => {
+  for (const [file, url] of [
+    ["ide/downloads/index.html", "/ide/downloads/"],
+    ["es/ide/downloads/index.html", "/es/ide/downloads/"],
+  ] as const) {
+    it(`${url} names the two checks, pinned to the IDE's release workflow, and no maintainer's key`, () => {
+      const html = read(file);
+      expect(html).toContain("sha256sum --check");
+      expect(html).toContain("gh attestation verify");
+      expect(html).toContain("--signer-workflow askenaz-dev/meltemi/.github/workflows/release.yml");
+      const lower = html.toLowerCase();
+      for (const stale of ["minisign", "maintainer's key", "clave del mantenedor"]) {
+        expect(lower, `${url} still names ${stale}`).not.toContain(stale);
+      }
+    });
+  }
+});

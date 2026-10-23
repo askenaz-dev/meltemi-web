@@ -112,6 +112,16 @@ describe("deploy.yml", () => {
     for (const name of WORKER_SECRETS) expect(text, name).not.toContain(name);
   });
 
+  it("writes the IDE's latest release into its pages after identity and before the site", () => {
+    const identity = at(text, "wrangler deploy -c wrangler.deploy.json");
+    const release = at(text, "run: node scripts/ide-release.mjs public");
+    const upload = text.indexOf("pnpm exec wrangler deploy", identity + 1);
+    expect(identity).toBeLessThan(release);
+    expect(release).toBeLessThan(upload);
+    expect(text).toContain("GH_TOKEN: ${{ github.token }}");
+    expect(text).toMatch(/workflow_dispatch:/);
+  });
+
   it("writes Terraform's ids, migrates, then uploads identity and then the site", () => {
     const config = at(text, "node scripts/deploy-config.mjs packages/identity/wrangler.jsonc");
     const migrate = at(text, "wrangler d1 migrations apply DB --remote -c wrangler.deploy.json");
@@ -172,6 +182,7 @@ describe("the infrastructure's workflows", () => {
           "OVSX_PAT",
           "SESSION_PRIVATE_KEY",
           "VSCE_PAT",
+          "WEB_DISPATCH_TOKEN",
         ].sort(),
       );
       for (const variable of [
@@ -179,6 +190,7 @@ describe("the infrastructure's workflows", () => {
         "session_private_key",
         "github_client_secret",
         "google_client_secret",
+        "web_dispatch_token",
       ]) {
         expect(text, `${name}: ${variable}`).toContain(`TF_VAR_${variable}:`);
       }

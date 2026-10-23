@@ -4,7 +4,9 @@ name: Deploy
 # the family site's files, uploaded with wrangler onto the Workers that Terraform declared
 # (packages/infra). This workflow creates nothing and sets no secret: the production environment
 # holds what Terraform put there, a deploy token that can only upload Workers and migrate D1, and
-# the ids the configuration needs.
+# the ids the configuration needs. The IDE's release workflow dispatches it once a release is out,
+# and the IDE's latest release is written into the IDE's pages before the site is uploaded
+# (change ide-releases).
 
 on:
   push:
@@ -50,6 +52,13 @@ jobs:
       - name: Identity Worker
         working-directory: packages/identity
         run: pnpm exec wrangler deploy -c wrangler.deploy.json
+      - name: The IDE's latest release, written into its pages
+        # Asked with this run's own read-only token; when GitHub does not answer, the pages keep
+        # their committed sentence and the deploy goes on.
+        working-directory: packages/site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/ide-release.mjs public
       - name: Family site
         working-directory: packages/site
         run: pnpm exec wrangler deploy

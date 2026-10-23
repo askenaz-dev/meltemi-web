@@ -117,6 +117,13 @@ body {
   margin-top: var(--sp-4);
 }
 
+/* The IDE's latest release, written at deploy time between its markers (scripts/ide-release.mjs). */
+.hero .release-note {
+  margin: var(--sp-4) 0 0;
+  font-size: var(--fs-caption);
+  color: var(--text-muted);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

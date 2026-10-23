@@ -125,3 +125,10 @@ variable "ovsx_pat" {
   sensitive   = true
   default     = ""
 }
+
+variable "web_dispatch_token" {
+  description = "A fine-grained token of `askenaz-dev` with access to `meltemi-web` only and the permission Actions (read and write), with which the IDE's release workflow starts this repository's deploy; empty until it exists."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

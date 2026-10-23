@@ -7,7 +7,7 @@
     <title>Downloads — Meltemi</title>
     <meta
       name="description"
-      content="Signed releases for Windows, macOS and Linux: the core archive with both binaries, the desktop installer, and an auditable install script. Every link resolves to the latest signed release."
+      content="Releases for Windows, macOS and Linux, signed by the workflow that publishes them: the core archive with both binaries, the desktop installer, and an auditable install script. Every link resolves to the latest published release."
     />
     <link rel="alternate" hreflang="en" href="/ide/downloads/" />
     <link rel="alternate" hreflang="es" href="/es/ide/downloads/" />
@@ -37,9 +37,9 @@
       <div class="wrap">
         <h1>Downloads</h1>
         <p>
-          Every link below points at the latest signed release. No version appears on
-          this page, and nothing is hosted here: the files come from the release
-          itself, so what you download is what was signed.
+          Every link below points at the latest published release. No version appears
+          on this page, and nothing is hosted here: the files come from the release
+          itself, so what you download is what was published and attested.
         </p>
       </div>
     </div>
@@ -106,8 +106,9 @@
         <h2 id="script">Or use the install script</h2>
         <p>
           The scripts are short and meant to be read before they are run. Each one is
-          published as a release asset with its checksum inside the signed
-          <code>SHA256SUMS</code>, and each verifies the archive's checksum and
+          published as a release asset with its checksum inside the
+          <code>SHA256SUMS</code> the release's attestation covers, and each verifies
+          the archive's checksum and
           refuses on a mismatch. There is no blind pipe into a shell here:
           <strong>download it, read it, then run it.</strong>
         </p>
@@ -141,17 +142,23 @@ notepad install.ps1
       <section aria-labelledby="verify">
         <h2 id="verify">Verify what you downloaded</h2>
         <p>
-          Every release publishes a <code>SHA256SUMS</code> with a detached
-          signature made with the maintainer's key, plus a build attestation minted
-          by the release workflow itself. Three checks, ordered by what each one
-          buys: the checksum tells you the file arrived intact, the signature tells
-          you the maintainer vouched for it, and the attestation tells you which
-          repository, commit and workflow produced it. The commands — and what each
-          check can and cannot prove — are in the release documentation.
+          Every release publishes a <code>SHA256SUMS</code> and is signed by the
+          attestation its own release workflow mints when it publishes it: no person
+          and no long-term key sign it. Two checks, ordered by what each one buys:
+          the checksum tells you the file arrived intact, and the attestation tells
+          you which repository, commit and workflow published that very file.
+        </p>
+        <pre><code>sha256sum --check --ignore-missing SHA256SUMS
+gh attestation verify meltemi-Linux.tar.gz --repo askenaz-dev/meltemi --signer-workflow askenaz-dev/meltemi/.github/workflows/release.yml</code></pre>
+        <p>
+          Each release also carries <code>attestation.sigstore.json</code>, the bundle
+          that lets the second check run without network. The commands for every
+          platform, the offline check, and what each check can and cannot prove are
+          in the release documentation.
         </p>
         <p>
           <a class="btn" href="https://github.com/askenaz-dev/meltemi/releases/latest/download/SHA256SUMS">SHA256SUMS of the latest release</a>
-          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/release.md">Checksum, signature and provenance procedure</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/release.md">How to verify a release</a>
         </p>
         <div class="notice info">
           <strong><span aria-hidden="true">◆</span> Nothing is mirrored here.</strong>
