@@ -12,10 +12,14 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DIR = join(ROOT, ".github", "workflows");
 const read = (name: string) => readFileSync(join(DIR, name), "utf8");
 
-/** The names of the secrets a workflow reads, `${{ secrets.NAME }}`. */
+/** The names of the secrets a workflow reads: every `secrets.NAME` inside a `${{ }}` expression. */
 const secretsOf = (text: string) =>
   [
-    ...new Set([...text.matchAll(/\$\{\{\s*secrets\.([A-Z0-9_]+)\s*\}\}/g)].map((m) => m[1]!)),
+    ...new Set(
+      [...text.matchAll(/\$\{\{([^}]*)\}\}/g)].flatMap((expression) =>
+        [...expression[1]!.matchAll(/\bsecrets\.([A-Z0-9_]+)/g)].map((m) => m[1]!),
+      ),
+    ),
   ].sort();
 
 /** The position of `needle` in `text`, failing the test when it is absent. */
@@ -194,6 +198,14 @@ describe("the infrastructure's workflows", () => {
       ]) {
         expect(text, `${name}: ${variable}`).toContain(`TF_VAR_${variable}:`);
       }
+    }
+  });
+
+  it("hand the IDE's notice the narrow token when it exists, and the admin token until then", () => {
+    for (const name of infra) {
+      expect(read(name), name).toContain(
+        "TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}",
+      );
     }
   });
 

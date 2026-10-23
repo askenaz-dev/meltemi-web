@@ -359,7 +359,7 @@ async function main(argv) {
     ["OVSX_PAT", "Open VSX token (Enter to skip for now)"],
     [
       "WEB_DISPATCH_TOKEN",
-      "token for the IDE's release notice: meltemi-web only, Actions read and write (Enter to skip for now)",
+      "token for the IDE's release notice: meltemi-web only, Actions read and write (Enter to skip: the notice then uses GH_ADMIN_TOKEN)",
     ],
   ];
   for (const [name, label] of prompts) {

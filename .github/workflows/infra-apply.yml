@@ -43,7 +43,9 @@ jobs:
       TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
       TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
       TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}
-      TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN }}
+      # The narrow notice token when it exists; until then the admin token, by the owner's choice
+      # of 2026-10-23 (change ide-releases, design: "The owner's choice").
+      TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
