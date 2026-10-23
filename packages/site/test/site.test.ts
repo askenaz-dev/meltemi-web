@@ -459,3 +459,21 @@ describe("the IDE's pages tell its release as it is", () => {
     });
   }
 });
+
+describe("the downloads page tells verification as it is", () => {
+  for (const [file, url] of [
+    ["ide/downloads/index.html", "/ide/downloads/"],
+    ["es/ide/downloads/index.html", "/es/ide/downloads/"],
+  ] as const) {
+    it(`${url} names the two checks, pinned to the IDE's release workflow, and no maintainer's key`, () => {
+      const html = read(file);
+      expect(html).toContain("sha256sum --check");
+      expect(html).toContain("gh attestation verify");
+      expect(html).toContain("--signer-workflow askenaz-dev/meltemi/.github/workflows/release.yml");
+      const lower = html.toLowerCase();
+      for (const stale of ["minisign", "maintainer's key", "clave del mantenedor"]) {
+        expect(lower, `${url} still names ${stale}`).not.toContain(stale);
+      }
+    });
+  }
+});

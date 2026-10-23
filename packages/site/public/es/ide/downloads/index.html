@@ -7,7 +7,7 @@
     <title>Descargas — Meltemi</title>
     <meta
       name="description"
-      content="Releases firmadas para Windows, macOS y Linux: el archivo del núcleo con ambos binarios, el instalador de escritorio y un script instalador auditable. Todo enlace resuelve a la última release firmada."
+      content="Releases para Windows, macOS y Linux, firmadas por el workflow que las publica: el archivo del núcleo con ambos binarios, el instalador de escritorio y un script instalador auditable. Todo enlace resuelve a la última release publicada."
     />
     <link rel="alternate" hreflang="en" href="/ide/downloads/" />
     <link rel="alternate" hreflang="es" href="/es/ide/downloads/" />
@@ -37,9 +37,10 @@
       <div class="wrap">
         <h1>Descargas</h1>
         <p>
-          Todos los enlaces de abajo apuntan a la última release firmada. En esta
+          Todos los enlaces de abajo apuntan a la última release publicada. En esta
           página no aparece ninguna versión y aquí no se hospeda nada: los archivos
-          vienen de la propia release, así que lo que descargas es lo que se firmó.
+          vienen de la propia release, así que lo que descargas es lo que se publicó
+          y se atestiguó.
         </p>
       </div>
     </div>
@@ -109,7 +110,8 @@
         <p>
           Los scripts son cortos y están hechos para leerse antes de ejecutarse. Cada
           uno se publica como artefacto de la release con su checksum dentro del
-          <code>SHA256SUMS</code> firmado, y cada uno verifica el checksum del archivo
+          <code>SHA256SUMS</code> que cubre la atestación de la release, y cada uno
+          verifica el checksum del archivo
           y rehúsa si no coincide. Aquí no hay tubería ciega a una shell:
           <strong>descárgalo, léelo y entonces ejecútalo.</strong>
         </p>
@@ -143,17 +145,23 @@ notepad install.ps1
       <section aria-labelledby="verify">
         <h2 id="verify">Verifica lo que descargaste</h2>
         <p>
-          Cada release publica un <code>SHA256SUMS</code> con firma separada hecha con
-          la clave del mantenedor, más una atestación de build acuñada por el propio
-          workflow de release. Tres comprobaciones, ordenadas por lo que cada una
-          compra: el checksum te dice que el archivo llegó intacto, la firma que el
-          mantenedor lo avaló, y la atestación de qué repositorio, commit y workflow
-          salió. Los comandos —y qué puede y qué no puede probar cada
-          comprobación— están en la documentación de release.
+          Cada release publica un <code>SHA256SUMS</code> y la firma la atestación
+          que acuña su propio workflow de release al publicarla: no la firma ninguna
+          persona ni ninguna clave de largo plazo. Dos comprobaciones, ordenadas por
+          lo que cada una compra: el checksum te dice que el archivo llegó intacto, y
+          la atestación de qué repositorio, commit y workflow salió ese mismo archivo.
+        </p>
+        <pre><code>sha256sum --check --ignore-missing SHA256SUMS
+gh attestation verify meltemi-Linux.tar.gz --repo askenaz-dev/meltemi --signer-workflow askenaz-dev/meltemi/.github/workflows/release.yml</code></pre>
+        <p>
+          Cada release trae también <code>attestation.sigstore.json</code>, el bundle
+          con el que la segunda comprobación funciona sin red. Los comandos de cada
+          plataforma, la comprobación sin red y qué puede y qué no puede probar cada
+          comprobación están en la documentación de release.
         </p>
         <p>
           <a class="btn" href="https://github.com/askenaz-dev/meltemi/releases/latest/download/SHA256SUMS">SHA256SUMS de la última release</a>
-          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/release.md">Procedimiento de checksum, firma y procedencia</a>
+          <a class="btn" href="https://github.com/askenaz-dev/meltemi/blob/main/docs/release.md">Cómo verificar una release</a>
         </p>
         <div class="notice info">
           <strong><span aria-hidden="true">◆</span> Aquí no se espeja nada.</strong>
