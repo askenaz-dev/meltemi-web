@@ -437,3 +437,25 @@ describe("the downloads page stays version-free", () => {
     });
   }
 });
+
+describe("the IDE's pages tell its release as it is", () => {
+  const BEGIN = "<!-- ide-release -->";
+  const END = "<!-- /ide-release -->";
+
+  for (const [file, url] of [
+    ["ide/index.html", "/ide/"],
+    ["es/ide/index.html", "/es/ide/"],
+  ] as const) {
+    it(`${url} carries the release block once, at rest: version-free, linking the latest release`, () => {
+      const html = read(file);
+      expect(html.split(BEGIN).length - 1, `${url}: ${BEGIN}`).toBe(1);
+      expect(html.split(END).length - 1, `${url}: ${END}`).toBe(1);
+      expect(html.indexOf(BEGIN), `${url}: the markers are in order`).toBeLessThan(
+        html.indexOf(END),
+      );
+      const block = html.slice(html.indexOf(BEGIN) + BEGIN.length, html.indexOf(END));
+      expect(block).toContain('href="https://github.com/askenaz-dev/meltemi/releases/latest"');
+      expect(block).not.toMatch(/v\d+\.\d+\.\d+/);
+    });
+  }
+});

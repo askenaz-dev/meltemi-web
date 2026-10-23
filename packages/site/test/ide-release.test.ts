@@ -85,15 +85,16 @@ describe("a published release", () => {
     expect(block).toContain(
       '<a href="https://github.com/askenaz-dev/meltemi/releases/tag/v0.2.0">v0.2.0</a>',
     );
-    expect(block).toContain("published 2026-10-24");
-    expect(block).toContain("signed by the workflow that published it");
+    expect(block).toContain("published 2026-10-24.");
+    // The block says what was released and when, not how: a release published before the IDE's
+    // pipeline attested anything would make a claim about signing false.
+    expect(block).not.toMatch(/signed|firmad/);
   });
 
   it("is named in Spanish the same way", () => {
     const block = renderBlock({ tag: "v0.2.0", date: "2026-10-24" }, "es");
     expect(block).toContain("Última release:");
-    expect(block).toContain("publicada el 2026-10-24");
-    expect(block).toContain("firmada por el workflow que la publicó");
+    expect(block).toContain("publicada el 2026-10-24.");
     expect(block).toContain("https://github.com/askenaz-dev/meltemi/releases/tag/v0.2.0");
   });
 

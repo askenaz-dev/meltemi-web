@@ -38,16 +38,8 @@ export const PAGES = [
 ];
 
 const WORDS = {
-  en: {
-    latest: "Latest release",
-    published: "published",
-    signed: "signed by the workflow that published it",
-  },
-  es: {
-    latest: "Última release",
-    published: "publicada el",
-    signed: "firmada por el workflow que la publicó",
-  },
+  en: { latest: "Latest release", published: "published" },
+  es: { latest: "Última release", published: "publicada el" },
 };
 
 /**
@@ -98,7 +90,7 @@ export function renderBlock(release, lang) {
   return (
     `<p class="release-note">${words.latest}: ` +
     `<a href="${escape(href)}">${escape(release.tag)}</a>, ` +
-    `${words.published} ${escape(release.date)}, ${words.signed}.</p>`
+    `${words.published} ${escape(release.date)}.</p>`
   );
 }
 
