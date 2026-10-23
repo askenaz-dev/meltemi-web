@@ -10,18 +10,18 @@ one as a layer; the web holds what both share. Decided on 13 October 2026
 
 | Repository                                                                                              | Working folder         | Holds                                                                                                                                                                                        | Domains                         | Stack                                                         |
 | ------------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| **Meltemi IDE**, [`askenaz-dev/meltemi`](https://github.com/askenaz-dev/meltemi)                        | `C:\forge\agentic-ide` | The agentic IDE: desktop app, terminal app and the `meltemid` daemon; the design system and the brand sources; today also the site (`site/`)                                                 | Downloads from GitHub Releases  | Rust, Svelte                                                  |
+| **Meltemi IDE**, [`askenaz-dev/meltemi`](https://github.com/askenaz-dev/meltemi)                        | `C:\forge\agentic-ide` | The agentic IDE: desktop app, terminal app and the `meltemid` daemon; the design system and the brand sources                                                                                | Downloads from GitHub Releases  | Rust, Svelte                                                  |
 | **Meltemi Diagrams**, [`askenaz-dev/meltemi-diagrams`](https://github.com/askenaz-dev/meltemi-diagrams) | `C:\development\dac`   | The `.meltemi` language, the CLI, the VS Code extension, the playground, and the hosted service (`packages/cloud`: accounts' projects, versions, sharing, collaboration, published catalogs) | `diagrams.meltemi.dev`          | TypeScript, pnpm, Cloudflare Workers, D1, R2, Durable Objects |
 | **Meltemi Web**, [`askenaz-dev/meltemi-web`](https://github.com/askenaz-dev/meltemi-web)                | `C:\meltemi`           | The product site, the shared identity service, and the family's infrastructure as code (`packages/infra`)                                                                                    | `meltemi.dev`, `id.meltemi.dev` | TypeScript, pnpm, Cloudflare Workers, D1                      |
 
-The IDE repository serves the site today from its `site/` folder through GitHub Pages; the
-`product-site` change moves it here. Once the site answers from here, the IDE repository
-(`C:\forge\agentic-ide`) removes `site/`, the Pages job of `.github/workflows/release.yml`,
-`core/meltemid/tests/site.rs` and `core/meltemid/tests/scenarios_sitio.rs`, and retargets
-`scripts/capture-desktop.ps1` and `tui/examples/capture_svg.rs` (both write into `site/media/`
-today); the token rule of `site.rs` (the site's tokens equal, name and value, to
-`desktop/ui/src/app.css`) becomes `pnpm site:tokens --ide <path>` in this repository. After
-that the IDE repository holds the IDE only.
+The IDE repository served the site from its `site/` folder through GitHub Pages until the
+`product-site` change moved it here. Its change `release-con-el-push` then removed `site/`, the
+Pages job of `.github/workflows/release.yml`, `core/meltemid/tests/site.rs` and
+`core/meltemid/tests/scenarios_sitio.rs`, and retargeted `scripts/capture-desktop.ps1` and
+`tui/examples/capture_svg.rs` to `docs/media/`, from where this repository copies the captures;
+the token rule of `site.rs` (the site's tokens equal, name and value, to
+`desktop/ui/src/app.css`) is `pnpm site:tokens --ide <path>` in this repository. The IDE
+repository holds the IDE only.
 
 Working folders on the owner's machine:
 
@@ -62,9 +62,9 @@ events are such fetches.
 
 ```
  meltemi.dev ──── links ────▶ diagrams.meltemi.dev      (open the app, install, docs)
-      │                              │
-      │ links                        │ consumes
-      ▼                              ▼
+      │   ▲                          │
+      │   │ release notice           │ consumes
+      ▼   │ (deploy dispatch)        ▼
  GitHub Releases (IDE)        id.meltemi.dev ── session contract ──▶ any product
                                     │
                                     └── signed events (user.deleted) ──▶ each product
@@ -89,10 +89,18 @@ events are such fetches.
    is `http://localhost:8788/_identity/events`. Diagrams' `IDENTITY_EVENTS_SECRET` holds the
    same value.
 3. **The site's links**: the Diagrams page links to the app and the install commands; the IDE
-   pages link to the releases. Nothing else is shared at run time.
+   pages link to the releases, and each deploy writes the IDE's latest published release into
+   `/ide/` from GitHub's public API. Nothing else is shared at run time.
 4. **Brand**: the normative design system and brand sources stay in the IDE repository
    (`design-system/`, `brand/`); the site and the identity pages carry a copy of the tokens
    (`tokens.css`) whose header names the source commit.
+5. **The IDE's release path** (change `ide-releases`; the IDE's `release-con-el-push`): the IDE
+   releases with no hand on it, from a version commit on its `main`. This repository's Terraform
+   declares what that path relies on and nothing else of the IDE repository: the rulesets of its
+   `main` and of its `v*` tags, its `release` environment (branch `main`) with the secret
+   `WEB_DISPATCH_TOKEN`, and read-only workflow permissions. Once a release is published, the
+   IDE's release workflow starts this repository's `deploy.yml` with that token, which can start
+   this repository's workflows and cannot write its code; the notice carries no data.
 
 Each product owns its own data, API, storage and quotas. The identity service never holds a
 product's data and never receives a provider's token from a product.

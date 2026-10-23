@@ -15,7 +15,7 @@
 
 ## 3. Documentation and checks
 
-- [ ] 3.1 `docs/repositories.md`: the IDE's release notice and the protections declared here
+- [x] 3.1 `docs/repositories.md`: the IDE's release notice and the protections declared here
 - [ ] 3.2 `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`, `pnpm infra:fmt`, `pnpm infra:validate`, `pnpm infra:test`; `openspec validate ide-releases`
 
 ## 4. The owner's part
