@@ -11,7 +11,7 @@
 - [x] 2.1 `packages/site/scripts/ide-release.mjs`: `releaseOf`, `renderBlock`, `inject`, `main`; `packages/site/test/ide-release.test.ts` with every scenario of the requirement (a published release in both languages, a tag that is not a version, a draft, a pre-release, a date that is not ISO, escaping, markers missing, `main` with a stub `fetch` that answers, fails and refuses); no network
 - [x] 2.2 `/ide/` and `/es/ide/`: the block between the markers in the hero, with the version-free sentence; `site.css`: `.hero .release-note`; the state tables of `/`, `/es/`, `/ide/` and `/es/ide/` say releases are signed by their workflow; `site.test.ts` checks the markers and the sentence at rest
 - [x] 2.3 `/ide/downloads/` and `/es/ide/downloads/` describe the two checks with the offline bundle and name no maintainer's key; `site.test.ts` checks it
-- [ ] 2.4 `deploy.yml`: the step that runs the script with `github.token`, after the identity Worker and before the site's upload; `test/workflows.test.ts` checks the order and that no secret is added
+- [x] 2.4 `deploy.yml`: the step that runs the script with `github.token`, after the identity Worker and before the site's upload; `test/workflows.test.ts` checks the order and that no secret is added
 
 ## 3. Documentation and checks
 
