@@ -3,8 +3,8 @@
 - [x] 1.1 `packages/infra/variables.tf`: `web_dispatch_token` (sensitive, empty by default); `packages/infra/github.tf`: `local.ide_repository`, the IDE's default-branch ruleset (deletion, non-fast-forward), its `v*` tag ruleset (update, deletion), the environment `release` with custom branch policies and a deployment policy for `main`, the secret `WEB_DISPATCH_TOKEN` counted on the variable, the workflow permissions (read, no approvals); `terraform fmt -check`, `terraform validate`
 - [x] 1.2 `packages/infra/tests/stages.tftest.hcl`: the first apply plans the IDE's protections and no notice secret; a run with `web_dispatch_token` plans the secret in the IDE's `release` environment; `terraform test` with the mocked providers
 - [x] 1.3 `packages/infra/test/files.test.ts`: the IDE test becomes "no `github_repository` names the IDE, and only the listed resources do"; `pnpm test`
-- [ ] 1.4 `infra-plan.yml`, `infra-apply.yml`, `infra-drift.yml` pass `TF_VAR_web_dispatch_token` from the `infrastructure` environment; `test/workflows.test.ts` names it among Terraform's secrets
-- [ ] 1.5 `scripts/bootstrap.mjs` asks for `WEB_DISPATCH_TOKEN` as an optional value; `packages/infra/README.md`: the token's scope and how to create it, the GitHub token's reach over the IDE repository, the row in the environment's table
+- [x] 1.4 `infra-plan.yml`, `infra-apply.yml`, `infra-drift.yml` pass `TF_VAR_web_dispatch_token` from the `infrastructure` environment; `test/workflows.test.ts` names it among Terraform's secrets
+- [x] 1.5 `scripts/bootstrap.mjs` asks for `WEB_DISPATCH_TOKEN` as an optional value; `packages/infra/README.md`: the token's scope and how to create it, the GitHub token's reach over the IDE repository, the row in the environment's table
 
 ## 2. The IDE's release on its pages
 

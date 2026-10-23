@@ -14,8 +14,8 @@
 //  3. notes an existing Secrets Store (an account holds one) so Terraform imports it;
 //  4. generates the identity service's signing key, keeps its private half as a secret and writes
 //     its public half into packages/identity/wrangler.jsonc, with the two OAuth client ids;
-//  5. asks for the GitHub token Terraform uses, the OAuth secrets and the
-//     optional release tokens;
+//  5. asks for the GitHub token Terraform uses, the OAuth secrets, the
+//     optional release tokens and the optional token of the IDE's release notice;
 //  6. creates the environment and sets its variables and secrets with `gh`.
 
 import { spawnSync } from "node:child_process";
@@ -357,6 +357,10 @@ async function main(argv) {
     ["NPM_TOKEN", "npm granular token of the meltemi organisation (Enter to skip for now)"],
     ["VSCE_PAT", "Visual Studio Marketplace token (Enter to skip for now)"],
     ["OVSX_PAT", "Open VSX token (Enter to skip for now)"],
+    [
+      "WEB_DISPATCH_TOKEN",
+      "token for the IDE's release notice: meltemi-web only, Actions read and write (Enter to skip for now)",
+    ],
   ];
   for (const [name, label] of prompts) {
     const value = await ask(`  ${label}${keep(name)}: `, { hidden: true });

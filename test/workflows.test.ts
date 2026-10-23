@@ -172,6 +172,7 @@ describe("the infrastructure's workflows", () => {
           "OVSX_PAT",
           "SESSION_PRIVATE_KEY",
           "VSCE_PAT",
+          "WEB_DISPATCH_TOKEN",
         ].sort(),
       );
       for (const variable of [
@@ -179,6 +180,7 @@ describe("the infrastructure's workflows", () => {
         "session_private_key",
         "github_client_secret",
         "google_client_secret",
+        "web_dispatch_token",
       ]) {
         expect(text, `${name}: ${variable}`).toContain(`TF_VAR_${variable}:`);
       }

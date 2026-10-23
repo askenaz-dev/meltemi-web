@@ -43,6 +43,7 @@ jobs:
       TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
       TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
       TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}
+      TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
