@@ -74,6 +74,16 @@ can start this repository's workflows and cannot write its code (a `repository_d
 needed Contents: write). The bootstrap asks for it as it asks for the release tokens, and the
 infrastructure workflows pass it as `TF_VAR_web_dispatch_token`.
 
+**The owner's choice, 2026-10-23.** No narrow token was created: the owner chose `GH_ADMIN_TOKEN`,
+the token Terraform already uses, as the notice's value until one exists. The infrastructure
+workflows pass `secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN`, so a narrow token stored
+later takes its place with no other change. The cost is written here as a cost: the IDE's
+`release` environment then holds a token that administers every repository of the organisation,
+not one that can only start this repository's workflows. Only jobs on the IDE's `main` can read
+it, and only the notice's step names it, so a leak there is the organisation's leak where the
+narrow token's would have been a redeploy. The dispatch also needs Actions (read and write), a
+permission the infrastructure's README did not list for the admin token before this choice.
+
 ### The notice redeploys `deploy.yml`, with no schedule
 
 The IDE's pipeline starts `deploy.yml` on `main` and passes no input. The run redeploys the

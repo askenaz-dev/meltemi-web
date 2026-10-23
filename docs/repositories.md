@@ -99,8 +99,9 @@ events are such fetches.
    declares what that path relies on and nothing else of the IDE repository: the rulesets of its
    `main` and of its `v*` tags, its `release` environment (branch `main`) with the secret
    `WEB_DISPATCH_TOKEN`, and read-only workflow permissions. Once a release is published, the
-   IDE's release workflow starts this repository's `deploy.yml` with that token, which can start
-   this repository's workflows and cannot write its code; the notice carries no data.
+   IDE's release workflow starts this repository's `deploy.yml` with that token. A narrow one can
+   start this repository's workflows and cannot write its code; until one exists, the owner chose
+   on 2026-10-23 to pass `GH_ADMIN_TOKEN`, which can do far more. The notice carries no data.
 
 Each product owns its own data, API, storage and quotas. The identity service never holds a
 product's data and never receives a provider's token from a product.

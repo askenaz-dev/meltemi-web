@@ -5,6 +5,7 @@
 - [x] 1.3 `packages/infra/test/files.test.ts`: the IDE test becomes "no `github_repository` names the IDE, and only the listed resources do"; `pnpm test`
 - [x] 1.4 `infra-plan.yml`, `infra-apply.yml`, `infra-drift.yml` pass `TF_VAR_web_dispatch_token` from the `infrastructure` environment; `test/workflows.test.ts` names it among Terraform's secrets
 - [x] 1.5 `scripts/bootstrap.mjs` asks for `WEB_DISPATCH_TOKEN` as an optional value; `packages/infra/README.md`: the token's scope and how to create it, the GitHub token's reach over the IDE repository, the row in the environment's table
+- [x] 1.6 The notice falls back to `GH_ADMIN_TOKEN` while `WEB_DISPATCH_TOKEN` is absent, by the owner's choice of 2026-10-23 (design, "The owner's choice"): the three infrastructure workflows, `test/workflows.test.ts`, `packages/infra/README.md`, the bootstrap's prompt, `docs/repositories.md`
 
 ## 2. The IDE's release on its pages
 
@@ -25,6 +26,6 @@
 
 ## 4. The owner's part
 
-- [ ] 4.1 Create the notice token: fine-grained, owner `askenaz-dev`, repository `meltemi-web` only, permission Actions read and write; run `pnpm infra:bootstrap` to store it in the `infrastructure` environment
+- [x] 4.1 ~~Create the notice token: fine-grained, owner `askenaz-dev`, repository `meltemi-web` only, permission Actions read and write; run `pnpm infra:bootstrap` to store it in the `infrastructure` environment~~ The owner chose on 2026-10-23 to use `GH_ADMIN_TOKEN` instead (task 1.6); a narrow token stored as `WEB_DISPATCH_TOKEN` later takes its place
 - [ ] 4.2 Read the plan the pull request receives; merge it, which applies; check on `askenaz-dev/meltemi` that the two rulesets, the `release` environment (branch `main`) and its secret exist and that workflows default to read
 - [ ] 4.3 After the IDE's first release through its new path, check that `/ide/` names it; then archive this change after `delivery`
