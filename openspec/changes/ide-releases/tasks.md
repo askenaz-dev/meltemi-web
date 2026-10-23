@@ -16,7 +16,12 @@
 ## 3. Documentation and checks
 
 - [x] 3.1 `docs/repositories.md`: the IDE's release notice and the protections declared here
-- [ ] 3.2 `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`, `pnpm infra:fmt`, `pnpm infra:validate`, `pnpm infra:test`; `openspec validate ide-releases`
+- [x] 3.2 `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`, `pnpm infra:fmt`, `pnpm infra:validate`, `pnpm infra:test`; `openspec validate ide-releases`
+  <!-- 2026-10-23: all green — typecheck, lint, build, 2063 tests (1 skipped: the
+  token check against an IDE checkout), infra fmt, and on a scratch copy without
+  a backend `terraform validate` and the 11 mocked stages; `openspec validate
+  ide-releases --strict` valid. The script also ran for real on a copy of
+  `public/` against GitHub's API and named v0.1.0 in both languages. -->
 
 ## 4. The owner's part
 
