@@ -477,3 +477,55 @@ describe("the downloads page tells verification as it is", () => {
     });
   }
 });
+
+describe("the agents pages point to the guide for a model of your own, honestly", () => {
+  const GUIDE = "https://github.com/askenaz-dev/meltemi/blob/main/docs/local-models.md";
+  const SECTION = '<section aria-labelledby="model">';
+  // The IDE's old lint refused the first eleven in its copy. The guide itself names the last three:
+  // it may, as interoperability data, and a section that links it may not.
+  const THIRD_PARTY = [
+    "Claude",
+    "Codex",
+    "Copilot",
+    "Gemini",
+    "Cursor",
+    "OpenAI",
+    "Anthropic",
+    "VS Code",
+    "JetBrains",
+    "Aider",
+    "OpenCode",
+    "Ollama",
+    "LiteLLM",
+    "OpenRouter",
+  ];
+
+  /** Whether `text` names `name` as a whole word, ignoring case. */
+  function names(text: string, name: string): boolean {
+    const lower = text.toLowerCase();
+    const needle = name.toLowerCase();
+    const edge = (c: string | undefined): boolean => c === undefined || !/[a-z0-9]/i.test(c);
+    for (let at = lower.indexOf(needle); at !== -1; at = lower.indexOf(needle, at + 1)) {
+      if (edge(lower[at - 1]) && edge(lower[at + needle.length])) return true;
+    }
+    return false;
+  }
+
+  for (const [file, url, notYet] of [
+    ["ide/agents/index.html", "/ide/agents/", "has no engine of its own yet"],
+    ["es/ide/agents/index.html", "/es/ide/agents/", "todavía no tiene motor propio"],
+  ] as const) {
+    it(`${url} has the section once, links the guide, says the engine is not there yet and names no vendor`, () => {
+      const html = read(file);
+      expect(html.split(SECTION).length - 1, `${url}: ${SECTION}`).toBe(1);
+      const from = html.indexOf(SECTION);
+      const section = html.slice(from, html.indexOf("</section>", from));
+      expect(section, `${url}: the link to the guide`).toContain(`href="${GUIDE}"`);
+      const text = section.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+      expect(text, `${url}: the engine of its own is not there yet`).toContain(notYet);
+      for (const name of THIRD_PARTY) {
+        expect(names(text, name), `${url}: the section names ${name}`).toBe(false);
+      }
+    });
+  }
+});
