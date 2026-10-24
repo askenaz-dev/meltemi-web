@@ -27,5 +27,7 @@
 ## 4. The owner's part
 
 - [x] 4.1 ~~Create the notice token: fine-grained, owner `askenaz-dev`, repository `meltemi-web` only, permission Actions read and write; run `pnpm infra:bootstrap` to store it in the `infrastructure` environment~~ The owner chose on 2026-10-23 to use `GH_ADMIN_TOKEN` instead (task 1.6); a narrow token stored as `WEB_DISPATCH_TOKEN` later takes its place
-- [ ] 4.2 Read the plan the pull request receives; merge it, which applies; check on `askenaz-dev/meltemi` that the two rulesets, the `release` environment (branch `main`) and its secret exist and that workflows default to read
+- [x] 4.2 Read the plan the pull request receives; merge it, which applies; check on `askenaz-dev/meltemi` that the two rulesets, the `release` environment (branch `main`) and its secret exist and that workflows default to read
+  <!-- 2026-10-23: pull request #1's plan created the IDE's five protections and touched nothing of the IDE but them; merged as `e4b3982`, applied by run 39992078529. On `askenaz-dev/meltemi`: the `main` and `version tags` rulesets active with no bypass, the `release` environment with one branch policy, `main`, and workflows defaulting to read. Its secret came with pull request #2 (`ae1fa63`, run 40007292733): `WEB_DISPATCH_TOKEN` in `release` since 2026-10-23T18:56:01Z. -->
 - [ ] 4.3 After the IDE's first release through its new path, check that `/ide/` names it; then archive this change after `delivery`
+  <!-- 2026-10-23: the first half is done. v0.2.0, the IDE's first release through its new path, was published at 18:03:44Z, and its notice started this repository's deploy (run 40007435237): `/ide/` and `/es/ide/` name v0.2.0 of 2026-10-23. The archive waits for `delivery`. -->
