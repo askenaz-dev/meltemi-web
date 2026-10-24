@@ -39,7 +39,7 @@
           What the Meltemi site, the sign-in service and Meltemi Diagrams keep about you, where it
           is kept, and how to have it removed.
         </p>
-        <p><span class="pill">Last updated: 14 October 2026</span></p>
+        <p><span class="pill">Last updated: 24 October 2026</span></p>
       </div>
     </div>
 
@@ -97,6 +97,27 @@
           The Meltemi IDE runs on your computer. It has no account and sends no telemetry: every
           metric is computed locally and nothing is sent to Meltemi.
         </p>
+        <ul>
+          <li>
+            Its background service opens no network port. It listens only on a local endpoint that
+            your user account alone can reach; reaching it from another machine is something you set
+            up yourself, through an SSH tunnel.
+          </li>
+          <li>
+            It does not read, store or reuse the credentials of the coding agents you run from it.
+            Each agent signs in by its own means, and the IDE only starts the agent's official
+            program.
+          </li>
+          <li>
+            What it keeps stays on your computer: the logs of your sessions and of its service, in
+            the data folder of your user account; its settings and permission rules, in the
+            configuration folder; and the specs of each project, in a <code>.meltemi</code> folder
+            inside that project. The data and configuration folders are <code>%APPDATA%\meltemi\data</code> and
+            <code>%APPDATA%\meltemi\config</code> on Windows, <code>~/Library/Application Support/meltemi</code>
+            (both) on macOS, and <code>~/.local/share/meltemi</code> and <code>~/.config/meltemi</code> on
+            Linux.
+          </li>
+        </ul>
         <p>
           The coding agents you run from it are their vendors' own programs. They run under their
           vendors' own terms and privacy notices, which this notice does not cover. More on the
