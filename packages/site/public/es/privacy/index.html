@@ -39,7 +39,7 @@
           Qué guardan sobre ti el sitio de Meltemi, el servicio de inicio de sesión y Meltemi
           Diagrams, dónde se guarda y cómo pedir que se elimine.
         </p>
-        <p><span class="pill">Última actualización: 14 de octubre de 2026</span></p>
+        <p><span class="pill">Última actualización: 24 de octubre de 2026</span></p>
       </div>
     </div>
 
@@ -98,6 +98,27 @@
           El IDE de Meltemi se ejecuta en tu equipo. No tiene cuenta y no envía telemetría: toda
           métrica se calcula en local y no se envía nada a Meltemi.
         </p>
+        <ul>
+          <li>
+            Su servicio en segundo plano no abre ningún puerto de red. Solo escucha en un punto
+            local al que únicamente llega tu cuenta de usuario; llegar a él desde otro equipo es
+            algo que configuras tú, mediante un túnel SSH.
+          </li>
+          <li>
+            No lee, no guarda ni reutiliza las credenciales de los agentes de codificación que
+            ejecutas desde él. Cada agente inicia sesión por sus propios medios, y el IDE solo
+            arranca el programa oficial del agente.
+          </li>
+          <li>
+            Lo que guarda se queda en tu equipo: los registros de tus sesiones y de su servicio, en
+            la carpeta de datos de tu cuenta de usuario; sus ajustes y reglas de permisos, en la
+            carpeta de configuración; y las especificaciones de cada proyecto, en una carpeta
+            <code>.meltemi</code> dentro de ese proyecto. Las carpetas de datos y de configuración son
+            <code>%APPDATA%\meltemi\data</code> y <code>%APPDATA%\meltemi\config</code> en Windows,
+            <code>~/Library/Application Support/meltemi</code> (las dos) en macOS, y
+            <code>~/.local/share/meltemi</code> y <code>~/.config/meltemi</code> en Linux.
+          </li>
+        </ul>
         <p>
           Los agentes de codificación que ejecutas desde él son programas de sus propios
           fabricantes. Funcionan bajo los términos y los avisos de privacidad de cada fabricante,

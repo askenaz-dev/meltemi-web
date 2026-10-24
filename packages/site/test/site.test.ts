@@ -529,3 +529,86 @@ describe("the agents pages point to the guide for a model of your own, honestly"
     });
   }
 });
+
+describe("the privacy notice states what the IDE does not do and where it keeps its data", () => {
+  const SECTION = '<section aria-labelledby="ide">';
+  const BS = String.fromCharCode(92);
+  // The folders the IDE resolves for the project name `meltemi`, as the notice writes them.
+  const FOLDERS = [
+    `%APPDATA%${BS}meltemi${BS}data`,
+    `%APPDATA%${BS}meltemi${BS}config`,
+    "~/Library/Application Support/meltemi",
+    "~/.local/share/meltemi",
+    "~/.config/meltemi",
+    ".meltemi",
+  ];
+  const MONTHS_EN =
+    "january february march april may june july august september october november december";
+  const MONTHS_ES =
+    "enero febrero marzo abril mayo junio julio agosto septiembre octubre noviembre diciembre";
+
+  const PAGES_OF_THE_NOTICE = [
+    {
+      file: "privacy/index.html",
+      url: "/privacy/",
+      // The claim of each statement, not the whole sentence: the rest can be reworded.
+      statements: [
+        "has no account",
+        "sends no telemetry",
+        "opens no network port",
+        "does not read, store or reuse the credentials",
+        "stays on your computer",
+      ],
+      date: /Last updated: (\d{1,2}) ([a-z]+) (\d{4})/i,
+      months: MONTHS_EN.split(" "),
+    },
+    {
+      file: "es/privacy/index.html",
+      url: "/es/privacy/",
+      statements: [
+        "no tiene cuenta",
+        "no envía telemetría",
+        "no abre ningún puerto de red",
+        "no lee, no guarda ni reutiliza las credenciales",
+        "se queda en tu equipo",
+      ],
+      date: /Última actualización: (\d{1,2}) de ([a-z]+) de (\d{4})/i,
+      months: MONTHS_ES.split(" "),
+    },
+  ];
+
+  /** The text of the IDE section of `html`, tags dropped and spaces collapsed. */
+  function ideSection(html: string, url: string): string {
+    expect(html.split(SECTION).length - 1, `${url}: ${SECTION}`).toBe(1);
+    const from = html.indexOf(SECTION);
+    return html
+      .slice(from, html.indexOf("</section>", from))
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ");
+  }
+
+  for (const page of PAGES_OF_THE_NOTICE) {
+    it(`${page.url} makes the five statements about the IDE and names its folders`, () => {
+      const text = ideSection(read(page.file), page.url);
+      const lower = text.toLowerCase();
+      for (const statement of page.statements) {
+        expect(lower, `${page.url}: the statement "${statement}"`).toContain(statement);
+      }
+      for (const folder of FOLDERS) {
+        expect(text, `${page.url}: the folder ${folder}`).toContain(folder);
+      }
+    });
+  }
+
+  it("carries the same date of the last update in both languages", () => {
+    const dates = PAGES_OF_THE_NOTICE.map((page) => {
+      const found = read(page.file).match(page.date);
+      expect(found, `${page.url}: the "last updated" date`).not.toBeNull();
+      const [, day, month, year] = found as RegExpMatchArray;
+      const n = page.months.indexOf((month as string).toLowerCase()) + 1;
+      expect(n, `${page.url}: the month "${month}"`).toBeGreaterThan(0);
+      return `${year}-${String(n).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    });
+    expect(dates[1], `/privacy/ says ${dates[0]}, /es/privacy/ says ${dates[1]}`).toBe(dates[0]);
+  });
+});
