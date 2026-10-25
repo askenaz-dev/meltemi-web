@@ -612,3 +612,92 @@ describe("the privacy notice states what the IDE does not do and where it keeps 
     expect(dates[1], `/privacy/ says ${dates[0]}, /es/privacy/ says ${dates[1]}`).toBe(dates[0]);
   });
 });
+
+describe("the figures are real captures, declared as such", () => {
+  const FIGURE = /<figure\b[\s\S]*?<\/figure>/g;
+  // What a caption must state, in its own language: the surface, the temporary fixture, the
+  // simulated agent, the state of the product and the platform. The rest can be reworded.
+  const CAPTION: Record<"en" | "es", [string, RegExp][]> = {
+    en: [
+      ["the surface", /\b(terminal|desktop) surface\b/i],
+      ["the temporary fixture", /\btemporary fixture\b/i],
+      ["the simulated agent", /\bsimulated agent\b/i],
+      ["the state of the product", /\bMeltemi (pre-1\.0|v?\d+\.\d+(\.\d+)?)/i],
+      ["the platform", /\b(Windows|macOS|Linux)\b/],
+    ],
+    es: [
+      ["the surface", /\bsuperficie de (terminal|escritorio)\b/i],
+      ["the temporary fixture", /\bfixture temporal\b/i],
+      ["the simulated agent", /\bagente simulado\b/i],
+      ["the state of the product", /\bMeltemi (previo a 1\.0|v?\d+\.\d+(\.\d+)?)/i],
+      ["the platform", /\b(Windows|macOS|Linux)\b/],
+    ],
+  };
+
+  const withoutComments = (html: string): string => html.replace(/<!--[\s\S]*?-->/g, "");
+  const figuresOf = (file: string): string[] =>
+    [...withoutComments(read(file)).matchAll(FIGURE)].map((m) => m[0]);
+  const imageOf = (figure: string): string =>
+    tags(figure).find((t) => t.name === "img")?.attrs["src"] ?? "";
+
+  it("gives every figure an alt text, a file that exists and a caption with its provenance", () => {
+    const offenders: string[] = [];
+    for (const file of ALL_HTML) {
+      const url = pageUrl(file);
+      const patterns = CAPTION[isSpanish(url) ? "es" : "en"];
+      for (const [i, figure] of figuresOf(file).entries()) {
+        const where = `${url} figure ${i + 1}`;
+        const img = tags(figure).find((t) => t.name === "img");
+        if (!img) {
+          offenders.push(`${where}: no <img>`);
+          continue;
+        }
+        if ((img.attrs["alt"] ?? "").trim().length < 40) {
+          offenders.push(`${where}: alt text shorter than 40 characters`);
+        }
+        const src = img.attrs["src"] ?? "";
+        if (!src.startsWith("/") || !fileSet.has(src.slice(1))) {
+          offenders.push(`${where}: ${src || "no src"} is not a file of the site`);
+        }
+        const caption = /<figcaption\b[^>]*>([\s\S]*?)<\/figcaption>/.exec(figure);
+        if (!caption) {
+          offenders.push(`${where}: no <figcaption>`);
+          continue;
+        }
+        const text = caption[1]!.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+        for (const [what, pattern] of patterns) {
+          if (!pattern.test(text)) offenders.push(`${where}: the caption does not state ${what}`);
+        }
+      }
+    }
+    expect(offenders, "figures that break the rule").toEqual([]);
+  });
+
+  it("keeps a picture that says something inside a figure", () => {
+    const offenders = ALL_HTML.flatMap((file) =>
+      tags(withoutComments(read(file)).replace(FIGURE, ""))
+        .filter((t) => t.name === "img" && (t.attrs["alt"] ?? "") !== "")
+        .map((t) => `${pageUrl(file)}: ${t.attrs["src"] ?? "no src"}`),
+    );
+    expect(
+      offenders,
+      'images with an alt text outside a figure (a decorative one has alt="")',
+    ).toEqual([]);
+  });
+
+  it("shows the same figures in both languages", () => {
+    const offenders: string[] = [];
+    for (const file of ALL_HTML) {
+      const twin = `es/${file}`;
+      if (file.startsWith("es/") || !fileSet.has(twin)) continue;
+      const english = figuresOf(file).map(imageOf);
+      const spanish = figuresOf(twin).map(imageOf);
+      if (english.join(",") !== spanish.join(",")) {
+        offenders.push(
+          `${pageUrl(file)} shows [${english}] and ${pageUrl(twin)} shows [${spanish}]`,
+        );
+      }
+    }
+    expect(offenders, "pages whose twins show other figures").toEqual([]);
+  });
+});
