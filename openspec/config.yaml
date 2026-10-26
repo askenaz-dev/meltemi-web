@@ -2,11 +2,11 @@ schema: spec-driven
 
 # Project context shown to AI when creating artifacts.
 context: |
-  Repository: "Meltemi Web" (working name; folder C:\meltemi), the web of the Meltemi family:
+  Repository: "Meltemi Web" (working name; folder C:\meltemi\web), the web of the Meltemi family:
   the product site at meltemi.dev and the shared identity service at id.meltemi.dev. Decided on
   2026-10-13 (decision 0001): the family has three repositories: the Meltemi IDE
-  (github.com/askenaz-dev/meltemi, folder C:\forge\agentic-ide, Rust; it promises no accounts
-  and no cloud service), Meltemi Diagrams (folder C:\development\dac, TypeScript; the diagrams
+  (github.com/askenaz-dev/meltemi, folder C:\meltemi\ide, Rust; it promises no accounts
+  and no cloud service), Meltemi Diagrams (folder C:\meltemi\diagrams, TypeScript; the diagrams
   tool and its hosted service at diagrams.meltemi.dev) and this one. docs/repositories.md maps
   them; docs/decisions/ records why.
 

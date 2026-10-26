@@ -284,7 +284,7 @@ keeping the old public key there for thirty days.
 
 ## Working on the service
 
-Nothing here needs the cloud. From `C:\meltemi`:
+Nothing here needs the cloud. From `C:\meltemi\web`:
 
 ```bash
 pnpm install

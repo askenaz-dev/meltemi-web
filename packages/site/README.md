@@ -66,7 +66,7 @@ header names the commit it was copied from. Never edit a value here: change the 
 copy it across. After the IDE's tokens change, or to check the copy:
 
 ```bash
-pnpm site:tokens --ide C:\forge\agentic-ide
+pnpm site:tokens --ide C:\meltemi\ide
 ```
 
 The script compares **every** `--name: value;` declaration (the design tokens are `--bg`,

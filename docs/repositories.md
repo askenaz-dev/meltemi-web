@@ -8,11 +8,11 @@ one as a layer; the web holds what both share. Decided on 13 October 2026
 
 ## Repositories
 
-| Repository                                                                                              | Working folder         | Holds                                                                                                                                                                                        | Domains                         | Stack                                                         |
-| ------------------------------------------------------------------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| **Meltemi IDE**, [`askenaz-dev/meltemi`](https://github.com/askenaz-dev/meltemi)                        | `C:\forge\agentic-ide` | The agentic IDE: desktop app, terminal app and the `meltemid` daemon; the design system and the brand sources                                                                                | Downloads from GitHub Releases  | Rust, Svelte                                                  |
-| **Meltemi Diagrams**, [`askenaz-dev/meltemi-diagrams`](https://github.com/askenaz-dev/meltemi-diagrams) | `C:\development\dac`   | The `.meltemi` language, the CLI, the VS Code extension, the playground, and the hosted service (`packages/cloud`: accounts' projects, versions, sharing, collaboration, published catalogs) | `diagrams.meltemi.dev`          | TypeScript, pnpm, Cloudflare Workers, D1, R2, Durable Objects |
-| **Meltemi Web**, [`askenaz-dev/meltemi-web`](https://github.com/askenaz-dev/meltemi-web)                | `C:\meltemi`           | The product site, the shared identity service, and the family's infrastructure as code (`packages/infra`)                                                                                    | `meltemi.dev`, `id.meltemi.dev` | TypeScript, pnpm, Cloudflare Workers, D1                      |
+| Repository                                                                                              | Working folder        | Holds                                                                                                                                                                                        | Domains                         | Stack                                                         |
+| ------------------------------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------- |
+| **Meltemi IDE**, [`askenaz-dev/meltemi`](https://github.com/askenaz-dev/meltemi)                        | `C:\meltemi\ide`      | The agentic IDE: desktop app, terminal app and the `meltemid` daemon; the design system and the brand sources                                                                                | Downloads from GitHub Releases  | Rust, Svelte                                                  |
+| **Meltemi Diagrams**, [`askenaz-dev/meltemi-diagrams`](https://github.com/askenaz-dev/meltemi-diagrams) | `C:\meltemi\diagrams` | The `.meltemi` language, the CLI, the VS Code extension, the playground, and the hosted service (`packages/cloud`: accounts' projects, versions, sharing, collaboration, published catalogs) | `diagrams.meltemi.dev`          | TypeScript, pnpm, Cloudflare Workers, D1, R2, Durable Objects |
+| **Meltemi Web**, [`askenaz-dev/meltemi-web`](https://github.com/askenaz-dev/meltemi-web)                | `C:\meltemi\web`      | The product site, the shared identity service, and the family's infrastructure as code (`packages/infra`)                                                                                    | `meltemi.dev`, `id.meltemi.dev` | TypeScript, pnpm, Cloudflare Workers, D1                      |
 
 The IDE repository served the site from its `site/` folder through GitHub Pages until the
 `product-site` change moved it here. Its change `release-con-el-push` then removed `site/`, the
@@ -23,12 +23,13 @@ the token rule of `site.rs` (the site's tokens equal, name and value, to
 `desktop/ui/src/app.css`) is `pnpm site:tokens --ide <path>` in this repository. The IDE
 repository holds the IDE only.
 
-Working folders on the owner's machine:
+Working folders on the owner's machine. The three clones sit side by side under `C:\meltemi`, each named for
+its product, so a folder name says which repository it is:
 
 ```
-C:\forge\agentic-ide      Meltemi IDE (clone of askenaz-dev/meltemi)
-C:\development\dac        Meltemi Diagrams (clone of askenaz-dev/meltemi-diagrams)
-C:\meltemi                Meltemi Web, this repository (clone of askenaz-dev/meltemi-web)
+C:\meltemi\ide                Meltemi IDE (clone of askenaz-dev/meltemi)
+C:\meltemi\diagrams           Meltemi Diagrams (clone of askenaz-dev/meltemi-diagrams)
+C:\meltemi\web                Meltemi Web, this repository (clone of askenaz-dev/meltemi-web)
   ├── packages/site       the product site          (product-site change)
   ├── packages/identity   the identity service      (identity-service change)
   ├── packages/infra      the family's infrastructure as code (delivery change)
