@@ -76,7 +76,14 @@
 
 ## 6. Integration and sign-off
 
-- [ ] 6.1 Run the full set: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`, `pnpm site:browser`, `pnpm site:tokens --ide <path to the IDE>` and `openspec validate site-in-motion --strict`. Verify all pass, and record the results here.
+- [x] 6.1 Run the full set: `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm test`, `pnpm site:browser`, `pnpm site:tokens --ide <path to the IDE>` and `openspec validate site-in-motion --strict`. Verify all pass, and record the results here.
+
+  Results, 2026-10-28, on Linux with Node 22 and Chromium 153 (`MELTEMI_BROWSER`):
+  - `pnpm typecheck`, `pnpm lint` and `pnpm build`: pass.
+  - `pnpm test`: 45 files, 2169 tests pass; 1 skipped (the token comparison that needs `MELTEMI_IDE`).
+  - `pnpm site:browser`: the nine checks pass on every page, in 146 seconds.
+  - `pnpm site:tokens --ide <the IDE>`: the 41 tokens of `tokens.css` match the IDE's `app.css`.
+  - `openspec validate site-in-motion --strict`: valid. Its note that `product-site` does not exist yet in `openspec/specs/` is the archive order below.
 - [ ] 6.2 Under `pnpm site:dev`, read every changed page in both languages and both schemes, with motion, with reduced motion, and with JavaScript off. Measure the home with Chrome's Lighthouse on mobile, with performance at 90 or more. Record what was seen and measured here.
 - [ ] 6.3 Owner: sign off the look of `home`, `ide` and `diagrams` in both themes (the brand gate), on the pull request's screenshots or a local preview.
 
