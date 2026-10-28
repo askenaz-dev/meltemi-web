@@ -1,10 +1,22 @@
 // The specification `ocean-package`, "A wind across a surface" and "The wind moves only when
-// allowed": a field that heads to the upper right and bends, trails that persist and fade, one
-// frame under reduced motion, none while hidden, and a strength that is checked.
+// allowed": a field that heads to the upper right and bends, short trails that fade and never pile
+// up, one frame under reduced motion, none while hidden, and a strength that is checked.
 
 import { describe, expect, it } from "vitest";
 import { noise2, seeded } from "../src/noise.js";
-import { createWind, flowAt, particleCount, speedAt, streamlines } from "../src/wind.js";
+import {
+  ALPHA,
+  RANGE_MIN,
+  RANGE_SPREAD,
+  SPACING,
+  TAIL,
+  createWind,
+  envelope,
+  flowAt,
+  particleCount,
+  speedAt,
+  streamlines,
+} from "../src/wind.js";
 import { fakeCanvas, harness, recordingContext } from "./fakes.js";
 
 const asCanvas = (c: unknown) => c as HTMLCanvasElement;
@@ -45,29 +57,63 @@ describe("the wind's field", () => {
     expect(a[0]).toHaveLength(82);
   });
 
-  it("carries a few hundred particles on a laptop screen, and never too many", () => {
-    expect(particleCount(1280, 800)).toBe(200);
-    expect(particleCount(3840, 2160)).toBe(1037);
-    expect(particleCount(7680, 4320)).toBe(1400);
-    expect(particleCount(320, 480)).toBe(200);
+  it("carries about a hundred particles on a laptop screen, and never too many", () => {
+    expect(particleCount(1280, 800)).toBe(100);
+    expect(particleCount(1920, 1080)).toBe(189);
+    expect(particleCount(3840, 2160)).toBe(754);
+    expect(particleCount(7680, 4320)).toBe(800);
+    expect(particleCount(320, 480)).toBe(100);
+  });
+
+  it("shows a streak only in the middle of its range, appearing and fading at its ends", () => {
+    const range = RANGE_MIN + RANGE_SPREAD / 2;
+    expect(envelope(0, range)).toBe(0);
+    expect(envelope(range, range)).toBe(0);
+    expect(envelope(range * 0.5, range)).toBe(1);
+    expect(envelope(range * 0.05, range)).toBeGreaterThan(0);
+    expect(envelope(range * 0.05, range)).toBeLessThan(envelope(range * 0.1, range));
+    expect(envelope(range * 0.9, range)).toBeLessThan(envelope(range * 0.7, range));
+    expect(envelope(range * 2, range), "past its range a streak is gone").toBe(0);
   });
 });
 
 describe("a wind across a surface", () => {
-  it("fades the surface and strokes every particle each frame, never clearing it", () => {
-    // Scenario: Trails that persist and fade.
+  it("draws short streaks from a clear surface, so nothing piles up", () => {
+    // Scenario: Trails that fade and never pile up.
     const ctx = recordingContext();
     const h = harness();
     const wind = createWind(asCanvas(fakeCanvas({ "2d": ctx })), {}, h.env);
     expect(wind.renderer).toBe("2d");
     wind.start();
-    for (let i = 0; i < 125; i++) h.advance(16);
-    expect(wind.frames).toBe(125);
-    expect(ctx.calls.filter((c) => c === "fillRect")).toHaveLength(125);
-    expect(ctx.calls.filter((c) => c === "stroke")).toHaveLength(125);
-    expect(ctx.calls).not.toContain("clearRect");
-    expect(ctx.rects[0]).toMatch(/^destination-out rgba\(0, 0, 0, 0\.0\d+\)$/);
-    expect(ctx.calls.filter((c) => c === "lineTo").length).toBe(125 * wind.particles);
+    const frames = 1250; // 20 seconds at 60 frames per second
+    for (let i = 0; i < frames; i++) h.advance(16);
+    expect(wind.frames).toBe(frames);
+
+    // Every frame starts from a clear surface; nothing is left to fade by painting over it.
+    expect(ctx.calls.filter((c) => c === "clearRect")).toHaveLength(frames);
+    expect(ctx.calls).not.toContain("fillRect");
+
+    // No streak is longer than its tail: what a frame draws is bounded by the particles' tails.
+    const length = (line: number[]) => {
+      let sum = 0;
+      for (let i = 2; i < line.length; i += 2) {
+        sum += Math.hypot(line[i]! - line[i - 2]!, line[i + 1]! - line[i - 1]!);
+      }
+      return sum;
+    };
+    const drawn = ctx.lines.reduce((sum, line) => sum + length(line), 0);
+    expect(drawn / frames).toBeLessThanOrEqual(wind.particles * (TAIL + 2 * SPACING));
+    for (const line of ctx.lines) expect(length(line)).toBeLessThanOrEqual(TAIL + 2 * SPACING);
+
+    // Streaks fade: the head of one in mid-life is the most opaque thing drawn, and fainter steps
+    // exist along the tails and at the ends of ranges.
+    expect(Math.max(...ctx.alphas)).toBeLessThanOrEqual(ALPHA + 1e-9);
+    expect(Math.min(...ctx.alphas)).toBeLessThan(ALPHA / 4);
+
+    // After 20 seconds every particle has travelled its range at least once and started again:
+    // the wind is still blowing.
+    const last = ctx.calls.lastIndexOf("clearRect");
+    expect(ctx.calls.slice(last).filter((c) => c === "stroke").length).toBeGreaterThan(0);
     expect(ctx.strokeStyle).toBe("#22d3ee");
     wind.destroy();
     expect(h.pending()).toBe(0);
