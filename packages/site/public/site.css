@@ -152,9 +152,15 @@ body {
   object-position: center bottom;
 }
 
-/* Once the sea draws, the still picture beneath it steps aside. */
-html.sea .sea-still {
+/* Once the sea draws, the still picture beneath it steps aside for the canvas, which stays out of
+   sight until then: without the script, or without WebGL2 and Canvas 2D, the picture remains. */
+html.sea .sea-still,
+.sea-canvas {
   visibility: hidden;
+}
+
+html.sea .sea-canvas {
+  visibility: visible;
 }
 
 /* The mark sails on the band: where the still picture rests it, and, once the sea draws, where
