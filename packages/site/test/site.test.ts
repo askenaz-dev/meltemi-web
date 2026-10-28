@@ -1,11 +1,17 @@
 // The checks of the specification `product-site`. Each one reads the files of `public/` and
 // reports every offender by page and address, so a failure says what to fix. No network.
 
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+import { STATES, type SeaState } from "../../ocean/src/index.js";
+import { BUILT, buildSite, stillColours } from "../scripts/build.js";
 import {
   ALL_HTML,
   FILES,
   PAGES,
+  PUBLIC,
   anchors,
   externalLinks,
   fileOfUrl,
@@ -539,7 +545,7 @@ describe("the downloads page tells verification as it is", () => {
 
 describe("the agents pages point to the guide for a model of your own, honestly", () => {
   const GUIDE = "https://github.com/askenaz-dev/meltemi/blob/main/docs/local-models.md";
-  const SECTION = '<section aria-labelledby="model">';
+  const SECTION = '<section aria-labelledby="model"';
   // The IDE's old lint refused the first eleven in its copy. The guide itself names the last three:
   // it may, as interoperability data, and a section that links it may not.
   const THIRD_PARTY = [
@@ -817,5 +823,250 @@ describe("the sea's styles", () => {
 
   it("name a rule that hides a section without the marker", () => {
     expect(hiddenOutsideMotion("[data-reveal] { opacity: 0; }")).toEqual(["[data-reveal]"]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+/** The pages whose hero moves, and the state each one draws; every other page is still. */
+const ANIMATED: Readonly<Record<string, SeaState>> = {
+  "/": "home",
+  "/ide/": "ide",
+  "/ide/method/": "ide",
+  "/ide/agents/": "ide",
+  "/ide/downloads/": "ide",
+  "/diagrams/": "diagrams",
+};
+
+const PAUSE_LABELS = {
+  en: { pause: "Pause animation", play: "Play animation" },
+  es: { pause: "Pausar animación", play: "Reanudar animación" },
+};
+
+/** The state a page declares on its `<body>`, or undefined. */
+export function seaState(html: string): string | undefined {
+  return tags(html).find((t) => t.name === "body")?.attrs["data-sea"];
+}
+
+/** The markup of a page's hero: from its opening to the first `</div>` at its indentation. */
+function heroOf(html: string): string {
+  const open = html.search(/<div class="hero[ "]/);
+  if (open < 0) return "";
+  const indent = html.slice(html.lastIndexOf("\n", open) + 1, open);
+  const close = html.indexOf(`\n${indent}</div>`, open);
+  return html.slice(open, close < 0 ? undefined : close);
+}
+
+/** What a page's hero lacks for the state it declares, in words that say what to fix. */
+export function heroProblems(html: string, url: string): string[] {
+  const state = seaState(html);
+  if (state === undefined) return ["no data-sea on <body>"];
+  if (!(STATES as readonly string[]).includes(state)) {
+    return [`data-sea="${state}" is not one of ${STATES.join(", ")}`];
+  }
+  const expected = ANIMATED[isSpanish(url) ? twinUrl(url) : url] ?? "still";
+  const problems: string[] = [];
+  if (state !== expected) problems.push(`data-sea="${state}" where the page draws "${expected}"`);
+  const hero = tags(heroOf(html));
+  const has = (name: string, attr: string, value: string) =>
+    hero.some((t) => t.name === name && t.attrs[attr] === value);
+  if (!hero.length) return [...problems, "no hero"];
+  if (!has("img", "src", `/assets/sea-${state}-light.svg`)) {
+    problems.push(`no still picture /assets/sea-${state}-light.svg`);
+  }
+  if (!has("source", "srcset", `/assets/sea-${state}-dark.svg`)) {
+    problems.push(`no still picture /assets/sea-${state}-dark.svg`);
+  }
+  const script = tags(html).some(
+    (t) => t.name === "script" && t.attrs["src"] === "/assets/site.js",
+  );
+  if (state === "still") {
+    if (has("canvas", "class", "sea-canvas")) problems.push("a canvas on a still page");
+    if (script) problems.push("a script on a still page");
+    return problems;
+  }
+  if (!has("canvas", "class", "sea-canvas")) problems.push("no hero canvas");
+  if (!has("div", "class", "sea-mark")) problems.push("no mark");
+  if (!has("button", "class", "sea-pause")) problems.push("no pause button");
+  if (!script) problems.push("no /assets/site.js");
+  return problems;
+}
+
+/** A mark's drawing: its paths' data, its gradient's stops, and any filter it carries. */
+function markOf(svg: string): { paths: string[]; stops: string[]; filters: number } {
+  const found = tags(svg);
+  return {
+    paths: found.filter((t) => t.name === "path").map((t) => t.attrs["d"] ?? ""),
+    stops: found
+      .filter((t) => t.name === "stop")
+      .map((t) => `${t.attrs["offset"]} ${(t.attrs["stop-color"] ?? "").toLowerCase()}`),
+    filters: found.filter((t) => t.name === "filter" || "filter" in t.attrs).length,
+  };
+}
+
+/** How a page's mark differs from the brand file's: paths, stops or a filter. */
+export function markDifferences(html: string, brand: string): string[] {
+  const hero = heroOf(html);
+  const at = hero.indexOf(`<div class="sea-mark">`);
+  if (at < 0) return [];
+  const mine = markOf(hero.slice(at, hero.indexOf("</svg>", at)));
+  const theirs = markOf(brand);
+  const differences: string[] = [];
+  if (mine.paths.join("|") !== theirs.paths.join("|")) differences.push("its paths");
+  if (mine.stops.join("|") !== theirs.stops.join("|")) differences.push("its gradient stops");
+  if (mine.filters) differences.push("a filter");
+  return differences;
+}
+
+/** The pause button's labels against the page's language. */
+export function labelProblems(html: string, url: string): string[] {
+  const button = tags(heroOf(html)).find((t) => t.name === "button");
+  if (!button) return [];
+  const want = PAUSE_LABELS[isSpanish(url) ? "es" : "en"];
+  const text = /<button[^>]*>([^<]*)<\/button>/.exec(heroOf(html))?.[1]?.trim();
+  const problems: string[] = [];
+  if (button.attrs["data-label-pause"] !== want.pause) problems.push("its pause label");
+  if (button.attrs["data-label-play"] !== want.play) problems.push("its play label");
+  if (text !== want.pause) problems.push("its text");
+  if (button.attrs["aria-pressed"] !== "false") problems.push("aria-pressed");
+  if (button.attrs["type"] !== "button") problems.push("its type");
+  return problems;
+}
+
+/** Whether a text is one SVG element whose tags all close, with nothing after it. */
+export function wellFormedSvg(text: string): boolean {
+  const body = text.trim().replace(/<\?xml[^>]*\?>\s*/, "");
+  if (!body.startsWith("<svg")) return false;
+  const open: string[] = [];
+  let rest = body;
+  for (const m of body.matchAll(/<(\/?)([a-zA-Z][\w:-]*)(?:\s[^<>]*?)?(\/?)>|[<>]/g)) {
+    if (m[0] === "<" || m[0] === ">") return false;
+    if (m[3]) {
+      if (!open.length) return false;
+    } else if (m[1]) {
+      if (open.pop() !== m[2]) return false;
+    } else {
+      open.push(m[2]!);
+    }
+    rest = body.slice(m.index + m[0].length);
+    if (!open.length) break;
+  }
+  return open.length === 0 && rest.trim() === "";
+}
+
+describe("a sea in every hero", () => {
+  const brand = read("media/meltemi-mark-gradient.svg");
+  const heroPages = PAGES.concat("404.html");
+
+  it("puts the hero every page's state asks for", () => {
+    const offenders = heroPages.flatMap((file) =>
+      heroProblems(read(file), pageUrl(file)).map((p) => `${pageUrl(file)}: ${p}`),
+    );
+    expect(offenders, "pages without their sea").toEqual([]);
+  });
+
+  it("gives the six product pages and their twins a moving sea", () => {
+    const moving = PAGES.filter((f) => seaState(read(f)) !== "still")
+      .map(pageUrl)
+      .sort();
+    const expected = Object.keys(ANIMATED)
+      .flatMap((u) => [u, twinUrl(u)])
+      .sort();
+    expect(moving).toEqual(expected);
+  });
+
+  it("declares the same state on both twins", () => {
+    const offenders = PAGES.filter((file) => {
+      const twin = fileOfUrl(twinUrl(pageUrl(file)));
+      return fileSet.has(twin) && seaState(read(file)) !== seaState(read(twin));
+    }).map(pageUrl);
+    expect(offenders, "pages whose twins draw another sea").toEqual([]);
+  });
+
+  it("keeps the mark the brand's: the same paths and stops, no filter", () => {
+    const offenders = heroPages.flatMap((file) =>
+      markDifferences(read(file), brand).map((d) => `${pageUrl(file)}: ${d}`),
+    );
+    expect(offenders, "marks that drift from media/meltemi-mark-gradient.svg").toEqual([]);
+  });
+
+  it("labels the pause button in the page's language", () => {
+    const offenders = PAGES.flatMap((file) =>
+      labelProblems(read(file), pageUrl(file)).map((p) => `${pageUrl(file)}: ${p}`),
+    );
+    expect(offenders, "pause buttons labelled in another language").toEqual([]);
+  });
+
+  const home = read("index.html");
+
+  it("names the page and what is missing", () => {
+    const withoutCanvas = home.replace(`<canvas class="sea-canvas"></canvas>`, "");
+    expect(heroProblems(withoutCanvas, "/")).toEqual(["no hero canvas"]);
+    const withoutStill = home.replace(/<img class="sea-still"[^>]*>/, "");
+    expect(heroProblems(withoutStill, "/")).toEqual([
+      "no still picture /assets/sea-home-light.svg",
+    ]);
+  });
+
+  it("refuses a state outside the four, and a state that is not the page's", () => {
+    expect(heroProblems(home.replace(`data-sea="home"`, `data-sea="storm"`), "/")).toEqual([
+      `data-sea="storm" is not one of ${STATES.join(", ")}`,
+    ]);
+    expect(heroProblems(home.replace(`data-sea="home"`, `data-sea="ide"`), "/")[0]).toBe(
+      `data-sea="ide" where the page draws "home"`,
+    );
+  });
+
+  it("names a mark that drifts from the brand", () => {
+    const drifted = home
+      .replace(`stop-color="#22D3EE"`, `stop-color="#ff00ff"`)
+      .replace(`<path class="sea-mark-hull"`, `<path filter="url(#glow)" class="sea-mark-hull"`);
+    expect(markDifferences(drifted, brand)).toEqual(["its gradient stops", "a filter"]);
+    expect(markDifferences(home.replace("M45 199C87", "M45 199C88"), brand)).toEqual(["its paths"]);
+  });
+
+  it("names a button labelled in another language", () => {
+    const spanish = read("es/index.html");
+    expect(labelProblems(spanish, "/")).toEqual(["its pause label", "its play label", "its text"]);
+  });
+});
+
+describe("the still pictures the build writes", () => {
+  const built = mkdtempSync(join(tmpdir(), "meltemi-site-"));
+  const ready = buildSite(PUBLIC, built);
+  afterAll(() => rmSync(built, { recursive: true, force: true }));
+
+  it("writes every state's picture in both schemes, well formed", async () => {
+    await ready;
+    const stills = BUILT.filter((f) => f.endsWith(".svg"));
+    expect(stills).toHaveLength(STATES.length * 2);
+    const offenders = stills.filter((file) => {
+      const text = readFileSync(join(built, file), "utf8");
+      return text.length === 0 || !wellFormedSvg(text);
+    });
+    expect(offenders, "still pictures missing, empty or not well-formed SVG").toEqual([]);
+  });
+
+  it("colours them with the tokens of each scheme", async () => {
+    await ready;
+    expect(stillColours(PUBLIC, "light")).toEqual({
+      point: "#2563eb",
+      crest: "#22d3ee",
+      wind: "#2563eb",
+    });
+    const dark = readFileSync(join(built, "assets/sea-home-dark.svg"), "utf8");
+    const { point, crest } = stillColours(PUBLIC, "dark");
+    expect(dark).toContain(`fill="${point}"`);
+    expect(dark).toContain(`fill="${crest}"`);
+  });
+
+  it("tells a picture that is not well-formed SVG", () => {
+    expect(wellFormedSvg(`<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>`)).toBe(
+      true,
+    );
+    expect(wellFormedSvg("")).toBe(false);
+    expect(wellFormedSvg(`<svg><g></svg>`)).toBe(false);
+    expect(wellFormedSvg(`<svg></svg><svg></svg>`)).toBe(false);
+    expect(wellFormedSvg(`<html></html>`)).toBe(false);
   });
 });

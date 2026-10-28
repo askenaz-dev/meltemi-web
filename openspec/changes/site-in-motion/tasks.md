@@ -39,7 +39,7 @@
   - the reveal and pause-button styles, with every hidden state scoped under `html.motion`.
 
   Verify the new tests that hero rules use tokens only and that no rule hides content outside `html.motion`.
-- [ ] 3.2 Put the hero on every product page in both languages: the canvas, the inline mark copied from the IDE's brand file, the still pictures `/assets/sea-<state>-light.svg` and `-dark.svg` in a `<picture>`, `data-sea`, and the pause button with its labels in the page's language. Give the legal pages and the 404 `data-sea="still"` with their still picture and no script. Have the build write the still pictures. Verify the tests that every product page has its hero, twins declare the same state, the mark's paths and stops equal the brand file's, and the button labels match the language.
+- [x] 3.2 Put the hero on every product page in both languages: the canvas, the inline mark copied from the IDE's brand file, the still pictures `/assets/sea-<state>-light.svg` and `-dark.svg` in a `<picture>`, `data-sea`, and the pause button with its labels in the page's language. Give the legal pages and the 404 `data-sea="still"` with their still picture and no script. Have the build write the still pictures. Verify the tests that every product page has its hero, twins declare the same state, the mark's paths and stops equal the brand file's, and the button labels match the language.
 - [ ] 3.3 In `src/site.ts`:
   - the `html.motion` marker after the reduced-motion check;
   - Motion's `scroll()` feeding `setProgress` and `setWind`;

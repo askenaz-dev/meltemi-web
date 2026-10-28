@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="/tokens.css" />
     <link rel="stylesheet" href="/site.css" />
   </head>
-  <body>
+  <body data-sea="ide">
     <header class="top">
       <div class="wrap">
         <a class="brand" href="/">
@@ -33,7 +33,26 @@
       </div>
     </header>
 
-    <div class="hero">
+    <div class="hero sea">
+      <div class="sea-stage" aria-hidden="true">
+        <picture>
+          <source srcset="/assets/sea-ide-dark.svg" media="(prefers-color-scheme: dark)" />
+          <img class="sea-still" src="/assets/sea-ide-light.svg" alt="" />
+        </picture>
+        <canvas class="sea-canvas"></canvas>
+        <div class="sea-mark">
+          <svg viewBox="0 0 256 256" focusable="false">
+            <defs>
+              <linearGradient id="sea-mark-gradient" x1="38" y1="222" x2="219" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#2563EB" />
+                <stop offset="1" stop-color="#22D3EE" />
+              </linearGradient>
+            </defs>
+            <path class="sea-mark-m" pathLength="1" d="M43 178C43 125 57 100 78 100C99 100 109 127 109 176C109 105 132 67 158 67C185 67 199 97 196 132C194 154 185 169 172 177C189 176 205 166 217 152C224 144 230 133 234 122" fill="none" stroke="url(#sea-mark-gradient)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" />
+            <path class="sea-mark-hull" d="M45 199C87 211 145 215 202 189C195 204 177 216 151 220C106 226 67 215 45 199Z" fill="url(#sea-mark-gradient)" />
+          </svg>
+        </div>
+      </div>
       <div class="wrap">
         <h1>The spec-driven control plane for agentic development</h1>
         <p class="motto">One heading, many sails.</p>
@@ -51,10 +70,11 @@
         <p class="release-note">Every release is on <a href="https://github.com/askenaz-dev/meltemi/releases/latest">GitHub</a>.</p>
         <!-- /ide-release -->
       </div>
+      <button class="sea-pause" type="button" aria-pressed="false" hidden data-label-pause="Pause animation" data-label-play="Play animation">Pause animation</button>
     </div>
 
     <main class="wrap">
-      <section aria-labelledby="what">
+      <section aria-labelledby="what" data-reveal>
         <h2 id="what">One product, two surfaces, three platforms</h2>
         <p>
           A headless daemon holds every capability. Two thin clients consume it over
@@ -90,7 +110,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="byo">
+      <section aria-labelledby="byo" data-reveal>
         <h2 id="byo">Bring your own agent, key and model</h2>
         <p>
           No credits, no fees, no lock-in. Meltemi runs the official binaries of the
@@ -128,7 +148,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="surfaces">
+      <section aria-labelledby="surfaces" data-reveal>
         <h2 id="surfaces">The surfaces, as they actually render</h2>
         <figure>
           <img
@@ -157,7 +177,7 @@
         </figure>
       </section>
 
-      <section aria-labelledby="state">
+      <section aria-labelledby="state" data-reveal>
         <h2 id="state">Honest state, before 1.0</h2>
         <div class="notice">
           <strong><span aria-hidden="true">▲</span> Pre-1.0.</strong> The contract
@@ -210,7 +230,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="not">
+      <section aria-labelledby="not" data-reveal>
         <h2 id="not">What Meltemi is not</h2>
         <p>
           Not a general-purpose editor: the code surface is utilitarian, in service
@@ -240,5 +260,6 @@
         </span>
       </div>
     </footer>
+    <script type="module" src="/assets/site.js"></script>
   </body>
 </html>

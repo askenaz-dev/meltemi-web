@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="/tokens.css" />
     <link rel="stylesheet" href="/site.css" />
   </head>
-  <body>
+  <body data-sea="still">
     <header class="top">
       <div class="wrap">
         <a class="brand" href="/">
@@ -26,7 +26,13 @@
       </div>
     </header>
 
-    <div class="hero">
+    <div class="hero sea calm">
+      <div class="sea-stage" aria-hidden="true">
+        <picture>
+          <source srcset="/assets/sea-still-dark.svg" media="(prefers-color-scheme: dark)" />
+          <img class="sea-still" src="/assets/sea-still-light.svg" alt="" />
+        </picture>
+      </div>
       <div class="wrap">
         <h1>Page not found</h1>
         <p>
