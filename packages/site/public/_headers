@@ -1,6 +1,15 @@
 /*
-  Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types 'none'
   Referrer-Policy: strict-origin-when-cross-origin
   X-Content-Type-Options: nosniff
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000
+
+/assets/site.js
+  Cache-Control: public, max-age=300
+
+/assets/sea-*
+  Cache-Control: public, max-age=300
+
+/assets/chunk-*
+  Cache-Control: public, max-age=31536000, immutable

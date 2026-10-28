@@ -87,6 +87,15 @@ describe("ci.yml", () => {
     }
   });
 
+  it("drives the site in the runner's Chrome, after a clean install", () => {
+    const job = text.slice(at(text, "\n  browser:"), at(text, "\n  infrastructure:"));
+    expect(job).toMatch(/runs-on: ubuntu-latest/);
+    expect(job).not.toMatch(/matrix:/);
+    expect(at(job, "run: pnpm install --frozen-lockfile")).toBeLessThan(
+      at(job, "run: pnpm site:browser"),
+    );
+  });
+
   it("checks the infrastructure without credentials: formatting, validity, the mocked stages", () => {
     at(text, "terraform fmt -check -recursive");
     at(text, "terraform init -backend=false");
@@ -140,10 +149,46 @@ describe("deploy.yml", () => {
 describe("release.yml", () => {
   const text = read("release.yml");
 
+  /** The publish job's step that runs `needle`, from its `- ` to the next step. */
+  const stepOf = (needle: string) => {
+    const index = at(text, needle);
+    const start = text.lastIndexOf("\n      - ", index);
+    const end = text.indexOf("\n      - ", index);
+    return text.slice(start, end < 0 ? undefined : end);
+  };
+
   it("runs on version tags and checks the tag before anything is published", () => {
-    expect(text).toMatch(/tags: \["v\*"\]/);
+    expect(text).toMatch(/tags: \["v\*", "ocean-v\*"\]/);
     expect(at(text, "scripts/release-tag.mjs")).toBeLessThan(at(text, "npm publish"));
     expect(text).toMatch(/publish:\n\s+needs: check/);
+  });
+
+  it("checks each tag against its own package: v the identity, ocean-v the ocean", () => {
+    at(
+      text,
+      'ocean-v*) node scripts/release-tag.mjs "$GITHUB_REF_NAME" packages/ocean/package.json ocean-v ;;',
+    );
+    at(
+      text,
+      '*) node scripts/release-tag.mjs "$GITHUB_REF_NAME" packages/identity/package.json ;;',
+    );
+  });
+
+  it("builds and publishes only the package its tag names", () => {
+    for (const [name, prefix] of [
+      ["identity", "v"],
+      ["ocean", "ocean-v"],
+    ] as const) {
+      const guard = `if: startsWith(github.ref_name, '${prefix}')`;
+      expect(stepOf(`pnpm --filter @meltemi/${name} run build`), name).toContain(guard);
+      const publish = stepOf(`name: Publish @meltemi/${name}`);
+      expect(publish, name).toContain(guard);
+      expect(publish, name).toContain(`working-directory: packages/${name}`);
+      expect(publish.indexOf(`npm view "@meltemi/${name}@\${version}" version`), name).toBeLessThan(
+        publish.indexOf("npm publish --access public --provenance"),
+      );
+    }
+    expect(stepOf("name: GitHub release")).toContain("if: startsWith(github.ref_name, 'v')");
   });
 
   it("publishes with provenance, skipping a version npm already has", () => {

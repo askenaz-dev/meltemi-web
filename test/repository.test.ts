@@ -82,6 +82,8 @@ describe("the public repository", () => {
     "Thumbs.db",
     ".DS_Store",
     "packages/identity/wrangler.deploy.json",
+    "packages/site/public/assets/site.js",
+    "packages/site/public/assets/sea-home.svg",
   ])("ignores %s", (path) => {
     expect(ignored(rules, path)).toBe(true);
   });
@@ -93,6 +95,9 @@ describe("the public repository", () => {
     "packages/infra/main.tf",
     "packages/identity/wrangler.jsonc",
     "packages/identity/src/worker.ts",
+    "packages/site/public/index.html",
+    "packages/site/public/media/meltemi-mark-gradient.svg",
+    "packages/site/src/site.ts",
     "LICENSE",
   ])("keeps %s", (path) => {
     expect(ignored(rules, path)).toBe(false);

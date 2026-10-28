@@ -1,8 +1,8 @@
 name: CI
 
 # Every push to main and every pull request: the types, the style, the build and the tests of the
-# whole workspace, and the infrastructure's own checks. Nothing here deploys, publishes or reads a
-# secret.
+# whole workspace, the site in a browser, and the infrastructure's own checks. Nothing here
+# deploys, publishes or reads a secret.
 
 on:
   push:
@@ -37,6 +37,21 @@ jobs:
       - run: pnpm lint
       - run: pnpm build
       - run: pnpm test
+
+  browser:
+    name: The site in Chrome (pnpm site:browser)
+    # The pages in the runner's installed Chrome, served by wrangler dev on 127.0.0.1: no console
+    # error, no policy violation, no request beyond the runner, and the motion of site-motion.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm site:browser
 
   infrastructure:
     name: Terraform (formatting, validity, tests with mocked providers)

@@ -5,6 +5,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ASSETS, BUILT } from "../scripts/build.js";
 
 export const PUBLIC = fileURLToPath(new URL("../public/", import.meta.url));
 
@@ -19,7 +20,11 @@ export function walk(dir = PUBLIC, prefix = ""): string[] {
   return found;
 }
 
-export const FILES = walk();
+/**
+ * The files of `public/`: what is committed, and what the build writes into `public/assets/`,
+ * whether or not a build has run (`scripts/build.ts` declares its outputs).
+ */
+export const FILES = [...walk().filter((f) => !f.startsWith(`${ASSETS}/`)), ...BUILT].sort();
 export const fileSet = new Set(FILES);
 
 export function read(file: string): string {

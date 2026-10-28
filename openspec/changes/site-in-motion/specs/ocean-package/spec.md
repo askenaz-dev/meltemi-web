@@ -67,11 +67,11 @@ Given the mark's element, the package SHALL only set its transform: a translatio
 - **THEN** the package's tests fail naming the attribute
 
 ### Requirement: Still pictures from the same sea
-`stillPicture(state)` SHALL return a well-formed SVG of the state at rest of at most 30 KB. Its colours SHALL follow `prefers-color-scheme` from the brand's tokens, with the brand's values as fallbacks. It SHALL contain no script and no reference to another file.
+`stillPicture(state, { scheme, colours })` SHALL return a well-formed SVG of the state at rest of at most 30 KB, for the light or the dark scheme, in the colours it is given, with the brand's values as fallbacks. It SHALL carry its colours as attributes, contain no script, no style element and no reference to another file, so a page's Content-Security-Policy never blocks it.
 
 #### Scenario: A still picture
 - **WHEN** a test renders the still picture of every state
-- **THEN** each parses as SVG, weighs at most 30 KB, holds a dark and a light colour rule, and has no `<script>`, `href` or `url(` to another file
+- **THEN** each parses as SVG, weighs at most 30 KB in both schemes, carries the colours it was given, and has no `<script>`, `<style>`, `href` or `url(` to another file
 
 #### Scenario: An oversize picture
 - **WHEN** a change makes a still picture exceed 30 KB

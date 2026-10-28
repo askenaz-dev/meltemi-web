@@ -20,6 +20,7 @@
     "identity:migrate": "pnpm --filter @meltemi/identity run migrate",
     "identity:keys": "node packages/identity/scripts/keys.mjs",
     "site:dev": "pnpm --filter @meltemi/site --fail-if-no-match run dev",
+    "site:browser": "pnpm --filter @meltemi/site --fail-if-no-match run browser",
     "site:tokens": "pnpm --filter @meltemi/site --fail-if-no-match run tokens",
     "infra:fmt": "pnpm --filter @meltemi/infra --fail-if-no-match run fmt",
     "infra:validate": "pnpm --filter @meltemi/infra --fail-if-no-match run validate",

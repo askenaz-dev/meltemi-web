@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="/tokens.css" />
     <link rel="stylesheet" href="/site.css" />
   </head>
-  <body>
+  <body data-sea="ide">
     <header class="top">
       <div class="wrap">
         <a class="brand" href="/es/">
@@ -33,7 +33,26 @@
       </div>
     </header>
 
-    <div class="hero">
+    <div class="hero sea">
+      <div class="sea-stage" aria-hidden="true">
+        <picture>
+          <source srcset="/assets/sea-ide-dark.svg" media="(prefers-color-scheme: dark)" />
+          <img class="sea-still" src="/assets/sea-ide-light.svg" alt="" />
+        </picture>
+        <canvas class="sea-canvas"></canvas>
+        <div class="sea-mark">
+          <svg viewBox="0 0 256 256" focusable="false">
+            <defs>
+              <linearGradient id="sea-mark-gradient" x1="38" y1="222" x2="219" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#2563EB" />
+                <stop offset="1" stop-color="#22D3EE" />
+              </linearGradient>
+            </defs>
+            <path class="sea-mark-m" pathLength="1" d="M43 178C43 125 57 100 78 100C99 100 109 127 109 176C109 105 132 67 158 67C185 67 199 97 196 132C194 154 185 169 172 177C189 176 205 166 217 152C224 144 230 133 234 122" fill="none" stroke="url(#sea-mark-gradient)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" />
+            <path class="sea-mark-hull" d="M45 199C87 211 145 215 202 189C195 204 177 216 151 220C106 226 67 215 45 199Z" fill="url(#sea-mark-gradient)" />
+          </svg>
+        </div>
+      </div>
       <div class="wrap">
         <h1>El método es una herramienta, no un peaje</h1>
         <p>
@@ -43,10 +62,11 @@
           lo que hace su resultado revisable en vez de solo verosímil.
         </p>
       </div>
+      <button class="sea-pause" type="button" aria-pressed="false" hidden data-label-pause="Pausar animación" data-label-play="Reanudar animación">Pausar animación</button>
     </div>
 
     <main class="wrap">
-      <section aria-labelledby="loop">
+      <section aria-labelledby="loop" data-reveal>
         <h2 id="loop">El bucle</h2>
         <p>
           Todo cambio recorre el mismo arco corto. Lo trivial toma la vía rápida
@@ -102,7 +122,7 @@
         </div>
       </section>
 
-      <section aria-labelledby="ears">
+      <section aria-labelledby="ears" data-reveal>
         <h2 id="ears">Requisitos capaces de romper un build</h2>
         <p>
           Los requisitos se escriben en una forma acotada —un disparador, una
@@ -117,7 +137,7 @@
         </p>
       </section>
 
-      <section aria-labelledby="agentic">
+      <section aria-labelledby="agentic" data-reveal>
         <h2 id="agentic">Dónde encajan los agentes</h2>
         <p>
           El método es el mismo si escribes el cambio tú o si lo delegas. Meltemi
@@ -134,7 +154,7 @@
         </p>
       </section>
 
-      <section aria-labelledby="read">
+      <section aria-labelledby="read" data-reveal>
         <h2 id="read">Lee las fuentes íntegras</h2>
         <p>
           Nada de esto sustituye a los documentos primarios, y este sitio no los
@@ -173,5 +193,6 @@
         </span>
       </div>
     </footer>
+    <script type="module" src="/assets/site.js"></script>
   </body>
 </html>

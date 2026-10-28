@@ -2,13 +2,15 @@
 
 The product site of the Meltemi family, served at `meltemi.dev` as the static assets of a
 Cloudflare Worker with no code: hand-written HTML in English and Spanish, the IDE's design
-tokens, `_headers` and `_redirects`. No framework, no build step, no JavaScript: what is in
-`public/` is what is served.
+tokens, `_headers` and `_redirects`, and the sea in motion. No framework: the pages are what is in
+`public/`, and the build adds `public/assets/` (the module scripts bundled from `src/` and the
+still pictures of the sea), which Git ignores. Every word, link and download works without a
+script ([decision 0006](../../docs/decisions/0006-site-in-motion.md)).
 
 Written by the OpenSpec change
 [`product-site`](../../openspec/changes/product-site/proposal.md). The decisions are in
 [`docs/decisions/0001`](../../docs/decisions/0001-family-repositories.md) and
-[`0003`](../../docs/decisions/0003-family-web-on-cloudflare.md).
+[`0003`](../../docs/decisions/0003-family-web-on-cloudflare.md), amended by [`0006`](../../docs/decisions/0006-site-in-motion.md).
 
 ## Pages
 
@@ -32,9 +34,14 @@ English page, `es` at the Spanish one.
 ## Preview and checks
 
 ```bash
-pnpm site:dev     # wrangler dev on http://localhost:8789: clean URLs, _redirects and _headers as in production
+pnpm site:dev     # build, then wrangler dev on http://localhost:8789: clean URLs, _redirects and _headers as in production
 pnpm test         # the checks of the site, with the rest of the workspace
+pnpm site:browser # build, serve on 127.0.0.1 and drive the installed Chrome through every page
 ```
+
+`pnpm site:browser` needs Chrome installed, or `MELTEMI_BROWSER` naming a Chromium build. It
+downloads nothing, and a request beyond this machine fails it. Words after it run only the checks
+whose names contain them.
 
 The port is the `SITE_URL` the identity service's `.dev.vars` names, beside the identity service
 on 8787 and the Diagrams Worker on 8788.

@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="/tokens.css" />
     <link rel="stylesheet" href="/site.css" />
   </head>
-  <body>
+  <body data-sea="diagrams">
     <header class="top">
       <div class="wrap">
         <a class="brand" href="/es/">
@@ -32,7 +32,26 @@
       </div>
     </header>
 
-    <div class="hero">
+    <div class="hero sea">
+      <div class="sea-stage" aria-hidden="true">
+        <picture>
+          <source srcset="/assets/sea-diagrams-dark.svg" media="(prefers-color-scheme: dark)" />
+          <img class="sea-still" src="/assets/sea-diagrams-light.svg" alt="" />
+        </picture>
+        <canvas class="sea-canvas"></canvas>
+        <div class="sea-mark">
+          <svg viewBox="0 0 256 256" focusable="false">
+            <defs>
+              <linearGradient id="sea-mark-gradient" x1="38" y1="222" x2="219" y2="54" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#2563EB" />
+                <stop offset="1" stop-color="#22D3EE" />
+              </linearGradient>
+            </defs>
+            <path class="sea-mark-m" pathLength="1" d="M43 178C43 125 57 100 78 100C99 100 109 127 109 176C109 105 132 67 158 67C185 67 199 97 196 132C194 154 185 169 172 177C189 176 205 166 217 152C224 144 230 133 234 122" fill="none" stroke="url(#sea-mark-gradient)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" />
+            <path class="sea-mark-hull" d="M45 199C87 211 145 215 202 189C195 204 177 216 151 220C106 226 67 215 45 199Z" fill="url(#sea-mark-gradient)" />
+          </svg>
+        </div>
+      </div>
       <div class="wrap">
         <h1>Diagramas como código, ajustados en un lienzo</h1>
         <p class="motto">Código, disposición y movimiento, en archivos que revisas.</p>
@@ -49,10 +68,11 @@
           <a class="btn" href="https://github.com/askenaz-dev/meltemi-diagrams/tree/main/docs">Leer la documentación</a>
         </div>
       </div>
+      <button class="sea-pause" type="button" aria-pressed="false" hidden data-label-pause="Pausar animación" data-label-play="Reanudar animación">Pausar animación</button>
     </div>
 
     <main class="wrap">
-      <section aria-labelledby="what">
+      <section aria-labelledby="what" data-reveal>
         <h2 id="what">Texto que escribes, un lienzo que arrastras</h2>
         <p>
           Un diagrama es un archivo de texto plano en el lenguaje <code>.meltemi</code>. El código,
@@ -103,7 +123,7 @@ diagram overview: flow {
 }</code></pre>
       </section>
 
-      <section aria-labelledby="profiles">
+      <section aria-labelledby="profiles" data-reveal>
         <h2 id="profiles">Cuatro perfiles, un lenguaje</h2>
         <p>
           Cada diagrama declara su perfil, como en <code>diagram overview: flow</code>. Los cuatro
@@ -156,7 +176,7 @@ diagram overview: flow {
         </div>
       </section>
 
-      <section aria-labelledby="export">
+      <section aria-labelledby="export" data-reveal>
         <h2 id="export">Movimiento y formatos de exportación</h2>
         <p>
           Los efectos recorren los conectores: partículas, trazos en movimiento y pulsos. Las
@@ -232,7 +252,7 @@ diagram overview: flow {
         </p>
       </section>
 
-      <section aria-labelledby="import">
+      <section aria-labelledby="import" data-reveal>
         <h2 id="import">Si vienes de Mermaid o PlantUML</h2>
         <p>
           Los importadores leen Mermaid (<code>flowchart</code>, <code>sequenceDiagram</code>, los
@@ -245,7 +265,7 @@ diagram overview: flow {
         </p>
       </section>
 
-      <section aria-labelledby="install">
+      <section aria-labelledby="install" data-reveal>
         <h2 id="install">Instalación</h2>
         <p>
           La app no necesita instalación. La línea de comandos y el editor sirven para trabajar con
@@ -279,7 +299,7 @@ meltemi-diagrams export shop --format png</code></pre>
         </div>
       </section>
 
-      <section aria-labelledby="account">
+      <section aria-labelledby="account" data-reveal>
         <h2 id="account">No hace falta una cuenta</h2>
         <p>
           La app no necesita una cuenta. Funciona por completo en tu navegador, y tu trabajo se
@@ -377,7 +397,7 @@ meltemi-diagrams export shop --format png</code></pre>
         </p>
       </section>
 
-      <section aria-labelledby="docs">
+      <section aria-labelledby="docs" data-reveal>
         <h2 id="docs">Documentación y código</h2>
         <p>
           La documentación cubre los primeros pasos, el lenguaje, la línea de comandos, el editor,
@@ -401,5 +421,6 @@ meltemi-diagrams export shop --format png</code></pre>
         </span>
       </div>
     </footer>
+    <script type="module" src="/assets/site.js"></script>
   </body>
 </html>

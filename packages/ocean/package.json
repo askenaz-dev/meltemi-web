@@ -1,0 +1,46 @@
+{
+  "name": "@meltemi/ocean",
+  "version": "0.1.0",
+  "description": "The Meltemi family's sea in motion: a field of points in waves, the Etesian wind and the sailing mark, drawn with WebGL2 or Canvas 2D, with no dependency.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "keywords": [
+    "meltemi",
+    "webgl2",
+    "canvas",
+    "animation",
+    "sea"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/askenaz-dev/meltemi-web.git",
+    "directory": "packages/ocean"
+  },
+  "homepage": "https://github.com/askenaz-dev/meltemi-web/tree/main/packages/ocean#readme",
+  "bugs": {
+    "url": "https://github.com/askenaz-dev/meltemi-web/issues"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

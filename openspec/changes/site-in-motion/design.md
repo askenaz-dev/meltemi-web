@@ -72,13 +72,17 @@ pure wave function (D4).
 
 ### D2. The site's choreography uses Motion; the package uses no library
 
-**Choice.** `motion` 14.2.0 (MIT) drives three things:
+**Choice.** `motion` 14.2.0 (MIT) drives two things:
 - the scroll progress through the hero, with `scroll()`, which uses the browser's native scroll
   timelines where they exist;
-- the section reveals, with `inView` and `animate`;
-- the intro draw of the mark's stroke, by animating `stroke-dashoffset`.
+- the section reveals, with `inView`, which adds the class whose CSS transition raises a section.
 
-The site imports only those functions, bundled and self-hosted. `@meltemi/ocean` stays free of
+The intro draw of the mark's stroke is CSS keyframes on `stroke-dashoffset`, so it plays even if
+the script never arrives. They wait 0.4 s with the mark hidden; once the sea has put the mark on
+its wave, the script rewinds them to the end of that wait (`getAnimations()`), so the mark is
+never drawn in one place and then moved.
+
+The site imports only those two functions, bundled and self-hosted. `@meltemi/ocean` stays free of
 dependencies: it exposes `setProgress` and `setWind`, and the site feeds them.
 
 **Alternatives.**
@@ -153,10 +157,15 @@ Each page declares its state on its `<body>` as `data-sea="home|ide|diagrams|sti
 
 **Choice.** `packages/site` gains `src/` and a `build` script that runs esbuild 0.28.2 (MIT).
 - The entry is `src/site.ts`, built to `public/assets/site.js`, with a stable name the pages link.
-- Each sea state is a dynamic import, split by esbuild into a hashed `public/assets/chunk-*.js`.
-  A page therefore loads its own state only: the budget counts the entry, Motion and that one
-  chunk.
-- The build also writes `public/assets/sea-<state>.svg` from `stillPicture()`.
+- The sea is a dynamic import, split by esbuild into a hashed `public/assets/chunk-*.js`. The
+  entry, with Motion's two functions, stays small and runs first: it marks the document, wires
+  the reveals and the pause button, and only then imports the sea. The states are data in one
+  module, so there is nothing per state worth splitting: the budget counts the entry and the
+  chunks it imports (about 13 KB gzipped at the first build).
+- The build also writes `public/assets/sea-<state>-light.svg` and `sea-<state>-dark.svg` from
+  `stillPicture()`, in the colours of `tokens.css` for each scheme, and the pages choose between
+  them with `<picture>` and `prefers-color-scheme`. A picture carries its colours as attributes:
+  served under the site's policy, an SVG's own `<style>` would be blocked, so it has none.
 - Output is minified ES2022 with no source maps shipped.
 - `public/assets/` is ignored by Git. `pnpm -r build` reaches the site, so CI and `deploy.yml`
   build it before they test and upload, with no change to either workflow's build step.
@@ -248,6 +257,10 @@ or Chrome. On every page it checks:
 - a scheme switch recolours the sea;
 - a complete page with JavaScript off.
 
+The page tells the check what it draws through a read-only `window.meltemiSea`: the renderer, the
+state, the frames drawn, the figures, the progress, the wind, the quality and whether it is
+paused. It can change nothing, and it holds nothing the page does not already show.
+
 `ci.yml` gains a `browser` job on `ubuntu-latest`, where Chrome is installed.
 
 **Why outside `pnpm test`.** Vitest stays fast and free of browsers on the Windows and Node 22
@@ -271,7 +284,7 @@ The package README is the contract Diagrams' sister change consumes. It covers:
     `restyle()` re-reads `--sea-*`, so a page with its own scheme switch (the Diagrams
     playground has one) can recolour the sea without a media query;
   - `heightAt` and `slopeAt`;
-  - `stillPicture(state)`;
+  - `stillPicture(state, { scheme, colours })`, one picture per scheme;
   - `STATES`.
 - **The colours** it reads from the canvas's computed style: `--sea-bg`, `--sea-point`,
   `--sea-crest` and `--sea-wind`, falling back to the brand's values.

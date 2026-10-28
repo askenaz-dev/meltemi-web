@@ -34,7 +34,9 @@ Nothing is configured or deployed from a machine ([decision 0004](docs/decisions
   in a dashboard shows up as the issue "Infrastructure drift".
 - **Code** reaches production when it reaches `main`: `deploy.yml` applies the identity
   migrations and uploads the identity Worker and the site.
-- **The package** is released by pushing a tag `v<x.y.z>` equal to `packages/identity`'s version:
-  `release.yml` publishes `@meltemi/identity` with provenance and creates the GitHub release.
+- **The packages** are released by pushing a tag equal to their version: `v<x.y.z>` for
+  `packages/identity`, which `release.yml` publishes as `@meltemi/identity` with provenance and a
+  GitHub release, and `ocean-v<x.y.z>` for `packages/ocean`, published as `@meltemi/ocean` with
+  provenance.
 - **Secrets** are never typed into a Worker: they live in the Secrets Store, generated or received
   by Terraform. The values only a person can obtain are the bootstrap of `packages/infra/README.md`.

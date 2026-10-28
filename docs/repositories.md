@@ -104,6 +104,15 @@ events are such fetches.
    start this repository's workflows and cannot write its code; until one exists, the owner chose
    on 2026-10-23 to pass `GH_ADMIN_TOKEN`, which can do far more. The notice carries no data.
 
+6. **The motion package** (change `site-in-motion`, [decision 0006](decisions/0006-site-in-motion.md)):
+   `@meltemi/ocean`, built in `packages/ocean`, draws the family's sea, wind and sailing mark with
+   WebGL2 or Canvas 2D and gives still pictures for pages where nothing moves. It has no
+   dependency, makes no request and keeps nothing. The site bundles it from its sources; products
+   install the published package, which this repository's release workflow publishes with
+   provenance on tags `ocean-v<x.y.z>`, and dress it in their own tokens through four CSS
+   properties. The [package README](../packages/ocean/README.md) is the full contract. Meltemi
+   Diagrams wears it on the playground's load screen and empty canvas (its change `playground-sea`).
+
 Each product owns its own data, API, storage and quotas. The identity service never holds a
 product's data and never receives a provider's token from a product.
 

@@ -82,7 +82,7 @@ Every animated page SHALL carry a keyboard-reachable button in its own language 
 - **THEN** `pnpm test` fails naming the page
 
 ### Requirement: Still pictures where nothing can move
-Every page SHALL show its sea state's still picture behind the drawing. When JavaScript is off, or when neither WebGL2 nor Canvas 2D is available, that still picture SHALL remain, and every word, link and download of the page SHALL work.
+Every page SHALL show its sea state's still picture behind the drawing, the light or the dark one as `prefers-color-scheme` says. When JavaScript is off, or when neither WebGL2 nor Canvas 2D is available, that still picture SHALL remain, and every word, link and download of the page SHALL work.
 
 #### Scenario: JavaScript off
 - **WHEN** the browser check opens every page with JavaScript disabled

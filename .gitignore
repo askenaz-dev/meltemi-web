@@ -6,6 +6,9 @@ dist/
 .DS_Store
 Thumbs.db
 
+# What the site's build writes: the bundled scripts and the still pictures (decision 0006).
+packages/site/public/assets/
+
 # The Worker configuration the deploy workflow writes from wrangler.jsonc and Terraform's ids.
 wrangler.deploy.json
 
