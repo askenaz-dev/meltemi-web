@@ -34,9 +34,14 @@ English page, `es` at the Spanish one.
 ## Preview and checks
 
 ```bash
-pnpm site:dev     # wrangler dev on http://localhost:8789: clean URLs, _redirects and _headers as in production
+pnpm site:dev     # build, then wrangler dev on http://localhost:8789: clean URLs, _redirects and _headers as in production
 pnpm test         # the checks of the site, with the rest of the workspace
+pnpm site:browser # build, serve on 127.0.0.1 and drive the installed Chrome through every page
 ```
+
+`pnpm site:browser` needs Chrome installed, or `MELTEMI_BROWSER` naming a Chromium build. It
+downloads nothing, and a request beyond this machine fails it. Words after it run only the checks
+whose names contain them.
 
 The port is the `SITE_URL` the identity service's `.dev.vars` names, beside the identity service
 on 8787 and the Diagrams Worker on 8788.
