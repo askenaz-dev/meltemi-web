@@ -53,6 +53,35 @@ describe("named sea states", () => {
     expect(sails.length).toBe(end.figures.sails);
   });
 
+  it("keeps the IDE's sails out of the mark's clear space, at every width and moment", () => {
+    for (const [width, height, mark] of [
+      [1280, 446, 90],
+      [390, 300, 56],
+      [1920, 560, 104],
+    ] as const) {
+      const wide = viewOf(width, height);
+      for (const progress of [0, 0.3, 0.6, 1]) {
+        for (const t of [0, 1.7, 4.2, 9]) {
+          const { shapes, clearSpace } = compose({
+            view: wide,
+            t,
+            state: "ide",
+            progress,
+            wind: 0.8,
+            particles: [],
+            mark: { width: mark, height: mark },
+          });
+          const left = clearSpace!.left * width;
+          for (const s of shapes) {
+            if (s.kind !== "triangle") continue;
+            const reach = Math.max(s.points[0]!, s.points[2]!, s.points[4]!);
+            expect(reach, `${width}px at ${progress}, t ${t}`).toBeLessThan(left);
+          }
+        }
+      }
+    }
+  });
+
   it("draws the Diagrams flow as links that appear with progress", () => {
     expect(scene("diagrams", 0).figures.links).toBe(0);
     expect(scene("diagrams", 0.5).figures.links).toBeGreaterThan(0);

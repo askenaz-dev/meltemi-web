@@ -49,9 +49,16 @@ const ramp = (p: number, from: number, to: number) => ease((p - from) / (to - fr
 /** How the following sails scatter from the mark's heading at progress 0, in degrees. */
 export const SCATTER = [22, -17, 25, -12, 19] as const;
 
-/** Where the following sails sail, behind the mark: back along x and further away in z. */
-const SAIL_BEHIND = [0.42, 0.84, 1.26, 1.68, 2.1] as const;
+/**
+ * Where the following sails sail: in the mark's wake, on the screen, behind its clear space by
+ * these many mark widths (closer together where the canvas runs out), and further away by these
+ * depths. Placing them on the screen keeps them out of the clear space whatever the perspective.
+ */
+const SAIL_WAKE = [0.15, 0.6, 1.05, 1.5, 1.95] as const;
 const SAIL_DEPTH = [0.55, 1.1, 0.25, 1.6, 0.9] as const;
+
+/** How far right of its base a sail reaches, in mark widths, at any heading it takes. */
+const SAIL_REACH = 0.2;
 
 /** The Diagrams flow: three nodes ahead of the mark, three points each. */
 const NODE_AHEAD = [0.75, 1.35, 1.95] as const;
@@ -112,9 +119,13 @@ export function compose(input: SceneInput): Scene {
 
   // The IDE's following sails: they converge on the mark's heading as the page scrolls.
   let spread = 0;
+  const wakeStart = keel.sx - markWidth / 2 - margin - markWidth * SAIL_REACH;
+  const wakeRoom = Math.max(0, wakeStart - markWidth * SAIL_REACH);
+  const wakeLength = Math.min(markWidth * SAIL_WAKE[SAIL_WAKE.length - 1]!, wakeRoom);
   for (let i = 0; i < definition.sails; i++) {
-    const x = mx - SAIL_BEHIND[i]!;
     const z = MARK_Z + SAIL_DEPTH[i]!;
+    const behind = (SAIL_WAKE[i]! / SAIL_WAKE[SAIL_WAKE.length - 1]!) * wakeLength;
+    const x = worldX(view, wakeStart - behind, z);
     const base = project(view, x, heightAt(x, z, t, state), z);
     const heading = angle + SCATTER[i]! * (1 - ease(progress));
     spread = Math.max(spread, Math.abs(heading - angle));
