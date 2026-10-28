@@ -52,7 +52,7 @@
 
 ## 4. The browser check
 
-- [ ] 4.1 Add `playwright-core` 1.64.0 and `pnpm site:browser`: build, start `wrangler dev` with `WRANGLER_SEND_METRICS=false`, drive the installed Chrome, and on every page assert no console error and no `securitypolicyviolation`. Verify it passes locally with no network access beyond `localhost`.
+- [ ] 4.1 Add `playwright-core` 1.63.0 and `pnpm site:browser`: build, start `wrangler dev` with `WRANGLER_SEND_METRICS=false`, drive the installed Chrome, and on every page assert no console error and no `securitypolicyviolation`. Verify it passes locally with no network access beyond `localhost`.
 - [ ] 4.2 Add the motion checks of `specs/site-motion`:
   - a canvas that is not blank;
   - the mark's attributes after 2 seconds;

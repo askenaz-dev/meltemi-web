@@ -76,7 +76,7 @@ needed"):
 | ----------------- | ------- | ---------- | ----------------------------------------------------------- |
 | `motion`          | 14.2.0  | MIT        | the site's scroll-linked and reveal animations (runtime)    |
 | `esbuild`         | 0.28.2  | MIT        | bundles the site's TypeScript (development)                 |
-| `playwright-core` | 1.64.0  | Apache-2.0 | drives the installed Chrome for the browser checks (development) |
+| `playwright-core` | 1.63.0  | Apache-2.0 | drives the installed Chrome for the browser checks (development; the version Meltemi Diagrams uses) |
 
 `@meltemi/ocean` itself has no dependency. The reference footage the owner shared is a
 watermarked stock preview: it is inspiration only, and nothing from it is used.

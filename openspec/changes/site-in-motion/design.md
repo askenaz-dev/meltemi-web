@@ -237,7 +237,7 @@ The ocean package's tests run in Node:
 ### D11. A browser check outside `pnpm test`
 
 **Choice.** `pnpm site:browser` builds the site, starts `wrangler dev` (local assets, no network,
-`WRANGLER_SEND_METRICS=false`) and drives the installed Chrome. It uses `playwright-core` 1.64.0
+`WRANGLER_SEND_METRICS=false`) and drives the installed Chrome. It uses `playwright-core` 1.63.0
 (Apache-2.0), which downloads no browser, the same way Meltemi Diagrams drives the installed Edge
 or Chrome. On every page it checks:
 - no console error and no CSP violation;
