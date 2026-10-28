@@ -1,8 +1,9 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* The site's only stylesheet beyond the tokens. No framework, no build step, no
- * JavaScript: what is in the repository is byte for byte what gets published
- * (sitio-web-producto D1). Density, radii, hairlines and the single overlay
- * shadow come from the same design system the desktop client wears. */
+/* The site's only stylesheet beyond the tokens. No framework: what is in the
+ * repository is what gets published, beside the scripts and still pictures the
+ * build writes into /assets/ (decision 0006). Density, radii, hairlines and the
+ * single overlay shadow come from the same design system the desktop client
+ * wears. */
 
 *,
 *::before,
@@ -93,30 +94,180 @@ body {
   border-bottom: 1px solid var(--hair);
 }
 
-/* The sea in the hero (decision 0006): the drawing sits behind the text, which stays in the
-   page's HTML above it. */
+/* ---- the sea (decision 0006) ---------------------------------------------- */
+
+/* The sea's colours, from the tokens, read by @meltemi/ocean from the canvas. */
+:root {
+  --sea-point: var(--mel-aegean);
+  --sea-crest: var(--mel-wind);
+  --sea-wind: var(--accent);
+  --sea-bg: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sea-point: var(--accent);
+    --sea-crest: var(--mel-wind);
+    --sea-wind: var(--info);
+  }
+}
+
+/* The hero keeps a band of sea below its text: the stage behind both is that band and the sky
+   above it, so the horizon (46% of the stage, as the package draws it) meets the band's top. */
 .hero.sea {
+  --sea-band: clamp(11rem, 30vh, 18rem);
+  --mark-size: clamp(56px, 7vw, 104px);
   position: relative;
   overflow: hidden;
-  min-height: clamp(30rem, 72vh, 42rem);
+  padding-bottom: calc(var(--sea-band) + var(--sp-4));
+}
+
+.hero.sea.calm {
+  --sea-band: clamp(5rem, 12vh, 8rem);
 }
 
 .sea-stage {
   position: absolute;
-  inset: 0;
+  inset: auto 0 0;
+  height: calc(var(--sea-band) / 0.54);
   z-index: 0;
   pointer-events: none;
 }
 
+.sea-stage picture,
+.sea-still,
 .sea-canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
 }
 
+.sea-still {
+  object-fit: cover;
+  object-position: center bottom;
+}
+
+/* Once the sea draws, the still picture beneath it steps aside. */
+html.sea .sea-still {
+  visibility: hidden;
+}
+
+/* The mark sails on the band: where the still picture rests it, and, once the sea draws, where
+   the package's transform puts it (from the stage's corner, pivoting on its keel). */
+.sea-mark {
+  position: absolute;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  left: calc(var(--mark-at, 40%) - var(--mark-size) / 2);
+  top: calc(82% - var(--mark-size) * 0.86);
+  transform-origin: 50% 86%;
+}
+
+[data-sea="home"] .sea-mark {
+  --mark-at: 40.4%;
+}
+
+[data-sea="ide"] .sea-mark {
+  --mark-at: 78%;
+}
+
+[data-sea="diagrams"] .sea-mark {
+  --mark-at: 34%;
+}
+
+html.sea .sea-mark {
+  left: 0;
+  top: 0;
+}
+
+.sea-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The wind draws the mark as the page opens: its m from end to end, then the hull out of the
+   sea. Pure CSS, so it plays even if the script never arrives, and never under reduced motion. */
+@keyframes sea-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes sea-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .sea-mark-m {
+    stroke-dasharray: 1;
+    animation: sea-draw 1.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .sea-mark-hull {
+    transform-box: fill-box;
+    animation: sea-rise 0.55s 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+
 .hero.sea > .wrap {
   position: relative;
   z-index: 1;
+}
+
+.sea-pause {
+  position: absolute;
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: 2;
+  min-height: var(--touch-min);
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-caption);
+  cursor: pointer;
+}
+
+.sea-pause:hover,
+.sea-pause:focus-visible {
+  border-color: var(--focus);
+  color: var(--text);
+}
+
+/* Sections rise into view once; their hidden start applies only after the script set
+   html.motion, so without it nothing is ever hidden. */
+html.motion [data-reveal] {
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s ease;
+}
+
+html.motion [data-reveal]:not(.is-in) {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+html.sea-paused *,
+html.sea-paused *::before,
+html.sea-paused *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
 }
 
 .hero h1 {

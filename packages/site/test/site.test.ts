@@ -760,3 +760,62 @@ describe("the figures are real captures, declared as such", () => {
     expect(offenders, "pages whose twins show other figures").toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+
+/** The rules of a stylesheet as `selector -> declarations`, comments and keyframes removed. */
+export function cssRules(css: string): { selector: string; body: string }[] {
+  const clean = css
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/@keyframes[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, "");
+  return [...clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+    selector: m[1]!.trim().replace(/\s+/g, " "),
+    body: m[2]!,
+  }));
+}
+
+const LITERAL_COLOUR = /#[0-9a-f]{3,8}\b|\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(/i;
+
+/** The sea's and the hero's rules that name a colour that is not a token. */
+export function literalColours(css: string): string[] {
+  return cssRules(css)
+    .filter(({ selector }) => /sea|hero/.test(selector))
+    .filter(({ body }) => LITERAL_COLOUR.test(body))
+    .map(({ selector }) => selector);
+}
+
+/** The rules that hide a section without the script's marker, `html.motion`. */
+export function hiddenOutsideMotion(css: string): string[] {
+  return cssRules(css)
+    .filter(({ body }) => /opacity:\s*0\b|visibility:\s*hidden|display:\s*none/.test(body))
+    .flatMap(({ selector }) => selector.split(",").map((s) => s.trim()))
+    .filter((s) => s.includes("[data-reveal]") && !s.startsWith("html.motion "));
+}
+
+describe("the sea's styles", () => {
+  it("colour the hero and the sea with tokens only", () => {
+    expect(literalColours(read("site.css"))).toEqual([]);
+  });
+
+  it("name the rule that colours the sea with a literal", () => {
+    expect(literalColours(".sea-pause { color: #ffffff; }\n.card { color: #000; }")).toEqual([
+      ".sea-pause",
+    ]);
+  });
+
+  it("define the four --sea-* properties from tokens, in both schemes", () => {
+    const rules = cssRules(read("site.css")).filter(({ selector }) => selector === ":root");
+    const declared = rules.map(({ body }) => body).join("\n");
+    for (const name of ["--sea-point", "--sea-crest", "--sea-wind", "--sea-bg"]) {
+      expect(declared, name).toMatch(new RegExp(`${name}:\\s*var\\(--[a-z-]+\\)`));
+    }
+  });
+
+  it("hide a section only after the script marked the document", () => {
+    expect(hiddenOutsideMotion(read("site.css"))).toEqual([]);
+  });
+
+  it("name a rule that hides a section without the marker", () => {
+    expect(hiddenOutsideMotion("[data-reveal] { opacity: 0; }")).toEqual(["[data-reveal]"]);
+  });
+});

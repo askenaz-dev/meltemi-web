@@ -33,7 +33,7 @@
 
 ## 3. The site in motion
 
-- [ ] 3.1 In `site.css`, define:
+- [x] 3.1 In `site.css`, define:
   - the `--sea-*` properties from the existing tokens for both schemes;
   - the hero layout: canvas behind the text, still picture beneath the canvas, a fixed hero height so nothing shifts;
   - the reveal and pause-button styles, with every hidden state scoped under `html.motion`.
