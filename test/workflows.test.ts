@@ -87,6 +87,15 @@ describe("ci.yml", () => {
     }
   });
 
+  it("drives the site in the runner's Chrome, after a clean install", () => {
+    const job = text.slice(at(text, "\n  browser:"), at(text, "\n  infrastructure:"));
+    expect(job).toMatch(/runs-on: ubuntu-latest/);
+    expect(job).not.toMatch(/matrix:/);
+    expect(at(job, "run: pnpm install --frozen-lockfile")).toBeLessThan(
+      at(job, "run: pnpm site:browser"),
+    );
+  });
+
   it("checks the infrastructure without credentials: formatting, validity, the mocked stages", () => {
     at(text, "terraform fmt -check -recursive");
     at(text, "terraform init -backend=false");
