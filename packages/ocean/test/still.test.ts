@@ -3,7 +3,7 @@
 // nothing a page's policy would block.
 
 import { describe, expect, it } from "vitest";
-import { STATES } from "../src/states.js";
+import { STATES, fleetSize } from "../src/states.js";
 import { stillPicture } from "../src/still.js";
 
 /** A small well-formedness check: one root, balanced elements, quoted attributes, no entities. */
@@ -27,8 +27,9 @@ describe("still pictures from the same sea", () => {
         expect(wellFormed(svg), "well-formed SVG").toBe(true);
         const bytes = Buffer.byteLength(svg);
         expect(bytes, `${state} (${scheme}) weighs ${bytes} bytes`).toBeLessThanOrEqual(30 * 1024);
-        expect(svg).not.toMatch(/<script|<style|href=|url\(|<image|<foreignObject/i);
+        expect(svg).not.toMatch(/<script|<style|href="(?!#)|url\((?!#)|<image|<foreignObject/i);
         expect(svg).toMatch(/fill="#[0-9a-f]+"/i);
+        expect(svg.match(/<use href="#m"/g), "one use per boat").toHaveLength(fleetSize(state));
       });
     }
   }
@@ -40,11 +41,18 @@ describe("still pictures from the same sea", () => {
     });
     expect(svg).toContain('fill="#123456"');
     expect(svg).toContain('fill="#abcdef"');
-    expect(svg).not.toContain("#2563eb");
+    expect(svg).toContain('stroke="#fedcba"');
+    // The brand's blue stays only in the mark's own gradient.
+    expect(svg).not.toContain('fill="#2563eb"');
+    expect(svg).toContain('stop-color="#2563eb"');
   });
 
-  it("draws the IDE's sails and the Diagrams flow, and the same picture every time", () => {
-    expect(stillPicture("ide")).toMatch(/Z" fill=/);
+  it("draws the fleet from the brand's mark, the wind's streamlines and the Diagrams flow, the same every time", () => {
+    const ide = stillPicture("ide");
+    expect(ide).toContain('<g id="m">');
+    expect(ide).toContain("M43 178C43 125");
+    expect(ide).toMatch(/stroke-opacity="0.32"/);
+    expect(stillPicture("diagrams")).toMatch(/Z" fill=/);
     expect(stillPicture("diagrams")).toEqual(stillPicture("diagrams"));
   });
 

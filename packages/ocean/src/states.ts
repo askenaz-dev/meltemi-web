@@ -1,4 +1,4 @@
-// The sea states: what each page of the family shows. Every number the renderers, the mark's
+// The sea states: what each page of the family shows. Every number the renderers, the fleet's
 // placement and the still pictures use comes from here, so they cannot drift apart.
 
 /** The states, in the order the site's specification names them. */
@@ -24,11 +24,11 @@ export interface StateDefinition {
   readonly amplitude: number;
   /** Whether the state moves at all; `still` draws one frame. */
   readonly animated: boolean;
-  /** Where the mark sails, as fractions of the width, at progress 0 and at progress 1. */
+  /** Where the lead boat rests, as fractions of the width, at progress 0 and at progress 1. */
   readonly markFrom: number;
   readonly markTo: number;
-  /** How many sails follow the mark (the IDE's agents). */
-  readonly sails: number;
+  /** How many boats the state sails, the lead included. */
+  readonly boats: number;
   /** How many links the wind draws between points (the Diagrams flow). */
   readonly links: number;
   /** The progress the state rests at: the story told without motion. */
@@ -57,7 +57,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     animated: true,
     markFrom: 0.18,
     markTo: 0.82,
-    sails: 0,
+    boats: 4,
     links: 0,
     rest: 0.35,
   },
@@ -67,7 +67,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     animated: true,
     markFrom: 0.3,
     markTo: 0.78,
-    sails: 5,
+    boats: 7,
     links: 0,
     rest: 1,
   },
@@ -77,7 +77,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     animated: true,
     markFrom: 0.12,
     markTo: 0.34,
-    sails: 0,
+    boats: 3,
     links: 11,
     rest: 1,
   },
@@ -87,7 +87,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     animated: false,
     markFrom: 0.18,
     markTo: 0.18,
-    sails: 0,
+    boats: 1,
     links: 0,
     rest: 0,
   },
@@ -110,8 +110,13 @@ export function definitionOf(state: unknown): StateDefinition {
 
 /**
  * Where a state rests: the still pictures are drawn at this progress, and a page that does not
- * move draws its one frame there, so the mark sits where the still picture leaves room for it.
+ * move draws its one frame there, so the lead sits where the still picture leaves room for it.
  */
 export function restProgress(state: SeaState): number {
   return definitionOf(state).rest;
+}
+
+/** How many boats a state sails, the lead included: the page carries that many elements. */
+export function fleetSize(state: SeaState): number {
+  return definitionOf(state).boats;
 }

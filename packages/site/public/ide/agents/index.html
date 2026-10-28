@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="/site.css" />
   </head>
   <body data-sea="ide">
+    <canvas class="wind" aria-hidden="true"></canvas>
     <header class="top">
       <div class="wrap">
         <a class="brand" href="/">
@@ -40,6 +41,12 @@
           <img class="sea-still" src="/assets/sea-ide-light.svg" alt="" />
         </picture>
         <canvas class="sea-canvas"></canvas>
+        <div class="sea-boat" aria-hidden="true"><svg viewBox="0 0 256 256" focusable="false"><use href="#sea-mark-m" /><use href="#sea-mark-hull" /></svg></div>
+        <div class="sea-boat" aria-hidden="true"><svg viewBox="0 0 256 256" focusable="false"><use href="#sea-mark-m" /><use href="#sea-mark-hull" /></svg></div>
+        <div class="sea-boat" aria-hidden="true"><svg viewBox="0 0 256 256" focusable="false"><use href="#sea-mark-m" /><use href="#sea-mark-hull" /></svg></div>
+        <div class="sea-boat" aria-hidden="true"><svg viewBox="0 0 256 256" focusable="false"><use href="#sea-mark-m" /><use href="#sea-mark-hull" /></svg></div>
+        <div class="sea-boat" aria-hidden="true"><svg viewBox="0 0 256 256" focusable="false"><use href="#sea-mark-m" /><use href="#sea-mark-hull" /></svg></div>
+        <div class="sea-boat" aria-hidden="true"><svg viewBox="0 0 256 256" focusable="false"><use href="#sea-mark-m" /><use href="#sea-mark-hull" /></svg></div>
         <div class="sea-mark">
           <svg viewBox="0 0 256 256" focusable="false">
             <defs>
@@ -48,8 +55,8 @@
                 <stop offset="1" stop-color="#22D3EE" />
               </linearGradient>
             </defs>
-            <path class="sea-mark-m" pathLength="1" d="M43 178C43 125 57 100 78 100C99 100 109 127 109 176C109 105 132 67 158 67C185 67 199 97 196 132C194 154 185 169 172 177C189 176 205 166 217 152C224 144 230 133 234 122" fill="none" stroke="url(#sea-mark-gradient)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" />
-            <path class="sea-mark-hull" d="M45 199C87 211 145 215 202 189C195 204 177 216 151 220C106 226 67 215 45 199Z" fill="url(#sea-mark-gradient)" />
+            <path id="sea-mark-m" class="sea-mark-m" pathLength="1" d="M43 178C43 125 57 100 78 100C99 100 109 127 109 176C109 105 132 67 158 67C185 67 199 97 196 132C194 154 185 169 172 177C189 176 205 166 217 152C224 144 230 133 234 122" fill="none" stroke="url(#sea-mark-gradient)" stroke-width="25" stroke-linecap="round" stroke-linejoin="round" />
+            <path id="sea-mark-hull" class="sea-mark-hull" d="M45 199C87 211 145 215 202 189C195 204 177 216 151 220C106 226 67 215 45 199Z" fill="url(#sea-mark-gradient)" />
           </svg>
         </div>
       </div>
@@ -63,7 +70,7 @@
           it — it does not install it behind your back.
         </p>
       </div>
-      <button class="sea-pause" type="button" aria-pressed="false" hidden data-label-pause="Pause animation" data-label-play="Play animation">Pause animation</button>
+      <button class="sea-pause" type="button" aria-pressed="false" hidden aria-label="Pause animation" title="Pause animation" data-label-pause="Pause animation" data-label-play="Play animation"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path class="sea-pause-glyph" d="M4 3h3v10H4zM9 3h3v10H9z" /></svg></button>
     </div>
 
     <main class="wrap">

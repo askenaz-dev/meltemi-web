@@ -26,6 +26,8 @@ const MOVING: Readonly<Record<string, string>> = {
   "/ide/downloads/": "ide",
   "/diagrams/": "diagrams",
 };
+/** How many boats each state sails, the lead included (`fleetSize`). */
+const MOVING_FLEET: Readonly<Record<string, number>> = { home: 4, ide: 7, diagrams: 3 };
 const twin = (url: string) => (url === "/" ? "/es/" : `/es${url}`);
 const MOVING_URLS = Object.keys(MOVING).flatMap((url) => [url, twin(url)]);
 
@@ -39,11 +41,29 @@ interface Report {
   readonly renderer: string;
   readonly state: string;
   readonly frames: number;
-  readonly figures: { sails: number; links: number; spread: number; markX: number };
+  readonly figures: { boats: number; leadX: number; xs: readonly number[]; links: number };
   readonly progress: number;
   readonly wind: number;
   readonly paused: boolean;
+  readonly windRenderer: string;
+  readonly windFrames: number;
 }
+
+/** How much of the wind canvas is painted, read from its own pixels (it is a 2D canvas). */
+const windShare = (page: Page) =>
+  page.evaluate(() => {
+    const canvas = document.querySelector<HTMLCanvasElement>("canvas.wind");
+    const context = canvas?.getContext("2d");
+    if (!canvas || !context) return -1;
+    const data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let painted = 0;
+    let seen = 0;
+    for (let i = 3; i < data.length; i += 4 * 7) {
+      seen += 1;
+      if (data[i]! > 12) painted += 1;
+    }
+    return painted / Math.max(1, seen);
+  });
 
 // ---------------------------------------------------------------------------------------------
 // The server and the browser.
@@ -169,8 +189,6 @@ const report = (page: Page) =>
   page.evaluate(
     () => (window as unknown as { meltemiSea?: Report }).meltemiSea ?? null,
   ) as Promise<Report | null>;
-
-const frames = async (page: Page) => (await report(page))?.frames ?? -1;
 
 /** Waits for the sea to report itself, at most 5 seconds. */
 async function drawn(page: Page): Promise<Report | null> {
@@ -312,9 +330,10 @@ const heroes: Check = async (browser, origin) => {
         ).length,
       };
     });
-    const tilt = /^translate\(-?[\d.]+px, -?[\d.]+px\) rotate\((-?[\d.]+)deg\)$/.exec(
-      mark.transform,
-    );
+    const tilt =
+      /^translate\(-?[\d.]+px, -?[\d.]+px\) scale\([\d.]+\) rotate\((-?[\d.]+)deg\)$/.exec(
+        mark.transform,
+      );
     if (!tilt) failures.push(`${url}: the mark's transform is "${mark.transform}"`);
     else if (Math.abs(Number(tilt[1])) > 4) failures.push(`${url}: the mark tilts ${tilt[1]}°`);
     if (!mark.inHero) failures.push(`${url}: the mark is not in the hero`);
@@ -324,6 +343,14 @@ const heroes: Check = async (browser, origin) => {
     if (mark.paths.join("|") !== BRAND.paths.join("|")) failures.push(`${url}: the mark's paths`);
     if (mark.stops.join("|") !== BRAND.stops.join("|")) failures.push(`${url}: the mark's stops`);
     if (mark.filters) failures.push(`${url}: a filter on the mark`);
+    if (sea.figures.boats !== MOVING_FLEET[sea.state]) {
+      failures.push(`${url}: ${sea.figures.boats} boats, not ${MOVING_FLEET[sea.state]}`);
+    }
+    const blown = await windShare(page);
+    if (blown < 0.002) {
+      failures.push(`${url}: the wind canvas is blank (${(blown * 100).toFixed(2)}%)`);
+    }
+    if (sea.windRenderer !== "2d") failures.push(`${url}: the wind drawn with ${sea.windRenderer}`);
     await scrollHero(page, 1);
     await scrollHero(page, 0);
     const shift = await page.evaluate(
@@ -336,29 +363,42 @@ const heroes: Check = async (browser, origin) => {
   return failures;
 };
 
-/** The home's crossing: the mark forward and the wind up at every step, and back. */
+/** The fleet sails on its own, and the wind rises with the scroll. */
 const crossing: Check = async (browser, origin) => {
   const failures: string[] = [];
   for (const url of ["/", "/es/"]) {
     const watched = await open(browser, origin, url);
     const { page } = watched;
     const start = await drawn(page);
-    let last = start;
+    if (!start) {
+      failures.push(`${url}: no drawing reported`);
+      await watched.context.close();
+      continue;
+    }
+    // Without scrolling, the lead sails right: four samples over 1.2 s, each ahead of the last
+    // unless the boat re-entered from the left.
+    let ahead = 0;
+    let last = start.figures.leadX;
+    for (let i = 0; i < 4; i++) {
+      await page.waitForTimeout(300);
+      const now = (await report(page))!.figures.leadX;
+      if (now > last || now < last - 200) ahead += 1;
+      last = now;
+    }
+    if (ahead < 4) failures.push(`${url}: the lead did not sail on its own (${ahead} of 4)`);
+    let wind = start.wind;
     for (const step of [0.2, 0.4, 0.6, 0.8]) {
       await scrollHero(page, step);
       const now = await report(page);
-      if (!now || !last) break;
-      if (!(now.figures.markX > last.figures.markX)) {
-        failures.push(`${url}: the mark did not move forward at ${step} of the hero`);
-      }
-      if (!(now.wind > last.wind)) failures.push(`${url}: the wind did not rise at ${step}`);
-      last = now;
+      if (!now) break;
+      if (!(now.wind > wind)) failures.push(`${url}: the wind did not rise at ${step}`);
+      wind = now.wind;
     }
     await page.evaluate(() => scrollTo(0, 0));
     await page.waitForTimeout(250);
     const back = await report(page);
-    if (start && back && Math.abs(back.figures.markX - start.figures.markX) > 0.5) {
-      failures.push(`${url}: scrolling back left the mark at ${back.figures.markX}`);
+    if (back && !(back.wind < wind)) {
+      failures.push(`${url}: scrolling back kept the wind at ${back.wind}`);
     }
     failures.push(...watched.problems.map((p) => `${url}: ${p}`));
     await watched.context.close();
@@ -366,25 +406,32 @@ const crossing: Check = async (browser, origin) => {
   return failures;
 };
 
-/** The IDE's sails line up on the mark's heading; the Diagrams links appear with the scroll. */
+/** The IDE's fleet of seven sails together; the Diagrams links appear with the scroll. */
 const stories: Check = async (browser, origin) => {
   const failures: string[] = [];
   for (const url of ["/ide/", "/es/ide/", "/diagrams/", "/es/diagrams/"]) {
     const watched = await open(browser, origin, url);
     const { page } = watched;
     const top = await drawn(page);
-    await scrollHero(page, 0.95);
-    const end = await report(page);
-    if (!top || !end) failures.push(`${url}: no drawing reported`);
-    else if (url.includes("/ide/")) {
-      if (end.figures.sails < 3) failures.push(`${url}: ${end.figures.sails} sails`);
-      if (!(end.figures.spread < top.figures.spread)) {
-        failures.push(
-          `${url}: the sails' spread went ${top.figures.spread} → ${end.figures.spread}`,
-        );
+    if (!top) {
+      failures.push(`${url}: no drawing reported`);
+      await watched.context.close();
+      continue;
+    }
+    if (url.includes("/ide/")) {
+      if (top.figures.boats !== 7) failures.push(`${url}: ${top.figures.boats} boats`);
+      const before = [...top.figures.xs];
+      await page.waitForTimeout(1000);
+      const after = (await report(page))!.figures.xs;
+      const stuck = after.filter((x, i) => !(x > before[i]! || x < before[i]! - 200)).length;
+      if (stuck) failures.push(`${url}: ${stuck} boats did not sail in a second`);
+    } else {
+      if (top.figures.boats !== 3) failures.push(`${url}: ${top.figures.boats} boats`);
+      await scrollHero(page, 0.95);
+      const end = await report(page);
+      if (!end || !(end.figures.links > top.figures.links)) {
+        failures.push(`${url}: the links went ${top.figures.links} → ${end?.figures.links}`);
       }
-    } else if (!(end.figures.links > top.figures.links)) {
-      failures.push(`${url}: the links went ${top.figures.links} → ${end.figures.links}`);
     }
     failures.push(...watched.problems.map((p) => `${url}: ${p}`));
     await watched.context.close();
@@ -414,8 +461,13 @@ const reduced: Check = async (browser, origin) => {
       transform: document.querySelector<HTMLElement>(".sea-mark")!.style.transform,
     }));
     if (!first || !later) failures.push(`${url}: no drawing reported`);
-    else if (first.frames !== 1 || later.frames !== 1) {
-      failures.push(`${url}: ${later.frames} frames under reduced motion`);
+    else {
+      if (first.frames !== 1 || later.frames !== 1) {
+        failures.push(`${url}: ${later.frames} frames under reduced motion`);
+      }
+      if (later.windFrames !== 1) {
+        failures.push(`${url}: ${later.windFrames} wind frames under reduced motion`);
+      }
     }
     if (state.transform !== at) failures.push(`${url}: the mark moved under reduced motion`);
     if (state.motion || state.hidden) failures.push(`${url}: motion or a hidden section`);
@@ -445,18 +497,31 @@ const pause: Check = async (browser, origin) => {
     await page.locator(".sea-pause").focus();
     await page.keyboard.press("Enter");
     await page.waitForTimeout(100);
-    const stopped = await frames(page);
+    const stopped = (await report(page))!;
     await page.waitForTimeout(1000);
-    const still = await frames(page);
+    const still = (await report(page))!;
     const button = page.locator(".sea-pause");
-    if (still !== stopped) failures.push(`${url}: ${still - stopped} frames while paused`);
-    if ((await button.getAttribute("aria-pressed")) !== "true")
+    if (still.frames !== stopped.frames) {
+      failures.push(`${url}: ${still.frames - stopped.frames} frames while paused`);
+    }
+    if (still.windFrames !== stopped.windFrames) {
+      failures.push(`${url}: ${still.windFrames - stopped.windFrames} wind frames while paused`);
+    }
+    if ((await button.getAttribute("aria-pressed")) !== "true") {
       failures.push(`${url}: aria-pressed`);
-    if ((await button.textContent()) !== words.play) failures.push(`${url}: the play label`);
+    }
+    if ((await button.getAttribute("aria-label")) !== words.play) {
+      failures.push(`${url}: the play label`);
+    }
+    if ((await button.textContent())?.trim()) failures.push(`${url}: words in the button`);
     await page.keyboard.press("Space");
     await page.waitForTimeout(600);
-    if (!((await frames(page)) > still)) failures.push(`${url}: no frames after resuming`);
-    if ((await button.textContent()) !== words.pause) failures.push(`${url}: the pause label`);
+    const resumed = (await report(page))!;
+    if (!(resumed.frames > still.frames)) failures.push(`${url}: no frames after resuming`);
+    if (!(resumed.windFrames > still.windFrames)) failures.push(`${url}: no wind after resuming`);
+    if ((await button.getAttribute("aria-label")) !== words.pause) {
+      failures.push(`${url}: the pause label`);
+    }
     const stored = await page.evaluate(async () => ({
       local: localStorage.length,
       session: sessionStorage.length,
@@ -482,9 +547,11 @@ const idle: Check = async (browser, origin) => {
     await drawn(page);
     await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(200);
-    const away = await frames(page);
+    const away = (await report(page))!.frames;
     await page.waitForTimeout(1000);
-    if ((await frames(page)) !== away) failures.push(`${url}: frames with the hero off screen`);
+    if ((await report(page))!.frames !== away) {
+      failures.push(`${url}: frames with the hero off screen`);
+    }
     await page.evaluate(() => scrollTo(0, 0));
     await page.waitForTimeout(400);
     // A hidden tab, as the page sees one: headless Chrome keeps a background tab visible.
@@ -497,9 +564,13 @@ const idle: Check = async (browser, origin) => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
     await page.waitForTimeout(200);
-    const hidden = await frames(page);
+    const hidden = (await report(page))!;
     await page.waitForTimeout(1000);
-    if ((await frames(page)) !== hidden) failures.push(`${url}: frames while the tab is hidden`);
+    const later = (await report(page))!;
+    if (later.frames !== hidden.frames) failures.push(`${url}: frames while the tab is hidden`);
+    if (later.windFrames !== hidden.windFrames) {
+      failures.push(`${url}: wind frames while the tab is hidden`);
+    }
     failures.push(...watched.problems.map((p) => `${url}: ${p}`));
     await watched.context.close();
   }
@@ -528,6 +599,15 @@ const schemes: Check = async (browser, origin) => {
   const stayed = await page.evaluate(() => (window as unknown as { stayed?: boolean }).stayed);
   if (!stayed) failures.push(`${url}: the switch navigated`);
   if (lightPoint === darkPoint) failures.push(`${url}: --sea-point did not change`);
+  const windDark = await page.evaluate(() =>
+    getComputedStyle(document.querySelector("canvas.wind")!).getPropertyValue("--sea-wind"),
+  );
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.waitForTimeout(100);
+  const windLight = await page.evaluate(() =>
+    getComputedStyle(document.querySelector("canvas.wind")!).getPropertyValue("--sea-wind"),
+  );
+  if (windDark === windLight) failures.push(`${url}: --sea-wind did not change`);
   if (light.background === dark.background) failures.push(`${url}: the background did not change`);
   const moved = light.ink.reduce((sum, v, i) => sum + Math.abs(v - dark.ink[i]!), 0);
   if (moved < 30)
@@ -548,7 +628,9 @@ const withoutScript: Check = async (browser, origin) => {
     const seen = await page.evaluate(() => {
       const still = document.querySelector<HTMLImageElement>(".sea-still");
       const canvas = document.querySelector(".sea-canvas");
+      const wind = document.querySelector("canvas.wind");
       return {
+        wind: wind ? getComputedStyle(wind).visibility !== "hidden" : false,
         still: still
           ? getComputedStyle(still).visibility === "visible" && still.naturalWidth > 0
           : false,
@@ -561,6 +643,7 @@ const withoutScript: Check = async (browser, origin) => {
     });
     if (!seen.still) failures.push(`${url}: the still picture is not shown`);
     if (seen.canvas) failures.push(`${url}: the canvas shows without the script`);
+    if (seen.wind) failures.push(`${url}: the wind canvas shows without the script`);
     if (seen.links !== links) failures.push(`${url}: ${seen.links} links of ${links}`);
     if (seen.hidden) failures.push(`${url}: a hidden section`);
     failures.push(...watched.problems.map((p) => `${url}: ${p}`));
@@ -571,9 +654,12 @@ const withoutScript: Check = async (browser, origin) => {
 
 const CHECKS: readonly [string, Check][] = [
   ["every page is quiet: no error, no policy violation, nothing beyond localhost", quiet],
-  ["every moving hero draws its sea, the brand's mark on its wave, with no layout shift", heroes],
-  ["the home's crossing follows the scroll, and the wind rises", crossing],
-  ["the IDE's sails line up and the Diagrams links appear", stories],
+  [
+    "every moving hero draws its sea and its wind, the brand's mark on its wave, with no layout shift",
+    heroes,
+  ],
+  ["the fleet sails on its own, and the wind rises with the scroll", crossing],
+  ["the IDE's fleet of seven sails together, and the Diagrams links appear", stories],
   ["reduced motion draws one frame, the mark at rest", reduced],
   ["the pause button stops and resumes, and stores nothing", pause],
   ["no frame off screen or in a hidden tab", idle],

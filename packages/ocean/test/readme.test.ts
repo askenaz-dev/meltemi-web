@@ -19,6 +19,11 @@ describe("the README, as the contract", () => {
       "placeMark",
       "STATES",
       "restProgress",
+      "fleetSize",
+      "createWind",
+      "MARK_M",
+      "MARK_HULL",
+      "MARK_GRADIENT",
       "MAX_TILT",
       "BRAND_STILL",
     ];
@@ -52,6 +57,29 @@ describe("the README, as the contract", () => {
     ]) {
       expect(readme, `the README lists ${member}`).toContain(`\`${member}`);
       expect(member in sea, `the handle has ${member}`).toBe(true);
+    }
+  });
+
+  it("lists every member the wind's handle has", () => {
+    const wind = ocean.createWind(
+      fakeCanvas({ "2d": recordingContext() }) as unknown as HTMLCanvasElement,
+      {},
+      harness().env,
+    );
+    for (const member of [
+      "renderer",
+      "frames",
+      "strength",
+      "particles",
+      "start",
+      "stop",
+      "setStrength",
+      "restyle",
+      "resize",
+      "destroy",
+    ]) {
+      expect(readme, `the README lists ${member}`).toContain(`\`${member}`);
+      expect(member in wind, `the wind's handle has ${member}`).toBe(true);
     }
   });
 
