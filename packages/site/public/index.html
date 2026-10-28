@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="/tokens.css" />
     <link rel="stylesheet" href="/site.css" />
   </head>
-  <body>
+  <body data-sea="home">
     <header class="top">
       <div class="wrap">
         <a class="brand" href="/">
@@ -32,7 +32,10 @@
       </div>
     </header>
 
-    <div class="hero">
+    <div class="hero sea">
+      <div class="sea-stage" aria-hidden="true">
+        <canvas class="sea-canvas"></canvas>
+      </div>
       <div class="wrap">
         <h1>Meltemi: two open-source tools, one family</h1>
         <p class="motto">One steers coding agents. The other draws diagrams as code.</p>
@@ -203,5 +206,6 @@
         </span>
       </div>
     </footer>
+    <script type="module" src="/assets/site.js"></script>
   </body>
 </html>

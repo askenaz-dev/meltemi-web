@@ -93,6 +93,32 @@ body {
   border-bottom: 1px solid var(--hair);
 }
 
+/* The sea in the hero (decision 0006): the drawing sits behind the text, which stays in the
+   page's HTML above it. */
+.hero.sea {
+  position: relative;
+  overflow: hidden;
+  min-height: clamp(30rem, 72vh, 42rem);
+}
+
+.sea-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.sea-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hero.sea > .wrap {
+  position: relative;
+  z-index: 1;
+}
+
 .hero h1 {
   margin: 0 0 var(--sp-2);
   font-size: clamp(1.6rem, 1.2rem + 2vw, 2.4rem);

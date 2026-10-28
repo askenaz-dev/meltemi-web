@@ -2,4 +2,14 @@
 // whose `<body>` declares a sea state. Everything the page says is in its HTML; this script only
 // adds motion, and a page without it is complete.
 
-export {};
+import { createSea, type SeaState } from "@meltemi/ocean";
+
+const state = document.body.dataset["sea"];
+const canvas = document.querySelector<HTMLCanvasElement>(".sea-canvas");
+
+if (canvas && state && state !== "still") {
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sea = createSea(canvas, { state: state as SeaState, reducedMotion });
+  sea.start();
+  addEventListener("resize", () => sea.resize());
+}

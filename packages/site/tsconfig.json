@@ -4,7 +4,10 @@
     "noEmit": true,
     "allowJs": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@meltemi/ocean": ["../ocean/src/index.ts"]
+    }
   },
   "include": ["src", "scripts", "test"]
 }

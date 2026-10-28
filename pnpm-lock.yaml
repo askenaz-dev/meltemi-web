@@ -57,6 +57,9 @@ importers:
         specifier: 14.2.0
         version: 14.2.0
     devDependencies:
+      '@meltemi/ocean':
+        specifier: workspace:*
+        version: link:../ocean
       esbuild:
         specifier: 0.28.2
         version: 0.28.2

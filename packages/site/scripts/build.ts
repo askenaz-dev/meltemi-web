@@ -21,6 +21,12 @@ export const ASSETS = "assets";
 /** The entry every animated page links, relative to `public/`. */
 export const ENTRY = `${ASSETS}/site.js`;
 
+/** The files of `public/` the build writes, which the checks of the pages may link. */
+export const BUILT: readonly string[] = [ENTRY];
+
+/** The sea is bundled from its sources, so a build needs no build of the package first. */
+const OCEAN = join(SITE, "..", "ocean", "src", "index.ts");
+
 export interface BuildResult {
   /** esbuild's account of what went into each output. */
   readonly metafile: Metafile;
@@ -37,6 +43,7 @@ export async function buildSite(publicDir: string): Promise<BuildResult> {
   const result = await build({
     absWorkingDir: SITE,
     entryPoints: { site: "src/site.ts" },
+    alias: { "@meltemi/ocean": OCEAN },
     outdir,
     bundle: true,
     splitting: true,

@@ -4,3 +4,5 @@
 // nothing. The README is the contract products consume.
 
 export { STATES, type SeaState } from "./states.js";
+export { heightAt, slopeAt, declaredAmplitude } from "./waves.js";
+export { createSea, type Sea, type SeaOptions, type Figures } from "./sea.js";
