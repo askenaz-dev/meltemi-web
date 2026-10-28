@@ -12,24 +12,24 @@
 
 - [ ] 2.1 Wind particles along a flow field toward the mark's gust, fading inside the mark's clear space (design D1, D3). Verify unit tests that the flow points to the upper right and that particles inside the clear-space box have zero opacity.
 - [ ] 2.2 The Canvas 2D renderer on the same wave function, and the `renderer: "none"` handle. Verify tests with fake canvases that a canvas without WebGL2 reports `"2d"` and one without any context reports `"none"` and draws nothing.
-- [ ] 2.2b `restyle()`: the handle re-reads `--sea-*` from the canvas and the next frame uses them, with no new context. Verify a test that changes the properties on a fake canvas, calls `restyle()` and reads the new colours in the next frame's uniforms or fill styles.
-- [ ] 2.3 The mark's placement: a translation onto the sea's height and a tilt from the slope clamped to 4 degrees, written to `transform` only. Verify the test that runs 10 seconds of simulated time on a fake mark, sees no other attribute change and no rotation above 4 degrees.
-- [ ] 2.4 The frame loop:
+- [ ] 2.3 `restyle()`: the handle re-reads `--sea-*` from the canvas and the next frame uses them, with no new context. Verify a test that changes the properties on a fake canvas, calls `restyle()` and reads the new colours in the next frame's uniforms or fill styles.
+- [ ] 2.4 The mark's placement: a translation onto the sea's height and a tilt from the slope clamped to 4 degrees, written to `transform` only. Verify the test that runs 10 seconds of simulated time on a fake mark, sees no other attribute change and no rotation above 4 degrees.
+- [ ] 2.5 The frame loop:
   - `start` and `stop`;
   - one frame and no loop under `reducedMotion`;
   - no frame while the document is hidden or the canvas is out of view;
   - a device-pixel-ratio cap, and points halved when the p95 frame time exceeds 20 ms.
 
   Verify the tests with injected `requestAnimationFrame`, `document` and `IntersectionObserver` stubs.
-- [ ] 2.5 The states:
+- [ ] 2.6 The states:
   - `ide`: five sails that converge on the mark's heading with progress;
   - `diagrams`: nine points that lift and link into a three-node flow;
   - `still`;
   - the `figures` counts, and option errors that name the option and value.
 
   Verify tests that the package knows exactly the four states, that `ide` reports at least three sails, that `diagrams` reports links, and that an unknown state or a progress outside 0 to 1 throws.
-- [ ] 2.6 `stillPicture(state)`: an SVG of the state at rest, with light and dark rules on `--sea-*` and the brand's values as fallbacks. Verify tests that every state's picture parses, weighs at most 30 KB, and has no `<script>`, `href` or external `url(`.
-- [ ] 2.7 Write the package README as the contract for products (design D13), and add the sixth crossing, the motion package, to `docs/repositories.md`. Verify `pnpm lint` passes and every API the README names is exported, checked by a test that imports them.
+- [ ] 2.7 `stillPicture(state)`: an SVG of the state at rest, with light and dark rules on `--sea-*` and the brand's values as fallbacks. Verify tests that every state's picture parses, weighs at most 30 KB, and has no `<script>`, `href` or external `url(`.
+- [ ] 2.8 Write the package README as the contract for products (design D13), and add the sixth crossing, the motion package, to `docs/repositories.md`. Verify `pnpm lint` passes and every API the README names is exported, checked by a test that imports them.
 
 ## 3. The site in motion
 
