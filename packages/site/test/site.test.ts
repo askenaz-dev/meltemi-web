@@ -1,13 +1,15 @@
 // The checks of the specification `product-site`. Each one reads the files of `public/` and
 // reports every offender by page and address, so a failure says what to fix. No network.
 
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import type { Metafile } from "esbuild";
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
+import { gzipSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
 import { STATES, type SeaState } from "../../ocean/src/index.js";
 import { definitionOf } from "../../ocean/src/states.js";
-import { BUILT, buildSite, stillColours } from "../scripts/build.js";
+import { BUILT, SITE, buildSite, stillColours } from "../scripts/build.js";
 import {
   ALL_HTML,
   FILES,
@@ -1044,11 +1046,13 @@ describe("a sea in every hero", () => {
   });
 });
 
-describe("the still pictures the build writes", () => {
-  const built = mkdtempSync(join(tmpdir(), "meltemi-site-"));
-  const ready = buildSite(PUBLIC, built);
-  afterAll(() => rmSync(built, { recursive: true, force: true }));
+// What the build writes, built once into a temporary folder: the checks measure what would be
+// served without a build having run first.
+const built = mkdtempSync(join(tmpdir(), "meltemi-site-"));
+const ready = buildSite(PUBLIC, built);
+afterAll(() => rmSync(built, { recursive: true, force: true }));
 
+describe("the still pictures the build writes", () => {
   it("writes every state's picture in both schemes, well formed", async () => {
     await ready;
     const stills = BUILT.filter((f) => f.endsWith(".svg"));
@@ -1081,5 +1085,109 @@ describe("the still pictures the build writes", () => {
     expect(wellFormedSvg(`<svg><g></svg>`)).toBe(false);
     expect(wellFormedSvg(`<svg></svg><svg></svg>`)).toBe(false);
     expect(wellFormedSvg(`<html></html>`)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+/** The gzipped scripts a page may load, in bytes. */
+const SCRIPT_BUDGET = 45 * 1024;
+
+/** The weight of each still picture, in bytes. */
+const STILL_BUDGET = 30 * 1024;
+
+export interface Script {
+  /** Its gzipped size, in bytes. */
+  readonly gzip: number;
+  /** The scripts it imports, statically or dynamically, as paths in `public/`. */
+  readonly imports: readonly string[];
+}
+
+/** Every built script, as a path in `public/`, with its gzipped size and what it imports. */
+export function scriptsOf(metafile: Metafile, outRoot: string): Map<string, Script> {
+  const inPublic = (path: string) => relative(outRoot, resolve(SITE, path)).split(sep).join("/");
+  const scripts = new Map<string, Script>();
+  for (const [path, output] of Object.entries(metafile.outputs)) {
+    if (!path.endsWith(".js")) continue;
+    scripts.set(inPublic(path), {
+      gzip: gzipSync(readFileSync(resolve(SITE, path))).length,
+      imports: output.imports.filter((i) => !i.external).map((i) => inPublic(i.path)),
+    });
+  }
+  return scripts;
+}
+
+/** What a page loads: the scripts it links and every script they import, each once. */
+export function loads(linked: readonly string[], scripts: Map<string, Script>): string[] {
+  const seen = new Set<string>();
+  const visit = (path: string) => {
+    if (seen.has(path)) return;
+    seen.add(path);
+    for (const next of scripts.get(path)?.imports ?? []) visit(next);
+  };
+  linked.forEach(visit);
+  return [...seen];
+}
+
+const kb = (bytes: number) => `${(bytes / 1024).toFixed(1)} KB`;
+
+/** The pages whose scripts weigh more than the budget, gzipped, naming each page and its weight. */
+export function budgetProblems(
+  pages: readonly { url: string; scripts: readonly string[] }[],
+  scripts: Map<string, Script>,
+  budget = SCRIPT_BUDGET,
+): string[] {
+  return pages.flatMap(({ url, scripts: linked }) => {
+    const total = loads(linked, scripts).reduce((sum, p) => sum + (scripts.get(p)?.gzip ?? 0), 0);
+    return total > budget ? [`${url}: ${kb(total)} gzipped, over ${kb(budget)}`] : [];
+  });
+}
+
+/** The scripts a page links, as paths in `public/`. */
+const linkedScripts = (html: string) =>
+  tags(html)
+    .filter((t) => t.name === "script" && t.attrs["src"])
+    .map((t) => t.attrs["src"]!.replace(/^\//, ""));
+
+describe("the weight a page loads", () => {
+  it("keeps every page's scripts within 45 KB gzipped, chunks included", async () => {
+    const { metafile } = await ready;
+    const scripts = scriptsOf(metafile, built);
+    expect([...scripts.keys()], "the entry the pages link").toContain("assets/site.js");
+    const pages = PAGES.concat("404.html").map((file) => ({
+      url: pageUrl(file),
+      scripts: linkedScripts(read(file)),
+    }));
+    for (const { url, scripts: linked } of pages) {
+      for (const path of linked) expect(scripts.has(path), `${url} links ${path}`).toBe(true);
+    }
+    expect(budgetProblems(pages, scripts), "pages over their budget").toEqual([]);
+    // The entry imports the sea, so a page that loads one loads both.
+    expect(loads(["assets/site.js"], scripts).length).toBeGreaterThan(1);
+  });
+
+  it("keeps every still picture within 30 KB", async () => {
+    await ready;
+    const offenders = BUILT.filter((f) => f.endsWith(".svg"))
+      .map((file) => [file, statSync(join(built, file)).size] as const)
+      .filter(([, bytes]) => bytes > STILL_BUDGET)
+      .map(([file, bytes]) => `${file}: ${kb(bytes)}, over ${kb(STILL_BUDGET)}`);
+    expect(offenders, "still pictures over their budget").toEqual([]);
+  });
+
+  it("names the page and its weight when the scripts are too heavy", () => {
+    const scripts = new Map<string, Script>([
+      ["assets/site.js", { gzip: 30_000, imports: ["assets/chunk-SEA.js"] }],
+      ["assets/chunk-SEA.js", { gzip: 20_000, imports: ["assets/site.js"] }],
+    ]);
+    expect(
+      budgetProblems(
+        [
+          { url: "/", scripts: ["assets/site.js"] },
+          { url: "/privacy/", scripts: [] },
+        ],
+        scripts,
+      ),
+    ).toEqual(["/: 48.8 KB gzipped, over 45.0 KB"]);
   });
 });

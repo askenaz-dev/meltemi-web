@@ -49,7 +49,7 @@
   - recolouring on a scheme change.
 
   Verify under `pnpm site:dev` on every product page in both languages.
-- [ ] 3.4 The budgets: from esbuild's metafile, a test gzips what each page loads (the entry, with Motion, and the chunks it imports) and fails above 45 KB, and fails on a still picture above 30 KB. Verify `pnpm build && pnpm test` passes, and that an oversized fixture fails naming the page and size.
+- [x] 3.4 The budgets: from esbuild's metafile, a test gzips what each page loads (the entry, with Motion, and the chunks it imports) and fails above 45 KB, and fails on a still picture above 30 KB. Verify `pnpm build && pnpm test` passes, and that an oversized fixture fails naming the page and size.
 
 ## 4. The browser check
 
