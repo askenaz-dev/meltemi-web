@@ -1,11 +1,12 @@
-// The mark sails (specification `ocean-package`, "The mark is placed, never redrawn"): the package
-// only ever writes the mark's CSS transform, a translation onto the sea and a tilt of at most four
-// degrees. Its paths, fills, strokes and filters are the brand's and are never touched.
+// The fleet sails (specification `ocean-package`, "The mark is placed, never redrawn"): the
+// package only ever writes an element's CSS transform, a translation onto the sea, a scale from
+// its depth and a tilt of at most four degrees. Its paths, fills, strokes and filters are the
+// brand's and are never touched.
 
-/** The most the mark may tilt, in degrees. */
+/** The most a boat may tilt, in degrees. */
 export const MAX_TILT = 4;
 
-/** Where the hull's keel sits within the mark's box, from its top (the brand file's 226 of 256). */
+/** Where the hull's keel sits within the mark's box, from its top (the brand file's 220 of 256). */
 export const KEEL = 0.86;
 
 export interface MarkPlacement {
@@ -14,9 +15,11 @@ export interface MarkPlacement {
   readonly y: number;
   /** Clockwise tilt in degrees, already within MAX_TILT. */
   readonly angle: number;
+  /** The boat's size against the lead's: 1 nearest, smaller farther away. */
+  readonly scale: number;
 }
 
-/** What the placement needs of the mark: its size and its style's transform. */
+/** What the placement needs of a boat: its size and its style's transform. */
 export interface MarkElement {
   readonly offsetWidth: number;
   readonly offsetHeight: number;
@@ -29,10 +32,15 @@ export function tiltOf(slope: number): number {
   return Math.max(-MAX_TILT, Math.min(MAX_TILT, degrees));
 }
 
-/** Writes the mark's transform, and nothing else, so its keel sits on the placement's point. */
+/**
+ * Writes the element's transform, and nothing else, so its keel sits on the placement's point.
+ * The element's `transform-origin` is its keel (50% 86%), so the scale and the tilt pivot there
+ * and the keel stays on the wave at any size.
+ */
 export function placeMark(mark: MarkElement, placement: MarkPlacement): void {
   const left = placement.x - mark.offsetWidth / 2;
   const top = placement.y - mark.offsetHeight * KEEL;
   const angle = Math.max(-MAX_TILT, Math.min(MAX_TILT, placement.angle));
-  mark.style.transform = `translate(${left.toFixed(2)}px, ${top.toFixed(2)}px) rotate(${angle.toFixed(3)}deg)`;
+  const scale = Math.max(0.05, Math.min(1, placement.scale));
+  mark.style.transform = `translate(${left.toFixed(2)}px, ${top.toFixed(2)}px) scale(${scale.toFixed(3)}) rotate(${angle.toFixed(3)}deg)`;
 }

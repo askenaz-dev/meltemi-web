@@ -201,8 +201,8 @@ describe("restyle", () => {
   });
 });
 
-describe("the mark is placed, never redrawn", () => {
-  /** A mark that records every write: only `style.transform` may change. */
+describe("the fleet is placed, never redrawn", () => {
+  /** A boat that records every write: only `style.transform` may change. */
   function fakeMark() {
     const writes: string[] = [];
     const style = new Proxy({ transform: "" } as Record<string, string>, {
@@ -231,40 +231,78 @@ describe("the mark is placed, never redrawn", () => {
     return { mark, style, writes };
   }
 
+  const TRANSFORM =
+    /^translate\((-?[\d.]+)px, (-?[\d.]+)px\) scale\(([\d.]+)\) rotate\((-?[\d.]+)deg\)$/;
+
   it("sails 10 seconds writing nothing but its transform, never tilting past 4 degrees", () => {
-    const { mark, style, writes } = fakeMark();
+    // Scenario: Sailing the fleet.
+    const fleet = [fakeMark(), fakeMark(), fakeMark()];
     const h = harness();
     const sea = createSea(
       asCanvas(fakeCanvas({ "2d": recordingContext() })),
-      { state: "home", mark: mark as never },
+      { state: "ide", fleet: fleet.map((f) => f.mark as never) },
       h.env,
     );
     sea.start();
     const angles: number[] = [];
     for (let i = 0; i < 625; i++) {
       h.advance(16);
-      const rotation = /rotate\((-?[\d.]+)deg\)/.exec(style["transform"] ?? "");
-      angles.push(Number(rotation?.[1]));
+      for (const { style } of fleet) {
+        const m = TRANSFORM.exec(style["transform"] ?? "");
+        expect(m, style["transform"]).not.toBeNull();
+        angles.push(Number(m![4]));
+      }
     }
-    expect(new Set(writes)).toEqual(new Set(["style.transform"]));
+    for (const { writes } of fleet) expect(new Set(writes)).toEqual(new Set(["style.transform"]));
     expect(Math.max(...angles.map(Math.abs))).toBeLessThanOrEqual(4);
     expect(new Set(angles).size, "it rocks with the sea").toBeGreaterThan(10);
+    expect(Number(TRANSFORM.exec(fleet[0]!.style["transform"]!)![3]), "the lead at full size").toBe(
+      1,
+    );
+    expect(Number(TRANSFORM.exec(fleet[1]!.style["transform"]!)![3])).toBeLessThan(1);
   });
 
-  it("moves the mark across the canvas with progress", () => {
-    const { mark } = fakeMark();
+  it("sails the fleet to the right on its own, with no scroll", () => {
+    const fleet = [fakeMark(), fakeMark()];
+    const h = harness();
     const sea = createSea(
       asCanvas(fakeCanvas({ "2d": recordingContext() })),
-      { state: "home", mark: mark as never, reducedMotion: true },
+      { state: "home", fleet: fleet.map((f) => f.mark as never) },
+      h.env,
+    );
+    sea.start();
+    h.advance(16);
+    const before = [...sea.figures.xs];
+    for (let i = 0; i < 60; i++) h.advance(16);
+    expect(sea.figures.boats).toBe(2);
+    sea.figures.xs.forEach((x, i) => expect(x).toBeGreaterThan(before[i]!));
+    expect(sea.figures.leadX).toBe(sea.figures.xs[0]);
+  });
+
+  it("places a reduced sea's fleet once, at rest", () => {
+    const { mark, style } = fakeMark();
+    const sea = createSea(
+      asCanvas(fakeCanvas({ "2d": recordingContext() })),
+      { state: "home", fleet: [mark as never], reducedMotion: true },
       harness().env,
     );
     sea.start();
-    const at = (p: number) => {
-      sea.setProgress(p);
-      return sea.figures.markX;
-    };
-    expect(at(0)).toBeCloseTo(800 * 0.18, 0);
-    expect(at(1)).toBeCloseTo(800 * 0.82, 0);
-    expect(at(0.5)).toBeGreaterThan(at(0.25));
+    expect(sea.frames).toBe(1);
+    const m = TRANSFORM.exec(style["transform"] ?? "");
+    expect(m).not.toBeNull();
+    // The lead rests where the still picture leaves room: 18% + 35% of the crossing.
+    expect(sea.figures.leadX).toBeCloseTo(800 * (0.18 + 0.35 * (0.82 - 0.18)), 0);
+  });
+
+  it("refuses a fleet larger than the state sails, naming both", () => {
+    // Scenario: Bad options.
+    const fleet = Array.from({ length: 5 }, () => fakeMark().mark as never);
+    expect(() =>
+      createSea(
+        asCanvas(fakeCanvas({ "2d": recordingContext() })),
+        { state: "home", fleet },
+        harness().env,
+      ),
+    ).toThrow('fleet must have at most 4 elements for state "home"; received 5');
   });
 });

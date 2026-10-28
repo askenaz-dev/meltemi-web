@@ -1,12 +1,12 @@
 // The specification `ocean-package`, "Named sea states": the package knows exactly four states,
-// the IDE's sails fall into line on the mark's heading as progress grows, and the Diagrams flow is
-// drawn by links that appear with progress.
+// each with its fleet, and the Diagrams flow is drawn by links that appear with progress.
 
 import { describe, expect, it } from "vitest";
 import { compose } from "../src/compose.js";
-import { STATES, definitionOf, restProgress } from "../src/states.js";
+import { fleetOf } from "../src/fleet.js";
+import { seeded } from "../src/noise.js";
 import { viewOf } from "../src/scene.js";
-import { particles, seeded } from "../src/wind.js";
+import { STATES, definitionOf, fleetSize, restProgress } from "../src/states.js";
 
 const view = viewOf(1200, 560);
 const scene = (state: (typeof STATES)[number], progress: number, t = 3) =>
@@ -16,8 +16,7 @@ const scene = (state: (typeof STATES)[number], progress: number, t = 3) =>
     state,
     progress,
     wind: 0.8,
-    particles: particles(60, seeded(3)),
-    mark: { width: 120, height: 120 },
+    boats: fleetOf(state, view, seeded(3)),
   });
 
 describe("named sea states", () => {
@@ -30,9 +29,10 @@ describe("named sea states", () => {
     expect(() => definitionOf("storm")).toThrow(
       'state must be one of home, ide, diagrams, still; received "storm"',
     );
+    expect(() => fleetSize("storm" as never)).toThrow("state must be one of");
   });
 
-  it("rests each state where its story is told: the sails in line, the flow drawn", () => {
+  it("rests each state where its story is told", () => {
     for (const state of STATES) {
       expect(restProgress(state)).toBeGreaterThanOrEqual(0);
       expect(restProgress(state)).toBeLessThanOrEqual(1);
@@ -42,43 +42,14 @@ describe("named sea states", () => {
     expect(() => restProgress("storm" as never)).toThrow("state must be one of");
   });
 
-  it("follows the IDE's mark with at least three sails that line up on its heading", () => {
-    const start = scene("ide", 0);
-    const end = scene("ide", 1);
-    expect(start.figures.sails).toBeGreaterThanOrEqual(3);
-    expect(start.figures.spread).toBeGreaterThan(20);
-    expect(scene("ide", 0.5).figures.spread).toBeLessThan(start.figures.spread);
-    expect(end.figures.spread).toBeCloseTo(0, 6);
-    const sails = end.shapes.filter((s) => s.kind === "triangle");
-    expect(sails.length).toBe(end.figures.sails);
-  });
-
-  it("keeps the IDE's sails out of the mark's clear space, at every width and moment", () => {
-    for (const [width, height, mark] of [
-      [1280, 446, 90],
-      [390, 300, 56],
-      [1920, 560, 104],
-    ] as const) {
-      const wide = viewOf(width, height);
-      for (const progress of [0, 0.3, 0.6, 1]) {
-        for (const t of [0, 1.7, 4.2, 9]) {
-          const { shapes, clearSpace } = compose({
-            view: wide,
-            t,
-            state: "ide",
-            progress,
-            wind: 0.8,
-            particles: [],
-            mark: { width: mark, height: mark },
-          });
-          const left = clearSpace!.left * width;
-          for (const s of shapes) {
-            if (s.kind !== "triangle") continue;
-            const reach = Math.max(s.points[0]!, s.points[2]!, s.points[4]!);
-            expect(reach, `${width}px at ${progress}, t ${t}`).toBeLessThan(left);
-          }
-        }
-      }
+  it("places every boat of the fleet and reports them", () => {
+    for (const state of STATES) {
+      const { placements, figures } = scene(state, 0.5);
+      expect(placements).toHaveLength(fleetSize(state));
+      expect(figures.boats).toBe(fleetSize(state));
+      expect(figures.xs).toHaveLength(fleetSize(state));
+      expect(figures.leadX).toBe(placements[0]!.x);
+      expect(placements[0]!.scale).toBe(1);
     }
   });
 
@@ -90,22 +61,10 @@ describe("named sea states", () => {
     expect(dots.length).toBe(9);
   });
 
-  it("draws neither sails nor links on the home's crossing", () => {
+  it("draws nothing above the sea on the home's crossing but its fleet", () => {
     const home = scene("home", 0.7);
-    expect([home.figures.sails, home.figures.links]).toEqual([0, 0]);
-    expect(home.shapes.every((s) => s.ink === "wind")).toBe(true);
-  });
-
-  it("keeps the wind out of the mark's clear space", () => {
-    const { shapes, clearSpace } = scene("home", 0.5);
-    expect(clearSpace).toBeDefined();
-    const box = clearSpace!;
-    for (const s of shapes) {
-      if (s.kind !== "segment") continue;
-      const u = s.x1 / view.width;
-      const v = s.y1 / view.height;
-      const inside = u >= box.left && u <= box.right && v >= box.top && v <= box.bottom;
-      expect(inside, `a streak's head at ${u.toFixed(3)},${v.toFixed(3)}`).toBe(false);
-    }
+    expect(home.shapes).toEqual([]);
+    expect(home.figures.links).toBe(0);
+    expect(home.figures.boats).toBe(4);
   });
 });

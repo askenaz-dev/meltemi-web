@@ -1,17 +1,20 @@
 // `createSea`: a sea state drawn on a canvas, with a handle to drive it (specification
 // `ocean-package`, "A sea on a canvas"). The handle owns the frame loop, which runs only while
-// motion is allowed, the document is visible and the canvas is in view; it places the mark, if
-// the page gave one, and moves nothing else of the page.
+// motion is allowed, the document is visible and the canvas is in view; it sails the fleet the
+// page gave it, placing each boat by its transform, and moves nothing else of the page.
 
-import { paletteOf, type Palette, type StyleSource } from "./colors.js";
+import { paletteOf, type Palette } from "./colors.js";
 import { compose, type SceneFigures } from "./compose.js";
+import { browserEnvironment, checkUnit, type Environment } from "./environment.js";
+import { fleetOf, sail, type Boat } from "./fleet.js";
 import type { Quality, Renderer } from "./frame.js";
 import { placeMark, type MarkElement } from "./mark.js";
 import { canvasRenderer, type Context2D } from "./render-2d.js";
 import { webglRenderer } from "./render-webgl.js";
 import { viewOf, type View } from "./scene.js";
-import { definitionOf, type SeaState } from "./states.js";
-import { particles, step, type Particle } from "./wind.js";
+import { definitionOf, fleetSize, type SeaState } from "./states.js";
+
+export type { Environment } from "./environment.js";
 
 export interface SeaOptions {
   /** The sea state to draw. */
@@ -20,10 +23,13 @@ export interface SeaOptions {
   readonly reducedMotion?: boolean;
   /** The scroll progress through the hero, between 0 and 1. */
   readonly progress?: number;
-  /** The wind's strength, between 0 and 1. */
+  /** The wind's strength, between 0 and 1: it speeds the fleet. */
   readonly wind?: number;
-  /** The mark's element, placed on the sea by its transform only. */
-  readonly mark?: MarkElement | null;
+  /**
+   * The fleet's elements, the lead first, each placed on the sea by its transform only. At most
+   * `fleetSize(state)` of them; a shorter fleet sails as many boats as it has elements.
+   */
+  readonly fleet?: readonly MarkElement[] | null;
 }
 
 export type Figures = SceneFigures;
@@ -33,7 +39,7 @@ export interface Sea {
   readonly state: SeaState;
   /** How many frames have been drawn. */
   readonly frames: number;
-  /** What the last frame drew: following sails, links, the sails' spread and the mark's place. */
+  /** What the last frame drew: the boats, the lead's place, every boat's x, the links. */
   readonly figures: Figures;
   readonly progress: number;
   readonly wind: number;
@@ -53,38 +59,6 @@ export interface Sea {
   destroy(): void;
 }
 
-/** What the sea needs from the page; tests give their own. */
-export interface Environment {
-  requestFrame(callback: (time: number) => void): number;
-  cancelFrame(handle: number): void;
-  readonly document?: {
-    readonly hidden: boolean;
-    addEventListener(type: "visibilitychange", listener: () => void): void;
-    removeEventListener(type: "visibilitychange", listener: () => void): void;
-  };
-  readonly IntersectionObserver?: new (
-    callback: (entries: readonly { readonly isIntersecting: boolean }[]) => void,
-  ) => { observe(target: Element): void; disconnect(): void };
-  devicePixelRatio(): number;
-  coarsePointer(): boolean;
-  style(element: Element): StyleSource | undefined;
-  random(): number;
-}
-
-function browserEnvironment(): Environment {
-  const g = globalThis as typeof globalThis & Partial<Window>;
-  return {
-    requestFrame: (cb) => g.requestAnimationFrame!(cb),
-    cancelFrame: (h) => g.cancelAnimationFrame!(h),
-    document: g.document,
-    IntersectionObserver: g.IntersectionObserver,
-    devicePixelRatio: () => g.devicePixelRatio ?? 1,
-    coarsePointer: () => g.matchMedia?.("(pointer: coarse)").matches ?? false,
-    style: (el) => g.getComputedStyle?.(el),
-    random: Math.random,
-  };
-}
-
 /** The most device pixels a CSS pixel may cost: 2, or 1.5 on a coarse (touch) pointer. */
 export function pixelRatioCap(ratio: number, coarse: boolean): number {
   return Math.max(1, Math.min(ratio, coarse ? 1.5 : 2));
@@ -100,13 +74,6 @@ export function percentile95(times: readonly number[]): number {
 /** Frames measured before the quality is judged, and the p95 above which points are halved. */
 export const JUDGED_FRAMES = 90;
 export const SLOW_FRAME_MS = 20;
-
-function checkUnit(name: string, value: number): number {
-  if (!Number.isFinite(value) || value < 0 || value > 1) {
-    throw new RangeError(`${name} must be between 0 and 1; received ${String(value)}`);
-  }
-  return value;
-}
 
 /** The canvas the sea draws on, as far as choosing a renderer goes. */
 export interface CanvasLike {
@@ -135,12 +102,8 @@ export function chooseRenderer(canvas: CanvasLike, palette: Palette): Renderer |
   return ctx ? canvasRenderer(ctx, palette) : undefined;
 }
 
-/** How many wind particles a canvas of this area carries. */
-export function windCount(view: View, quality: Quality): number {
-  const count = Math.round((view.width * view.height) / 9000);
-  const capped = Math.min(110, Math.max(36, count));
-  return quality === "high" ? capped : Math.round(capped / 2);
-}
+/** The lead's size when the page gave no element: a fifth of the canvas's height. */
+const DEFAULT_MARK = 0.2;
 
 /** Draws a sea state on a canvas and returns its handle. */
 export function createSea(
@@ -153,7 +116,12 @@ export function createSea(
   let progress = checkUnit("progress", options.progress ?? 0);
   let wind = checkUnit("wind", options.wind ?? 0.6);
   const still = options.reducedMotion === true || !definition.animated;
-  const mark = options.mark ?? undefined;
+  const fleet = options.fleet ?? [];
+  if (fleet.length > fleetSize(definition.state)) {
+    throw new RangeError(
+      `fleet must have at most ${fleetSize(definition.state)} elements for state "${definition.state}"; received ${fleet.length}`,
+    );
+  }
 
   let palette = paletteOf(env.style(canvas));
   const renderer = chooseRenderer(canvas as unknown as CanvasLike, palette);
@@ -169,10 +137,11 @@ export function createSea(
   let seaTime = 0;
   let last: number | undefined;
   const times: number[] = [];
-  let wake: Particle[] = [];
-  let figures: Figures = { sails: definition.sails, links: 0, spread: 0, markX: 0 };
+  let boats: Boat[] = [];
+  let figures: Figures = { boats: 0, leadX: 0, xs: [], links: 0 };
 
   const visible = () => !(env.document?.hidden ?? false);
+  const markWidth = () => fleet[0]?.offsetWidth || view.height * DEFAULT_MARK;
 
   const measure = () => {
     dpr = pixelRatioCap(env.devicePixelRatio(), env.coarsePointer());
@@ -184,22 +153,22 @@ export function createSea(
     if (canvas.width !== w) canvas.width = w;
     if (canvas.height !== h) canvas.height = h;
     renderer?.resize(w, h);
-    const count = windCount(view, quality);
-    if (wake.length !== count) wake = particles(count, env.random);
+    // The fleet is dealt once, for the first size; the boats keep their world places after.
+    if (boats.length === 0) {
+      boats = fleetOf(definition.state, view, env.random).slice(
+        0,
+        Math.max(1, fleet.length || fleetSize(definition.state)),
+      );
+    }
   };
 
   const draw = () => {
     if (!renderer || destroyed) return;
-    const scene = compose({
-      view,
-      t: seaTime,
-      state: definition.state,
-      progress,
-      wind,
-      particles: wake,
-      mark: mark ? { width: mark.offsetWidth, height: mark.offsetHeight } : undefined,
+    const scene = compose({ view, t: seaTime, state: definition.state, progress, wind, boats });
+    fleet.forEach((element, i) => {
+      const placement = scene.placements[i];
+      if (placement) placeMark(element, placement);
     });
-    if (mark) placeMark(mark, scene.placement);
     figures = scene.figures;
     renderer.draw({
       view,
@@ -229,7 +198,7 @@ export function createSea(
     }
     last = now;
     seaTime += dt;
-    step(wake, dt, seaTime, wind, env.random);
+    sail(boats, dt, wind, view, seaTime, definition.state, markWidth(), env.random);
     draw();
     schedule();
   };

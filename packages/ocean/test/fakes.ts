@@ -11,22 +11,28 @@ export interface Recorder {
   globalAlpha: number;
   lineWidth: number;
   lineCap: CanvasLineCap;
+  globalCompositeOperation: string;
   /** The fill styles in use at each `fill()`, in order. */
   readonly fills: string[];
+  /** The fill styles in use at each `fillRect()`, in order. */
+  readonly rects: string[];
 }
 
 /** A 2D context that records what it is asked to do. */
 export function recordingContext(): Recorder & Record<string, unknown> {
   const calls: string[] = [];
   const fills: string[] = [];
+  const rects: string[] = [];
   const ctx: Recorder & Record<string, unknown> = {
     calls,
     fills,
+    rects,
     fillStyle: "",
     strokeStyle: "",
     globalAlpha: 1,
     lineWidth: 1,
     lineCap: "butt",
+    globalCompositeOperation: "source-over",
   };
   for (const name of [
     "clearRect",
@@ -43,6 +49,10 @@ export function recordingContext(): Recorder & Record<string, unknown> {
   ctx["fill"] = () => {
     calls.push("fill");
     fills.push(ctx.fillStyle);
+  };
+  ctx["fillRect"] = () => {
+    calls.push("fillRect");
+    rects.push(`${ctx.globalCompositeOperation} ${ctx.fillStyle}`);
   };
   return ctx;
 }

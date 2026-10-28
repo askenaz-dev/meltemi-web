@@ -1,14 +1,19 @@
 // Still pictures (specification `ocean-package`, "Still pictures from the same sea"): the state at
-// rest, drawn from the same wave function, wind and figures as the moving sea, as an SVG that
+// rest, drawn from the same wave function, fleet and figures as the moving sea, as an SVG that
 // pages show where nothing moves (no script, no WebGL or Canvas). One picture per scheme, its
-// colours as attributes: an SVG's own `<style>` would fall under the page's policy.
+// colours as attributes: an SVG's own `<style>` would fall under the page's policy. The fleet is
+// the mark defined once and used once per boat; the wind is a few streamlines of the same field.
 
 import { compose } from "./compose.js";
+import { fleetOf, placementOf } from "./fleet.js";
 import { lattice } from "./frame.js";
+import { KEEL } from "./mark.js";
+import { MARK_BOX, MARK_GRADIENT, MARK_HULL, MARK_M, MARK_STROKE } from "./mark-shape.js";
+import { noise2 } from "./noise.js";
 import { FAR, NEAR, project, viewOf } from "./scene.js";
 import { definitionOf, type SeaState } from "./states.js";
 import { declaredAmplitude, heightAt } from "./waves.js";
-import { particles, seeded } from "./wind.js";
+import { seeded, streamlines } from "./wind.js";
 
 export type Scheme = "light" | "dark";
 
@@ -34,6 +39,9 @@ export interface StillOptions {
 
 /** A moment of the sea that reads well at rest. */
 const MOMENT = 2.2;
+
+/** The lead boat's height as a share of the picture's. */
+const LEAD_HEIGHT = 0.2;
 
 const round = (n: number) => Math.round(n * 10) / 10;
 
@@ -108,15 +116,34 @@ export function stillPicture(state: SeaState, options: StillOptions = {}): strin
       );
   }
 
-  // The wind and the figures, as the moving sea draws them at this moment.
+  // The wind: a few streamlines of the same field, deterministic, as relative integer moves so
+  // they weigh little.
+  const wind: string[] = [];
+  for (const line of streamlines(width, height, 10, seeded(9), noise2(3), 28)) {
+    let d = `M${Math.round(line[0]!)} ${Math.round(line[1]!)}`;
+    let px = Math.round(line[0]!);
+    let py = Math.round(line[1]!);
+    for (let i = 2; i < line.length; i += 2) {
+      const x = Math.round(line[i]!);
+      const y = Math.round(line[i + 1]!);
+      d += `l${x - px} ${y - py}`;
+      px = x;
+      py = y;
+    }
+    wind.push(
+      `<path d="${d}" fill="none" stroke="${colours.wind}" stroke-opacity="0.32" stroke-width="1.4" stroke-linecap="round"/>`,
+    );
+  }
+
+  // The figures, as the moving sea draws them at this moment.
+  const boats = fleetOf(state, view, seeded(5));
   const scene = compose({
     view,
     t: MOMENT,
     state,
     progress: definitionOf(state).rest,
     wind: 0.7,
-    particles: definitionOf(state).animated ? particles(26, seeded(11)) : [],
-    mark: { width: height * 0.2, height: height * 0.2 },
+    boats,
   });
   const inks = { point: colours.point, crest: colours.crest, wind: colours.wind };
   const shapes: string[] = [];
@@ -140,10 +167,34 @@ export function stillPicture(state: SeaState, options: StillOptions = {}): strin
     }
   }
 
+  // The fleet: the mark once, in the brand's own gradient, and one use per boat, the farthest
+  // first so the lead draws over them. Each use is scaled from the box's units and pivots on
+  // the keel.
+  const unit = (height * LEAD_HEIGHT) / MARK_BOX;
+  const keelY = MARK_BOX * KEEL;
+  const fleet = boats
+    .map((boat) => placementOf(boat, view, MOMENT, state))
+    .sort((a, b) => a.scale - b.scale)
+    .map((p) => {
+      const s = unit * p.scale;
+      const tx = round(p.x - (MARK_BOX / 2) * s);
+      const ty = round(p.y - keelY * s);
+      return `<use href="#m" transform="translate(${tx} ${ty}) scale(${Math.round(s * 1000) / 1000}) rotate(${round(p.angle)} ${MARK_BOX / 2} ${keelY})"/>`;
+    });
+  const defs = [
+    `<defs>`,
+    `<linearGradient id="g" gradientUnits="userSpaceOnUse" x1="${MARK_GRADIENT.x1}" y1="${MARK_GRADIENT.y1}" x2="${MARK_GRADIENT.x2}" y2="${MARK_GRADIENT.y2}"><stop offset="0" stop-color="${MARK_GRADIENT.from}"/><stop offset="1" stop-color="${MARK_GRADIENT.to}"/></linearGradient>`,
+    `<g id="m"><path d="${MARK_M}" fill="none" stroke="url(#g)" stroke-width="${MARK_STROKE}" stroke-linecap="round" stroke-linejoin="round"/><path d="${MARK_HULL}" fill="url(#g)"/></g>`,
+    `</defs>`,
+  ].join("");
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" preserveAspectRatio="xMidYMax slice">`,
+    defs,
     ...groups,
+    ...wind,
     ...shapes,
+    ...fleet,
     "</svg>",
     "",
   ].join("\n");
