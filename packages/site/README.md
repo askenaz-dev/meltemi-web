@@ -100,7 +100,9 @@ hand-fixed copy: the IDE's generator (`tui/examples/capture_svg.rs`) wrote `--` 
 comment, which made the file invalid XML, and its reversed runs had no monospace face. The
 generator now writes a well-formed file with both text classes in the monospace face, a docs lint
 in the IDE checks every SVG of `docs/media/`, and the capture shows the sessions view grouped by
-project and state. Later refreshes copy the file as it is.
+project and state. Later refreshes copy the file as it is: on 2026-10-28 it was copied again from
+the IDE's commit **`ec223233061391ff5d9206b3e603c89be415056e`** (change `enfasis-con-color`), where the TUI paints what it
+emphasises in the brand's blue instead of reverse video and the capture carries those colours.
 
 The old GitHub Pages addresses (`/method.html`, `/es/downloads.html`…) redirect with a 301 to the
 page that now holds their content, and `/media/meltemi-mark-gradient.svg` keeps answering.

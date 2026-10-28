@@ -10,28 +10,26 @@
   </style>
   <rect class="bg" x="0" y="0" width="768" height="432" rx="8"/>
   <text class="fg" x="0" y="12.960001" xml:space="preserve">● daemon 0.1.0 | 1845s | 1 ses.   ⠋ 1 working   </text>
-  <rect class="rev" x="384" y="0" width="88" height="18"/>
-  <text class="revfg" x="384" y="12.960001" xml:space="preserve">! 1 waiting</text>
-  <rect class="rev" x="0" y="18" width="216" height="18"/>
-  <text class="revfg" x="0" y="30.960001" xml:space="preserve">! 1 permissions waiting - a</text>
+  <rect fill="#2563eb" x="384" y="0" width="88" height="18"/>
+  <text class="fg" fill="#ffffff" font-weight="700" x="384" y="12.960001" xml:space="preserve">! 1 waiting</text>
+  <rect fill="#2563eb" x="0" y="18" width="216" height="18"/>
+  <text class="fg" fill="#ffffff" font-weight="700" x="0" y="30.960001" xml:space="preserve">! 1 permissions waiting - a</text>
   <text class="fg" x="0" y="48.96" xml:space="preserve">┌</text>
-  <rect class="rev" x="8" y="36" width="96" height="18"/>
-  <text class="revfg" x="8" y="48.96" xml:space="preserve"> 1 Sessions </text>
+  <rect fill="#2563eb" x="8" y="36" width="96" height="18"/>
+  <text class="fg" fill="#ffffff" font-weight="700" x="8" y="48.96" xml:space="preserve"> 1 Sessions </text>
   <text class="fg" x="104" y="48.96" xml:space="preserve">──────────────────────────────────────────────────────────────────────────────────┐</text>
   <text class="fg" x="0" y="66.96" xml:space="preserve">│</text>
-  <rect class="rev" x="8" y="54" width="104" height="18"/>
-  <text class="revfg" x="8" y="66.96" xml:space="preserve">▾ harbour (2)</text>
+  <text class="fg" fill="#2563eb" font-weight="700" x="8" y="66.96" xml:space="preserve">▾ harbour (2)</text>
   <text class="fg" x="112" y="66.96" xml:space="preserve">                                                                                 │</text>
   <text class="fg" x="0" y="84.96" xml:space="preserve">│  ‖ waiting on your decision (1)                                                              │</text>
   <text class="fg" x="0" y="102.96" xml:space="preserve">│   ‖ waiting-permission 7b21e4d8  mock-agent  [personal]                                      │</text>
   <text class="fg" x="0" y="120.96" xml:space="preserve">│  ▶ working (1)                                                                               │</text>
   <text class="fg" x="0" y="138.96" xml:space="preserve">│</text>
-  <rect class="rev" x="8" y="126" width="320" height="18"/>
-  <text class="revfg" x="8" y="138.96" xml:space="preserve">▸  ▶ active 3f9c1a20  mock-agent  [work]</text>
+  <rect fill="#2563eb" x="8" y="126" width="320" height="18"/>
+  <text class="fg" fill="#ffffff" font-weight="700" x="8" y="138.96" xml:space="preserve">▸  ▶ active 3f9c1a20  mock-agent  [work]</text>
   <text class="fg" x="328" y="138.96" xml:space="preserve">                                                      │</text>
   <text class="fg" x="0" y="156.96" xml:space="preserve">│</text>
-  <rect class="rev" x="8" y="144" width="128" height="18"/>
-  <text class="revfg" x="8" y="156.96" xml:space="preserve">▾ lighthouse (1)</text>
+  <text class="fg" fill="#2563eb" font-weight="700" x="8" y="156.96" xml:space="preserve">▾ lighthouse (1)</text>
   <text class="fg" x="136" y="156.96" xml:space="preserve">                                                                              │</text>
   <text class="fg" x="0" y="174.96" xml:space="preserve">│  ✓ stopped (1)                                                                               │</text>
   <text class="fg" x="0" y="192.96" xml:space="preserve">│   ✓ ended c04ab7f1  mock-agent                                                               │</text>
