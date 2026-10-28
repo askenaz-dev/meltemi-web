@@ -92,6 +92,7 @@
   - With reduced motion: the home and the Diagrams page show one frame at rest, the mark where the still picture leaves it room, the flow drawn.
   - With JavaScript off: the still pictures, the mark at rest and every section show.
   - Found and fixed: on the IDE's pages, perspective drew two following sails on the mark's north-east arm. They now sail in its wake, out of its clear space, with a test (commit "Keep the IDE's sails in the mark's wake").
+  - Found and fixed: in the home's short hero, the wind's streaks ran beside the last lines of text. The stage's fade now hangs from the sea band, opaque to the horizon and gone under the hero's words (commit "Fade the wind out at the horizon").
   - Measured, standing in for Lighthouse: the home and `/ide/` on an emulated phone (412×823, 4× CPU slowdown, 150 ms and 1.6 Mbps), three runs each. Home: first contentful paint 0.54–0.74 s, largest 0.65–0.96 s, total blocking 44–270 ms (one task, the sea's first frame, cold), layout shift 0. `/ide/`: first contentful and largest paint 0.71–1.0 s, total blocking 0–87 ms, layout shift 0.
   - Open: the Lighthouse score itself. Lighthouse is not installed here, and downloading it awaits the owner's approval; run it on the home on mobile before this box is ticked.
 - [ ] 6.3 Owner: sign off the look of `home`, `ide` and `diagrams` in both themes (the brand gate), on the pull request's screenshots or a local preview.
