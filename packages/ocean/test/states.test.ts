@@ -4,7 +4,7 @@
 
 import { describe, expect, it } from "vitest";
 import { compose } from "../src/compose.js";
-import { STATES, definitionOf } from "../src/states.js";
+import { STATES, definitionOf, restProgress } from "../src/states.js";
 import { viewOf } from "../src/scene.js";
 import { particles, seeded } from "../src/wind.js";
 
@@ -30,6 +30,16 @@ describe("named sea states", () => {
     expect(() => definitionOf("storm")).toThrow(
       'state must be one of home, ide, diagrams, still; received "storm"',
     );
+  });
+
+  it("rests each state where its story is told: the sails in line, the flow drawn", () => {
+    for (const state of STATES) {
+      expect(restProgress(state)).toBeGreaterThanOrEqual(0);
+      expect(restProgress(state)).toBeLessThanOrEqual(1);
+    }
+    expect(restProgress("ide")).toBe(1);
+    expect(restProgress("diagrams")).toBe(1);
+    expect(() => restProgress("storm" as never)).toThrow("state must be one of");
   });
 
   it("follows the IDE's mark with at least three sails that line up on its heading", () => {

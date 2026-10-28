@@ -31,6 +31,8 @@ export interface StateDefinition {
   readonly sails: number;
   /** How many links the wind draws between points (the Diagrams flow). */
   readonly links: number;
+  /** The progress the state rests at: the story told without motion. */
+  readonly rest: number;
 }
 
 /**
@@ -57,6 +59,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     markTo: 0.82,
     sails: 0,
     links: 0,
+    rest: 0.35,
   },
   ide: {
     state: "ide",
@@ -66,6 +69,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     markTo: 0.78,
     sails: 5,
     links: 0,
+    rest: 1,
   },
   diagrams: {
     state: "diagrams",
@@ -75,6 +79,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     markTo: 0.34,
     sails: 0,
     links: 11,
+    rest: 1,
   },
   still: {
     state: "still",
@@ -84,6 +89,7 @@ const DEFINITIONS: Readonly<Record<SeaState, StateDefinition>> = {
     markTo: 0.18,
     sails: 0,
     links: 0,
+    rest: 0,
   },
 };
 
@@ -100,4 +106,12 @@ export function definitionOf(state: unknown): StateDefinition {
     );
   }
   return DEFINITIONS[state];
+}
+
+/**
+ * Where a state rests: the still pictures are drawn at this progress, and a page that does not
+ * move draws its one frame there, so the mark sits where the still picture leaves room for it.
+ */
+export function restProgress(state: SeaState): number {
+  return definitionOf(state).rest;
 }

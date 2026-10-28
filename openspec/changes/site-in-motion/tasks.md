@@ -40,16 +40,16 @@
 
   Verify the new tests that hero rules use tokens only and that no rule hides content outside `html.motion`.
 - [x] 3.2 Put the hero on every product page in both languages: the canvas, the inline mark copied from the IDE's brand file, the still pictures `/assets/sea-<state>-light.svg` and `-dark.svg` in a `<picture>`, `data-sea`, and the pause button with its labels in the page's language. Give the legal pages and the 404 `data-sea="still"` with their still picture and no script. Have the build write the still pictures. Verify the tests that every product page has its hero, twins declare the same state, the mark's paths and stops equal the brand file's, and the button labels match the language.
-- [ ] 3.3 In `src/site.ts`:
+- [x] 3.3 In `src/site.ts`:
   - the `html.motion` marker after the reduced-motion check;
   - Motion's `scroll()` feeding `setProgress` and `setWind`;
-  - the intro, drawing the `m` stroke in at most 1.6 seconds and raising the hull;
+  - the intro, drawing the `m` stroke in at most 1.6 seconds and raising the hull (CSS keyframes, rewound once the mark is on its wave);
   - `inView` reveals on `[data-reveal]`;
   - the pause button, stopping the sea and Motion, setting `aria-pressed`, swapping labels and storing nothing;
   - recolouring on a scheme change.
 
   Verify under `pnpm site:dev` on every product page in both languages.
-- [ ] 3.4 The budgets: from esbuild's metafile, a test gzips what each page loads (entry, Motion, its state's chunk) and fails above 45 KB, and fails on a still picture above 30 KB. Verify `pnpm build && pnpm test` passes, and that an oversized fixture fails naming the page and size.
+- [ ] 3.4 The budgets: from esbuild's metafile, a test gzips what each page loads (the entry, with Motion, and the chunks it imports) and fails above 45 KB, and fails on a still picture above 30 KB. Verify `pnpm build && pnpm test` passes, and that an oversized fixture fails naming the page and size.
 
 ## 4. The browser check
 

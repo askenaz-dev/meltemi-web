@@ -132,6 +132,9 @@ body {
   height: calc(var(--sea-band) / 0.54);
   z-index: 0;
   pointer-events: none;
+  /* The sky behind the hero's words fades out, so the wind blows over the sea and never across a
+     line of text. A mask: only its alpha counts. */
+  mask-image: linear-gradient(to bottom, transparent 14%, black 46%);
 }
 
 .sea-stage picture,
@@ -190,7 +193,9 @@ html.sea .sea-mark {
 }
 
 /* The wind draws the mark as the page opens: its m from end to end, then the hull out of the
-   sea. Pure CSS, so it plays even if the script never arrives, and never under reduced motion. */
+   sea. Pure CSS, so it plays even if the script never arrives, and never under reduced motion.
+   It waits 0.4 s, hidden: when the script puts the mark on its wave in that time, it rewinds the
+   intro to the end of the wait, so the drawing starts where the mark sails. */
 @keyframes sea-draw {
   from {
     stroke-dashoffset: 1;
@@ -214,12 +219,12 @@ html.sea .sea-mark {
 @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
   .sea-mark-m {
     stroke-dasharray: 1;
-    animation: sea-draw 1.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+    animation: sea-draw 1.2s 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
 
   .sea-mark-hull {
     transform-box: fill-box;
-    animation: sea-rise 0.55s 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation: sea-rise 0.55s 1.25s cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
 }
 

@@ -18,6 +18,7 @@ describe("the README, as the contract", () => {
       "stillPicture",
       "placeMark",
       "STATES",
+      "restProgress",
       "MAX_TILT",
       "BRAND_STILL",
     ];

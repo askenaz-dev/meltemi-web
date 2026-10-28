@@ -27,6 +27,8 @@ playground). The package is specified by the `ocean-package` capability of
 | `still`    | A calm sea, drawn once.                                                          |
 
 `STATES` lists them. An unknown state is an error that names the option and the value.
+`restProgress(state)` is the progress where a state tells its story without motion: the still
+pictures are drawn there, and a page that does not move draws its one frame there.
 
 ## Drawing a sea
 

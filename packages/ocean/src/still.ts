@@ -32,9 +32,6 @@ export interface StillOptions {
   readonly height?: number;
 }
 
-/** Where each state rests: the story told without motion. */
-const REST: Readonly<Record<SeaState, number>> = { home: 0.35, ide: 1, diagrams: 1, still: 0 };
-
 /** A moment of the sea that reads well at rest. */
 const MOMENT = 2.2;
 
@@ -116,7 +113,7 @@ export function stillPicture(state: SeaState, options: StillOptions = {}): strin
     view,
     t: MOMENT,
     state,
-    progress: REST[state],
+    progress: definitionOf(state).rest,
     wind: 0.7,
     particles: definitionOf(state).animated ? particles(26, seeded(11)) : [],
     mark: { width: height * 0.2, height: height * 0.2 },

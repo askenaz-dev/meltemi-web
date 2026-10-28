@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { STATES, type SeaState } from "../../ocean/src/index.js";
+import { definitionOf } from "../../ocean/src/states.js";
 import { BUILT, buildSite, stillColours } from "../scripts/build.js";
 import {
   ALL_HTML,
@@ -1023,6 +1024,18 @@ describe("a sea in every hero", () => {
       .replace(`<path class="sea-mark-hull"`, `<path filter="url(#glow)" class="sea-mark-hull"`);
     expect(markDifferences(drifted, brand)).toEqual(["its gradient stops", "a filter"]);
     expect(markDifferences(home.replace("M45 199C87", "M45 199C88"), brand)).toEqual(["its paths"]);
+  });
+
+  it("rests the mark where its state rests, so the still picture leaves it room", () => {
+    const css = cssRules(read("site.css"));
+    const offenders = (["home", "ide", "diagrams"] as const).flatMap((state) => {
+      const { markFrom, markTo, rest } = definitionOf(state);
+      const want = Math.round((markFrom + rest * (markTo - markFrom)) * 1000) / 10;
+      const rule = css.find(({ selector }) => selector === `[data-sea="${state}"] .sea-mark`);
+      const declared = /--mark-at:\s*([\d.]+)%/.exec(rule?.body ?? "")?.[1];
+      return Number(declared) === want ? [] : [`${state}: --mark-at ${declared}% for ${want}%`];
+    });
+    expect(offenders, "marks resting off their state's place").toEqual([]);
   });
 
   it("names a button labelled in another language", () => {
