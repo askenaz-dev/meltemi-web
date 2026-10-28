@@ -1251,3 +1251,101 @@ describe("the weight a page loads", () => {
     ).toEqual(["/: 48.8 KB gzipped, over 45.0 KB"]);
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+
+/** The rows of a page's table inside a section: each row's cells as text, glyphs and tags off. */
+export function rowsOf(html: string, sectionId: string): string[][] {
+  const start = html.indexOf(`aria-labelledby="${sectionId}"`);
+  const section = html.slice(start, html.indexOf("</section>", start));
+  const body = /<tbody>([\s\S]*?)<\/tbody>/.exec(section)?.[1] ?? "";
+  return [...body.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((row) =>
+    [...row[1]!.matchAll(/<td>([\s\S]*?)<\/td>/g)].map((cell) =>
+      cell[1]!
+        .replace(/<[^>]+>/g, "")
+        .replace(/[●◔○]/g, "")
+        .replace(/\s+/g, " ")
+        .trim(),
+    ),
+  );
+}
+
+/**
+ * The state of every part, as verified on 2026-10-28: the identity service answers
+ * https://id.meltemi.dev/login with GitHub and Google and its GitHub start redirects to
+ * github.com with the production callback; https://diagrams.meltemi.dev/api/session answers
+ * with the sign-in address, and the Diagrams repository has archived cloud-accounts,
+ * cloud-projects, sharing-and-permissions, live-collaboration, live-sessions, cli-cloud and
+ * account-panel (2026-10-15 to 23); the IDE's plan still has the signing of MSI and DMG pending.
+ * The next verification updates this table and the pages together.
+ */
+const STATE_AS_IT_IS = {
+  "index.html": [
+    ["Daemon, terminal client, spec engine", "Published"],
+    ["Desktop client", "In development"],
+    ["Language, command line, VS Code extension, app in the browser", "Built"],
+    ["Account, projects kept between devices, sharing, live collaboration", "Live"],
+    ["Sign-in with GitHub or Google", "Live"],
+  ],
+  "es/index.html": [
+    ["Daemon, cliente de terminal, motor de specs", "Publicado"],
+    ["Cliente de escritorio", "En desarrollo"],
+    ["Lenguaje, línea de comandos, extensión de VS Code, aplicación en el navegador", "Construido"],
+    [
+      "Cuenta, proyectos guardados entre dispositivos, uso compartido, colaboración en vivo",
+      "En producción",
+    ],
+    ["Inicio de sesión con GitHub o Google", "En producción"],
+  ],
+  "diagrams/index.html": [
+    ["Draw, edit, import and export in the app", "Available"],
+    ["Projects kept between devices, with versions", "Available"],
+    ["Sharing by link and with named people", "Available"],
+    ["Editing together", "Available"],
+    ["Publishing a catalog", "Available"],
+    ["Push and pull from the command line", "Available"],
+  ],
+  "es/diagrams/index.html": [
+    ["Dibujar, editar, importar y exportar en la app", "Disponible"],
+    ["Proyectos guardados entre dispositivos, con versiones", "Disponible"],
+    ["Compartir por enlace y con personas concretas", "Disponible"],
+    ["Edición en conjunto", "Disponible"],
+    ["Publicar un catálogo", "Disponible"],
+    ["Push y pull desde la línea de comandos", "Disponible"],
+  ],
+} as const;
+
+describe("the family's state, as the products ship it", () => {
+  for (const [file, rows] of Object.entries(STATE_AS_IT_IS)) {
+    const section = file.includes("diagrams") ? "account" : "state";
+    it(`${pageUrl(file)} says what is live, row by row`, () => {
+      const found = rowsOf(read(file), section).map((cells) =>
+        section === "state" ? [cells[1], cells[2]] : [cells[0], cells[1]],
+      );
+      expect(found).toEqual(rows.map((row) => [...row]));
+    });
+  }
+
+  it("says nothing is specified but not built", () => {
+    for (const file of Object.keys(STATE_AS_IT_IS)) {
+      const html = read(file);
+      expect(html, file).not.toMatch(
+        /Not yet|Todavía no|not built|no construido|not released|sin publicar/,
+      );
+    }
+  });
+
+  it("names the row that contradicts the record", () => {
+    const stale = read("index.html").replace(
+      /(Sign-in with GitHub or Google<\/td>\s*<td>\s*<span class="state )ok("><span class="sym" aria-hidden="true">)●(<\/span> )Live/,
+      "$1pending$2◔$3In development",
+    );
+    const rows = rowsOf(stale, "state");
+    expect(rows[4]).toEqual([
+      "The family",
+      "Sign-in with GitHub or Google",
+      "In development",
+      "One account for the online services, at id.meltemi.dev. Meltemi IDE does not use it.",
+    ]);
+  });
+});
