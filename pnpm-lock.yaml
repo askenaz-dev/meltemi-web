@@ -49,6 +49,8 @@ importers:
 
   packages/infra: {}
 
+  packages/ocean: {}
+
   packages/site:
     dependencies:
       motion:
