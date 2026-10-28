@@ -1,6 +1,8 @@
-// The two scripts the pipelines run: the release tag check, and the configuration the deploy
-// workflow writes from the committed `wrangler.jsonc` and the ids Terraform gave.
+// The two scripts the pipelines run: the release tag check (one prefix per package), and the
+// configuration the deploy workflow writes from the committed `wrangler.jsonc` and the ids
+// Terraform gave.
 
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,6 +35,38 @@ describe("release-tag", () => {
 
   it("refuses a tag without the v", () => {
     expect(tagMismatch("0.1.0", manifest)).toMatch(/expected v0\.1\.0/);
+  });
+
+  describe("with the ocean's prefix", () => {
+    const ocean = JSON.stringify({ name: "@meltemi/ocean", version: "0.1.0" });
+
+    it("accepts ocean-v and the package's version", () => {
+      expect(tagMismatch("ocean-v0.1.0", ocean, "ocean-v")).toBeUndefined();
+    });
+
+    it("refuses another version, naming both", () => {
+      expect(tagMismatch("ocean-v0.2.0", ocean, "ocean-v")).toBe(
+        "the tag ocean-v0.2.0 does not name the package's version 0.1.0 (expected ocean-v0.1.0)",
+      );
+    });
+
+    it("keeps each family to its own package", () => {
+      expect(tagMismatch("v0.1.0", ocean, "ocean-v")).toMatch(/expected ocean-v0\.1\.0/);
+      expect(tagMismatch("ocean-v0.1.0", manifest)).toMatch(/expected v0\.1\.0/);
+    });
+
+    it("takes the prefix from the command line, against the package's manifest", () => {
+      const path = join(ROOT, "packages/ocean/package.json");
+      const { version } = JSON.parse(readFileSync(path, "utf8")) as { version: string };
+      const run = (tag: string) =>
+        spawnSync(process.execPath, [join(ROOT, "scripts/release-tag.mjs"), tag, path, "ocean-v"], {
+          encoding: "utf8",
+        });
+      expect(run(`ocean-v${version}`).status).toBe(0);
+      const wrong = run("ocean-v99.0.0");
+      expect(wrong.status).toBe(1);
+      expect(wrong.stderr).toContain(`expected ocean-v${version}`);
+    });
   });
 });
 
