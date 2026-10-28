@@ -85,6 +85,15 @@
   - `pnpm site:tokens --ide <the IDE>`: the 41 tokens of `tokens.css` match the IDE's `app.css`.
   - `openspec validate site-in-motion --strict`: valid. Its note that `product-site` does not exist yet in `openspec/specs/` is the archive order below.
 - [ ] 6.2 Under `pnpm site:dev`, read every changed page in both languages and both schemes, with motion, with reduced motion, and with JavaScript off. Measure the home with Chrome's Lighthouse on mobile, with performance at 90 or more. Record what was seen and measured here.
+
+  Read on 2026-10-28 under `pnpm site:dev`, in Chromium 153 at 1280×800 and on a 390×844 phone:
+  - Every page in both languages and both schemes: the heroes' text, links and buttons stay above the drawing and clear of the wind; the sea, the wind and the mark follow the scheme; the still pages (privacy, terms, the 404) show a calm band. The phone layouts hold, with the pause button below the text.
+  - With motion: the intro draws the mark on its wave; scrolling carries the home's mark across and lines up the IDE's sails; the Diagrams flow forms; sections rise once.
+  - With reduced motion: the home and the Diagrams page show one frame at rest, the mark where the still picture leaves it room, the flow drawn.
+  - With JavaScript off: the still pictures, the mark at rest and every section show.
+  - Found and fixed: on the IDE's pages, perspective drew two following sails on the mark's north-east arm. They now sail in its wake, out of its clear space, with a test (commit "Keep the IDE's sails in the mark's wake").
+  - Measured, standing in for Lighthouse: the home and `/ide/` on an emulated phone (412×823, 4× CPU slowdown, 150 ms and 1.6 Mbps), three runs each. Home: first contentful paint 0.54–0.74 s, largest 0.65–0.96 s, total blocking 44–270 ms (one task, the sea's first frame, cold), layout shift 0. `/ide/`: first contentful and largest paint 0.71–1.0 s, total blocking 0–87 ms, layout shift 0.
+  - Open: the Lighthouse score itself. Lighthouse is not installed here, and downloading it awaits the owner's approval; run it on the home on mobile before this box is ticked.
 - [ ] 6.3 Owner: sign off the look of `home`, `ide` and `diagrams` in both themes (the brand gate), on the pull request's screenshots or a local preview.
 
 ## Workflow follow-up
