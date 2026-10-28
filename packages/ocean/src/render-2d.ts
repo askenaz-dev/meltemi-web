@@ -32,7 +32,7 @@ export function canvasRenderer(ctx: Context2D, palette: Palette): Renderer {
   let width = 1;
   let height = 1;
   let gridKey = "";
-  let grid = new Float32Array(0);
+  let grid: Float32Array = new Float32Array(0);
   let rowStarts: number[] = [];
 
   const ensureGrid = (frame: Frame) => {
