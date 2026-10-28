@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: A sea on a canvas
-`createSea(canvas, options)` SHALL draw a named sea state on the given canvas with WebGL2, or with Canvas 2D when WebGL2 is unavailable. When neither is available, it SHALL return a handle that reports `renderer: "none"` and draws nothing. It SHALL take a fleet of elements, the lead first, and sail them: every boat to the right, re-entering from the left at a new depth when it leaves, at a speed that grows with the wind. The handle SHALL start, stop, take a scroll progress between 0 and 1, take a wind strength between 0 and 1, re-read its colours from the canvas's `--sea-*` properties, resize and be destroyed, releasing every resource it took. `fleetSize(state)` SHALL say how many boats a state sails.
+`createSea(canvas, options)` SHALL draw a named sea state on the given canvas with WebGL2, or with Canvas 2D when WebGL2 is unavailable. When neither is available, it SHALL return a handle that reports `renderer: "none"` and draws nothing. It SHALL take a fleet of elements, the lead first, and sail them: every boat to the right, surging and easing with the gusts, re-entering just off the left edge at a new depth when it leaves, at a speed that grows with the wind. The handle SHALL start, stop, take a scroll progress between 0 and 1, take a wind strength between 0 and 1, re-read its colours from the canvas's `--sea-*` properties, resize and be destroyed, releasing every resource it took. `fleetSize(state)` SHALL say how many boats a state sails.
 
 #### Scenario: Falling back
 - **WHEN** a canvas offers no WebGL2 context but offers Canvas 2D
@@ -20,11 +20,11 @@
 - **THEN** it throws an error naming the option and the value it received
 
 ### Requirement: The mark is placed, never redrawn
-Given the fleet's elements, the package SHALL only set each one's transform: a translation onto the sea surface, a scale from its depth, and a tilt of at most 4 degrees taken from the wave's slope. It SHALL never change an element's paths, fills, strokes, filters or any other attribute. The mark's own shape SHALL be exported as constants (`MARK_M`, `MARK_HULL`, `MARK_GRADIENT`) equal to the IDE's brand file, for pages and stills.
+Given the fleet's elements, the package SHALL only set each one's transform: a translation onto the sea surface, a scale from its depth, and a heel of at most 6 degrees taken from the wave's slope. It SHALL never change an element's paths, fills, strokes, filters or any other attribute. The mark's own shape SHALL be exported as constants (`MARK_M`, `MARK_HULL`, `MARK_GRADIENT`) equal to the IDE's brand file, for pages and stills.
 
 #### Scenario: Sailing the fleet
 - **WHEN** a test runs the placement for 10 seconds of simulated time on a fleet of SVG elements
-- **THEN** every attribute of every element except its transform is unchanged, every transform is a translation, a scale and a rotation, and no rotation exceeds 4 degrees
+- **THEN** every attribute of every element except its transform is unchanged, every transform is a translation, a scale and a rotation, and no rotation exceeds 6 degrees
 
 #### Scenario: A placement that alters the mark
 - **WHEN** the placement writes any attribute of an element other than its transform

@@ -22,12 +22,12 @@ playground). The package is specified by the `ocean-package` capability of
 
 ## The states
 
-| State      | What it draws                                                                       |
-| ---------- | ----------------------------------------------------------------------------------- |
-| `home`     | The crossing: a fleet of four marks sailing to the right, the lead nearest.         |
-| `ide`      | One heading, many sails: a fleet of seven.                                          |
-| `diagrams` | The wind draws: a fleet of three, and nine points that link into a three-node flow. |
-| `still`    | A calm sea with one boat, drawn once.                                               |
+| State      | What it draws                                                                      |
+| ---------- | ---------------------------------------------------------------------------------- |
+| `home`     | The crossing: a fleet of six marks sailing to the right, the lead nearest.         |
+| `ide`      | One heading, many sails: a fleet of nine.                                          |
+| `diagrams` | The wind draws: a fleet of five, and nine points that link into a three-node flow. |
+| `still`    | A calm sea with one boat, drawn once.                                              |
 
 `STATES` lists them. An unknown state is an error that names the option and the value.
 `fleetSize(state)` is how many boats a state sails, the lead included: a page carries that many
@@ -77,7 +77,8 @@ Every boat is the Meltemi mark. Give the lead as an element that holds the brand
 every other boat as an element that uses them (`<use href="#…">`), so the brand's shape exists
 once in the page. The package writes each element's `transform` and nothing else: a translation
 that puts its keel on the wave at its depth, a scale from the depth (the lead at 1, the farthest
-at about 0.35) and a tilt of at most `MAX_TILT` (4) degrees. Give the elements
+at about 0.35) and a heel of at most `MAX_TILT` (6) degrees; gusts make every boat surge and
+ease on its way. Give the elements
 `transform-origin: 50% 86%` so they pivot on the keel. The fleet sails to the right on its own;
 a boat that leaves the right edge re-enters from the left, behind every other, at a new depth.
 `placeMark(element, placement)` is the same placement, exported for pages that position boats

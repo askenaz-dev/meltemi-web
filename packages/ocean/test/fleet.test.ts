@@ -23,9 +23,9 @@ describe("the fleet", () => {
         expect(scaleOf(boat.z)).toBeGreaterThanOrEqual(0.3);
       }
     }
-    expect(fleetSize("home")).toBe(4);
-    expect(fleetSize("ide")).toBe(7);
-    expect(fleetSize("diagrams")).toBe(3);
+    expect(fleetSize("home")).toBe(6);
+    expect(fleetSize("ide")).toBe(9);
+    expect(fleetSize("diagrams")).toBe(5);
     expect(fleetSize("still")).toBe(1);
   });
 

@@ -1,10 +1,10 @@
 // The fleet sails (specification `ocean-package`, "The mark is placed, never redrawn"): the
 // package only ever writes an element's CSS transform, a translation onto the sea, a scale from
-// its depth and a tilt of at most four degrees. Its paths, fills, strokes and filters are the
+// its depth and a heel of at most six degrees. Its paths, fills, strokes and filters are the
 // brand's and are never touched.
 
-/** The most a boat may tilt, in degrees. */
-export const MAX_TILT = 4;
+/** The most a boat may heel, in degrees. */
+export const MAX_TILT = 6;
 
 /** Where the hull's keel sits within the mark's box, from its top (the brand file's 220 of 256). */
 export const KEEL = 0.86;

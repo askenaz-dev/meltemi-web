@@ -234,7 +234,7 @@ describe("the fleet is placed, never redrawn", () => {
   const TRANSFORM =
     /^translate\((-?[\d.]+)px, (-?[\d.]+)px\) scale\(([\d.]+)\) rotate\((-?[\d.]+)deg\)$/;
 
-  it("sails 10 seconds writing nothing but its transform, never tilting past 4 degrees", () => {
+  it("sails 10 seconds writing nothing but its transform, never heeling past 6 degrees", () => {
     // Scenario: Sailing the fleet.
     const fleet = [fakeMark(), fakeMark(), fakeMark()];
     const h = harness();
@@ -254,7 +254,7 @@ describe("the fleet is placed, never redrawn", () => {
       }
     }
     for (const { writes } of fleet) expect(new Set(writes)).toEqual(new Set(["style.transform"]));
-    expect(Math.max(...angles.map(Math.abs))).toBeLessThanOrEqual(4);
+    expect(Math.max(...angles.map(Math.abs))).toBeLessThanOrEqual(6);
     expect(new Set(angles).size, "it rocks with the sea").toBeGreaterThan(10);
     expect(Number(TRANSFORM.exec(fleet[0]!.style["transform"]!)![3]), "the lead at full size").toBe(
       1,
@@ -296,13 +296,13 @@ describe("the fleet is placed, never redrawn", () => {
 
   it("refuses a fleet larger than the state sails, naming both", () => {
     // Scenario: Bad options.
-    const fleet = Array.from({ length: 5 }, () => fakeMark().mark as never);
+    const fleet = Array.from({ length: 7 }, () => fakeMark().mark as never);
     expect(() =>
       createSea(
         asCanvas(fakeCanvas({ "2d": recordingContext() })),
         { state: "home", fleet },
         harness().env,
       ),
-    ).toThrow('fleet must have at most 4 elements for state "home"; received 5');
+    ).toThrow('fleet must have at most 6 elements for state "home"; received 7');
   });
 });

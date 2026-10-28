@@ -65,6 +65,6 @@ describe("named sea states", () => {
     const home = scene("home", 0.7);
     expect(home.shapes).toEqual([]);
     expect(home.figures.links).toBe(0);
-    expect(home.figures.boats).toBe(4);
+    expect(home.figures.boats).toBe(6);
   });
 });

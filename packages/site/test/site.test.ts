@@ -1078,7 +1078,7 @@ describe("a sea in every hero", () => {
 
   it("names a short fleet, and a boat that is not the mark", () => {
     const short = home.replace(/<div class="sea-boat"[\s\S]*?<\/div>\n/, "");
-    expect(heroProblems(short, "/")).toEqual(["2 boats for a fleet of 4"]);
+    expect(heroProblems(short, "/")).toEqual(["4 boats for a fleet of 6"]);
     const other = home.replace('<use href="#sea-mark-hull" />', '<use href="#other" />');
     expect(heroProblems(other, "/")).toEqual(["a boat that is not a use of the lead mark's paths"]);
     expect(heroProblems(home.replace(/<canvas class="wind"[^>]*><\/canvas>\n/, ""), "/")).toEqual([

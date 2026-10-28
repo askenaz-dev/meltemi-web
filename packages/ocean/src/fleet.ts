@@ -4,6 +4,7 @@
 // depth the mark always had; the rest sail farther and smaller.
 
 import { KEEL, tiltOf, type MarkPlacement } from "./mark.js";
+import { noise2 } from "./noise.js";
 import { MARK_Z, project, worldX, type View } from "./scene.js";
 import { definitionOf, fleetSize, type SeaState } from "./states.js";
 import { heightAt, slopeAt } from "./waves.js";
@@ -18,7 +19,10 @@ export interface Boat {
 }
 
 /** The depths the fleet is dealt, after the lead, and the pool a re-entering boat picks from. */
-export const DEPTHS = [2.1, 3.2, 2.6, 4.0, 1.9, 3.6, 2.3, 2.9] as const;
+export const DEPTHS = [2.1, 3.2, 2.6, 4.0, 1.9, 3.6, 2.3, 2.9, 3.4, 2.0] as const;
+
+/** The gusts: a slow field over the hero that makes every boat surge and ease on its way. */
+const GUSTS = noise2(11);
 
 /** The least and the most a boat is scaled by its depth. */
 const MIN_SCALE = 0.3;
@@ -28,10 +32,15 @@ export function scaleOf(z: number): number {
   return Math.max(MIN_SCALE, Math.min(1, MARK_Z / z));
 }
 
-/** World units per second at a wind strength: a lead boat crosses a wide hero in about 20 s. */
+/** World units per second at a wind strength: a lead boat crosses a wide hero in about 18 s. */
 export function paceAt(wind: number, z: number): number {
   // Far boats would crawl under pure perspective; they keep most of the lead's screen pace.
-  return (0.16 + 0.14 * wind) * Math.pow(z / MARK_Z, 0.6);
+  return (0.14 + 0.2 * wind) * Math.pow(z / MARK_Z, 0.6);
+}
+
+/** How a gust at a place and moment multiplies a boat's pace: between about 0.7 and 1.3. */
+export function gustAt(across: number, t: number): number {
+  return 1 + 0.3 * GUSTS(across * 2.2 + t * 0.09, t * 0.05);
 }
 
 /** The fleet of a state at rest: the lead where the still picture rests it, the others spread. */
@@ -96,22 +105,29 @@ export function sail(
   random: () => number,
 ): Boat[] {
   const reentered: Boat[] = [];
-  for (const boat of boats) boat.x += paceAt(wind, boat.z) * boat.pace * dt;
+  for (const boat of boats) {
+    const across = project(view, boat.x, 0, boat.z).sx / view.width;
+    boat.x += paceAt(wind, boat.z) * boat.pace * gustAt(across, t) * dt;
+  }
   for (let i = 0; i < boats.length; i++) {
     const boat = boats[i]!;
     const placement = placementOf(boat, view, t, state);
     const half = (markWidth * placement.scale) / 2;
     if (placement.x - half <= view.width) continue;
     if (i > 0) boat.z = DEPTHS[Math.floor(random() * DEPTHS.length)]!;
-    const scale = scaleOf(boat.z);
-    let leftmost = 0;
-    for (const other of boats) {
-      if (other === boat) continue;
-      const p = placementOf(other, view, t, state);
-      leftmost = Math.min(leftmost, p.x - (markWidth * p.scale) / 2);
+    const width = markWidth * scaleOf(boat.z);
+    // Just off the left edge, or further left until it sits in no other boat's box, so it is
+    // back in view as soon as the wind allows and never on top of another.
+    const others = boats
+      .filter((other) => other !== boat)
+      .map((other) => boxOf(placementOf(other, view, t, state), markWidth, markWidth))
+      .sort((a, b) => b.left - a.left);
+    const gap = width * (0.3 + random() * 0.6);
+    let right = -gap;
+    for (const box of others) {
+      if (right > box.left && right - width < box.right) right = box.left - gap;
     }
-    const gap = markWidth * scale * (0.4 + random() * 0.8);
-    boat.x = worldX(view, leftmost - gap - (markWidth * scale) / 2, boat.z);
+    boat.x = worldX(view, right - width / 2, boat.z);
     reentered.push(boat);
   }
   return reentered;

@@ -65,7 +65,7 @@ export function canvasRenderer(ctx: Context2D, palette: Palette): Renderer {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const max = declaredAmplitude(state);
       const crestFrom = 0.35 * max;
-      const base = frame.quality === "high" ? 2.6 : 3.2;
+      const base = frame.quality === "high" ? 3.3 : 3.9;
       for (let r = 0; r + 1 < rowStarts.length; r++) {
         const start = rowStarts[r]!;
         const end = rowStarts[r + 1]!;

@@ -122,6 +122,15 @@ body {
   z-index: 0;
   pointer-events: none;
   visibility: hidden;
+  /* Softer behind the column where the words are, full at the margins. A mask: only its alpha
+     counts. */
+  mask-image: linear-gradient(
+    to right,
+    black,
+    rgba(0, 0, 0, 0.55) 22%,
+    rgba(0, 0, 0, 0.55) 78%,
+    black
+  );
 }
 
 html.sea .wind {

@@ -274,7 +274,7 @@ export function webglRenderer(gl: WebGL2RenderingContext, palette: Palette): Ren
       gl.uniform2f(u.res, gl.drawingBufferWidth, gl.drawingBufferHeight);
       gl.uniform1f(u.horizon, view.horizon * dpr);
       gl.uniform1f(u.focal, view.focal * dpr);
-      gl.uniform1f(u.point, (frame.quality === "high" ? 2.6 : 3.2) * dpr);
+      gl.uniform1f(u.point, (frame.quality === "high" ? 3.3 : 3.9) * dpr);
       gl.uniform4fv(u.pointColour, rgba(colours.point));
       gl.uniform4fv(u.crestColour, rgba(colours.crest));
       gl.bindVertexArray(seaVao);
