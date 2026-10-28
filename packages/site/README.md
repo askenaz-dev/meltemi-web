@@ -2,13 +2,15 @@
 
 The product site of the Meltemi family, served at `meltemi.dev` as the static assets of a
 Cloudflare Worker with no code: hand-written HTML in English and Spanish, the IDE's design
-tokens, `_headers` and `_redirects`. No framework, no build step, no JavaScript: what is in
-`public/` is what is served.
+tokens, `_headers` and `_redirects`, and the sea in motion. No framework: the pages are what is in
+`public/`, and the build adds `public/assets/` (the module scripts bundled from `src/` and the
+still pictures of the sea), which Git ignores. Every word, link and download works without a
+script ([decision 0006](../../docs/decisions/0006-site-in-motion.md)).
 
 Written by the OpenSpec change
 [`product-site`](../../openspec/changes/product-site/proposal.md). The decisions are in
 [`docs/decisions/0001`](../../docs/decisions/0001-family-repositories.md) and
-[`0003`](../../docs/decisions/0003-family-web-on-cloudflare.md).
+[`0003`](../../docs/decisions/0003-family-web-on-cloudflare.md), amended by [`0006`](../../docs/decisions/0006-site-in-motion.md).
 
 ## Pages
 

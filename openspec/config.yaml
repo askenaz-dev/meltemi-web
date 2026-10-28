@@ -21,9 +21,9 @@ context: |
     GET /sessions/:sid; account deletion reaches products as signed `user.deleted` events.
     Products never receive provider tokens. The service holds: user id, name, avatar URL, the
     emails and ids the providers gave, sessions, pending events. No analytics, no telemetry.
-  - Hosting (decision 0003): Cloudflare's free plan. The site is static assets of a Worker (no
-    JavaScript in pages; `_headers` and `_redirects`); identity is a Worker with D1 and a cron
-    trigger. Everything runs locally with `wrangler dev`; nothing needs the cloud to be built
+  - Hosting (decision 0003): Cloudflare's free plan. The site is static assets of a Worker
+    (`_headers` and `_redirects`; same-origin module scripts only, built from `packages/site/src`,
+    decision 0006); identity is a Worker with D1 and a cron trigger. Everything runs locally with `wrangler dev`; nothing needs the cloud to be built
     or tested.
   - Products are consumers: Meltemi Diagrams hosts its own API, storage and collaboration in
     its repository (`packages/cloud`); this repository gives it the session contract and the

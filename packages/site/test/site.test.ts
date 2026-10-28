@@ -145,31 +145,73 @@ describe("the family's site in two languages", () => {
 
 // ---------------------------------------------------------------------------------------------
 
-describe("static assets with no script and no external resource", () => {
-  it("contains no script, event handler, form, inline style or javascript: address", () => {
-    const problems: string[] = [];
-    for (const file of ALL_HTML) {
-      const url = pageUrl(file);
-      const html = read(file).replace(/<!--[\s\S]*?-->/g, "");
-      if (/<script/i.test(html)) problems.push(`${url}: a <script> element`);
-      if (/<style/i.test(html)) problems.push(`${url}: a <style> element`);
-      for (const tag of tags(html)) {
-        for (const name of Object.keys(tag.attrs)) {
-          if (/^on[a-z]+$/.test(name))
-            problems.push(`${url}: the event handler ${name} on <${tag.name}>`);
-        }
-        if (tag.attrs["style"] !== undefined)
-          problems.push(`${url}: a style attribute on <${tag.name}>`);
-        if (tag.name === "form" || tag.name === "base" || tag.name === "iframe") {
-          problems.push(`${url}: a <${tag.name}> element`);
-        }
-        for (const attr of ["href", "src"]) {
-          if (/^\s*javascript:/i.test(tag.attrs[attr] ?? ""))
-            problems.push(`${url}: a javascript: ${attr}`);
-        }
-      }
+/**
+ * What a page may not carry (specification `product-site`, "Self-hosted scripts and no external
+ * resource"): a script that is inline or not one of the site's own modules under `/assets/`, an
+ * inline event handler, a `javascript:` address, a `<style>` element or attribute, and a form,
+ * base or frame. Each problem names the page and the element.
+ */
+export function pageProblems(html: string, url: string): string[] {
+  const problems: string[] = [];
+  const source = html.replace(/<!--[\s\S]*?-->/g, "");
+  if (/<style/i.test(source)) problems.push(`${url}: a <style> element`);
+  for (const m of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+    const [script] = tags(`<script${m[1] ?? ""}>`);
+    const src = script?.attrs["src"];
+    if ((m[2] ?? "").trim() !== "") problems.push(`${url}: an inline <script>`);
+    else if (src === undefined) problems.push(`${url}: a <script> with no src`);
+    else if (!/^\/assets\/[\w.-]+\.js$/.test(src)) problems.push(`${url}: a <script> from ${src}`);
+    else if (script?.attrs["type"] !== "module")
+      problems.push(`${url}: the <script> ${src} is not a module`);
+  }
+  for (const tag of tags(source)) {
+    for (const name of Object.keys(tag.attrs)) {
+      if (/^on[a-z]+$/.test(name))
+        problems.push(`${url}: the event handler ${name} on <${tag.name}>`);
     }
+    if (tag.attrs["style"] !== undefined)
+      problems.push(`${url}: a style attribute on <${tag.name}>`);
+    if (tag.name === "form" || tag.name === "base" || tag.name === "iframe") {
+      problems.push(`${url}: a <${tag.name}> element`);
+    }
+    for (const attr of ["href", "src"]) {
+      if (/^\s*javascript:/i.test(tag.attrs[attr] ?? ""))
+        problems.push(`${url}: a javascript: ${attr}`);
+    }
+  }
+  return problems;
+}
+
+describe("self-hosted scripts and no external resource", () => {
+  it("loads only the site's own modules: no inline script, handler, form or javascript: address", () => {
+    const problems = ALL_HTML.flatMap((file) => pageProblems(read(file), pageUrl(file)));
     expect(problems).toEqual([]);
+  });
+
+  it("lets a page load the site's own module", () => {
+    const html = '<body><script type="module" src="/assets/site.js"></script></body>';
+    expect(pageProblems(html, "/fixture/")).toEqual([]);
+  });
+
+  it.each([
+    ["an inline script", "<script>alert(1)</script>", "/fixture/: an inline <script>"],
+    [
+      "an inline handler",
+      '<button onclick="go()">Go</button>',
+      "/fixture/: the event handler onclick on <button>",
+    ],
+    [
+      "a script from a CDN",
+      '<script type="module" src="https://cdn.jsdelivr.net/npm/motion"></script>',
+      "/fixture/: a <script> from https://cdn.jsdelivr.net/npm/motion",
+    ],
+    [
+      "a classic script of the site",
+      '<script src="/assets/site.js"></script>',
+      "/fixture/: the <script> /assets/site.js is not a module",
+    ],
+  ])("refuses %s, naming the page", (_, html, problem) => {
+    expect(pageProblems(html, "/fixture/")).toEqual([problem]);
   });
 
   it("loads nothing from another origin: no stylesheet, image, font or media", () => {
@@ -179,9 +221,17 @@ describe("static assets with no script and no external resource", () => {
       for (const tag of tags(read(file))) {
         const fetches =
           (tag.name === "link" && tag.attrs["rel"] !== "alternate") ||
-          ["img", "source", "video", "audio", "embed", "object", "track", "input"].includes(
-            tag.name,
-          );
+          [
+            "img",
+            "script",
+            "source",
+            "video",
+            "audio",
+            "embed",
+            "object",
+            "track",
+            "input",
+          ].includes(tag.name);
         if (!fetches) continue;
         for (const attr of ["href", "src", "srcset", "poster", "data"]) {
           const value = tag.attrs[attr];
@@ -204,12 +254,21 @@ describe("static assets with no script and no external resource", () => {
   it("sets the policy headers on every path", () => {
     expect(headersFor("/*")).toEqual({
       "content-security-policy":
-        "default-src 'none'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+        "default-src 'none'; script-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types 'none'",
       "referrer-policy": "strict-origin-when-cross-origin",
       "x-content-type-options": "nosniff",
       "permissions-policy": "camera=(), microphone=(), geolocation=()",
       "strict-transport-security": "max-age=31536000",
     });
+  });
+
+  it("caches the hashed chunks for a year and the stable assets for five minutes", () => {
+    expect(headersFor("/assets/chunk-*")).toEqual({
+      "cache-control": "public, max-age=31536000, immutable",
+    });
+    for (const path of ["/assets/site.js", "/assets/sea-*"]) {
+      expect(headersFor(path), path).toEqual({ "cache-control": "public, max-age=300" });
+    }
   });
 
   it("is a Worker of static assets only, on the port the identity service names", () => {

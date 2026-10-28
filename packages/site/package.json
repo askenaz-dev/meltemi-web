@@ -2,12 +2,19 @@
   "name": "@meltemi/site",
   "version": "0.1.0",
   "private": true,
-  "description": "The product site of the Meltemi family: static pages in English and Spanish, served as the assets of a Cloudflare Worker with no code.",
+  "description": "The product site of the Meltemi family: pages in English and Spanish with the sea in motion, served as the assets of a Cloudflare Worker with no code.",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "build": "tsx scripts/build.ts",
     "dev": "wrangler dev",
     "tokens": "node scripts/tokens.mjs",
     "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "motion": "14.2.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }
