@@ -85,11 +85,15 @@ moved from `site/` of the IDE repository, and the three brand SVGs (`meltemi-mar
 **`463c34e8cda2043536abd85ccab67314b3289cca`** of `askenaz-dev/meltemi`. The IDE's release
 workflow staged those SVGs into `site/media/` at publish time, so the folder alone never had them;
 `site/CNAME` was a GitHub Pages file and is not copied. Only the links of the moved pages changed
-(to the new structure); their words are the IDE's. One file differs from its source:
-`media/tui-sessions.svg` has a one-line comment fixed (`--example` became ``(example `capture_svg`)``),
-because XML forbids `--` inside a comment and the original was not valid XML, so the image never
-rendered on the live site either; the IDE's generator (`tui/examples/capture_svg.rs`) has the same
-comment and needs the same fix.
+(to the new structure); their words are the IDE's.
+
+`media/tui-sessions.svg` was copied again, byte for byte, from `docs/media/` of the IDE at the
+commit **`bd72c637d232f12edd5bc554f3e70bbaed16518f`** (2026-10-28). Until then the site carried a
+hand-fixed copy: the IDE's generator (`tui/examples/capture_svg.rs`) wrote `--` inside an XML
+comment, which made the file invalid XML, and its reversed runs had no monospace face. The
+generator now writes a well-formed file with both text classes in the monospace face, a docs lint
+in the IDE checks every SVG of `docs/media/`, and the capture shows the sessions view grouped by
+project and state. Later refreshes copy the file as it is.
 
 The old GitHub Pages addresses (`/method.html`, `/es/downloads.html`…) redirect with a 301 to the
 page that now holds their content, and `/media/meltemi-mark-gradient.svg` keeps answering.
