@@ -1,12 +1,14 @@
 name: Release
 
 # A tag v<x.y.z> publishes @meltemi/identity at that version to npm, with provenance, and creates
-# the GitHub release. The first job refuses a tag that does not name the package's version, before
-# anything is published; a run re-run after a partial failure skips what npm already has.
+# the GitHub release. A tag ocean-v<x.y.z> publishes @meltemi/ocean the same way, with no GitHub
+# release: npm is where products take it from. The first job refuses a tag that does not name its
+# package's version, before anything is published; a run re-run after a partial failure skips what
+# npm already has.
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["v*", "ocean-v*"]
 
 permissions:
   contents: read
@@ -21,7 +23,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: The tag names the package's version
-        run: node scripts/release-tag.mjs "$GITHUB_REF_NAME" packages/identity/package.json
+        run: |
+          case "$GITHUB_REF_NAME" in
+            ocean-v*) node scripts/release-tag.mjs "$GITHUB_REF_NAME" packages/ocean/package.json ocean-v ;;
+            *) node scripts/release-tag.mjs "$GITHUB_REF_NAME" packages/identity/package.json ;;
+          esac
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -46,8 +52,10 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @meltemi/identity run build
+      - if: startsWith(github.ref_name, 'v')
+        run: pnpm --filter @meltemi/identity run build
       - name: Publish @meltemi/identity
+        if: startsWith(github.ref_name, 'v')
         working-directory: packages/identity
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -58,7 +66,22 @@ jobs:
           else
             npm publish --access public --provenance
           fi
+      - if: startsWith(github.ref_name, 'ocean-v')
+        run: pnpm --filter @meltemi/ocean run build
+      - name: Publish @meltemi/ocean
+        if: startsWith(github.ref_name, 'ocean-v')
+        working-directory: packages/ocean
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if npm view "@meltemi/ocean@${version}" version >/dev/null 2>&1; then
+            echo "@meltemi/ocean@${version} is already on npm"
+          else
+            npm publish --access public --provenance
+          fi
       - name: GitHub release
+        if: startsWith(github.ref_name, 'v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

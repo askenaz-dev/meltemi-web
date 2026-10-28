@@ -72,7 +72,7 @@
 ## 5. Publishing `@meltemi/ocean`
 
 - [x] 5.1 Give `scripts/release-tag.mjs` a tag-prefix argument, with tests in `test/scripts.test.ts`. Verify that `ocean-v0.1.0` against version `0.1.0` passes, that `ocean-v0.2.0` against `0.1.0` fails naming both, and that the identity's `v*` behaviour is unchanged.
-- [ ] 5.2 Make `release.yml` publish `@meltemi/ocean` with provenance on `ocean-v*`, skipping a version npm already has, and update `test/workflows.test.ts`. Verify `pnpm test` passes.
+- [x] 5.2 Make `release.yml` publish `@meltemi/ocean` with provenance on `ocean-v*`, skipping a version npm already has, and update `test/workflows.test.ts`. Verify `pnpm test` passes.
 
 ## 6. Integration and sign-off
 
