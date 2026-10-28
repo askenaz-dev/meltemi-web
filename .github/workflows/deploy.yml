@@ -14,6 +14,9 @@ on:
     paths:
       - "packages/identity/**"
       - "packages/site/**"
+      # The site bundles the sea and the wind at build time: a change to them is a change to the
+      # site's files, and without this path it would never reach production.
+      - "packages/ocean/**"
       - "scripts/deploy-config.mjs"
       - "pnpm-lock.yaml"
       - ".github/workflows/deploy.yml"
