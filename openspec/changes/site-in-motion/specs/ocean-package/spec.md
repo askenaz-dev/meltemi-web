@@ -19,11 +19,15 @@ telemetry.
 - **THEN** `pnpm test` fails naming the file and the call
 
 ### Requirement: A sea on a canvas
-`createSea(canvas, options)` SHALL draw a named sea state on the given canvas with WebGL2, or with Canvas 2D when WebGL2 is unavailable. When neither is available, it SHALL return a handle that reports `renderer: "none"` and draws nothing. The handle SHALL start, stop, take a scroll progress between 0 and 1, resize and be destroyed, releasing every resource it took.
+`createSea(canvas, options)` SHALL draw a named sea state on the given canvas with WebGL2, or with Canvas 2D when WebGL2 is unavailable. When neither is available, it SHALL return a handle that reports `renderer: "none"` and draws nothing. The handle SHALL start, stop, take a scroll progress between 0 and 1, re-read its colours from the canvas's `--sea-*` properties, resize and be destroyed, releasing every resource it took.
 
 #### Scenario: Falling back
 - **WHEN** a canvas offers no WebGL2 context but offers Canvas 2D
 - **THEN** the handle reports `renderer: "2d"` and draws the same state
+
+#### Scenario: A page's own scheme switch
+- **WHEN** a page changes the `--sea-*` properties on the canvas and calls the handle's `restyle()`
+- **THEN** the next frame uses the new colours, with no new context created
 
 #### Scenario: Bad options
 - **WHEN** `createSea` receives an unknown state, or a progress outside 0 to 1 is set

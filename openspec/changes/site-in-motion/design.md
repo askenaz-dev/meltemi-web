@@ -267,7 +267,9 @@ matrix.
 The package README is the contract Diagrams' sister change consumes. It covers:
 - **The API:**
   - `createSea(canvas, options)` returns a `Sea` handle, with `renderer`, `state`, `frames`,
-    `figures`, `start`, `stop`, `setProgress`, `setWind`, `resize` and `destroy`;
+    `figures`, `start`, `stop`, `setProgress`, `setWind`, `restyle`, `resize` and `destroy`.
+    `restyle()` re-reads `--sea-*`, so a page with its own scheme switch (the Diagrams
+    playground has one) can recolour the sea without a media query;
   - `heightAt` and `slopeAt`;
   - `stillPicture(state)`;
   - `STATES`.

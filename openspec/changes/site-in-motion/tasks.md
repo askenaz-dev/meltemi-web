@@ -12,6 +12,7 @@
 
 - [ ] 2.1 Wind particles along a flow field toward the mark's gust, fading inside the mark's clear space (design D1, D3). Verify unit tests that the flow points to the upper right and that particles inside the clear-space box have zero opacity.
 - [ ] 2.2 The Canvas 2D renderer on the same wave function, and the `renderer: "none"` handle. Verify tests with fake canvases that a canvas without WebGL2 reports `"2d"` and one without any context reports `"none"` and draws nothing.
+- [ ] 2.2b `restyle()`: the handle re-reads `--sea-*` from the canvas and the next frame uses them, with no new context. Verify a test that changes the properties on a fake canvas, calls `restyle()` and reads the new colours in the next frame's uniforms or fill styles.
 - [ ] 2.3 The mark's placement: a translation onto the sea's height and a tilt from the slope clamped to 4 degrees, written to `transform` only. Verify the test that runs 10 seconds of simulated time on a fake mark, sees no other attribute change and no rotation above 4 degrees.
 - [ ] 2.4 The frame loop:
   - `start` and `stop`;
