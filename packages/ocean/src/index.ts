@@ -5,4 +5,12 @@
 
 export { STATES, type SeaState } from "./states.js";
 export { heightAt, slopeAt, declaredAmplitude } from "./waves.js";
-export { createSea, type Sea, type SeaOptions, type Figures } from "./sea.js";
+export { createSea, type Sea, type SeaOptions, type Figures, type Environment } from "./sea.js";
+export { placeMark, MAX_TILT, type MarkElement, type MarkPlacement } from "./mark.js";
+export {
+  stillPicture,
+  BRAND_STILL,
+  type Scheme,
+  type StillColours,
+  type StillOptions,
+} from "./still.js";

@@ -156,7 +156,10 @@ Each page declares its state on its `<body>` as `data-sea="home|ide|diagrams|sti
 - Each sea state is a dynamic import, split by esbuild into a hashed `public/assets/chunk-*.js`.
   A page therefore loads its own state only: the budget counts the entry, Motion and that one
   chunk.
-- The build also writes `public/assets/sea-<state>.svg` from `stillPicture()`.
+- The build also writes `public/assets/sea-<state>-light.svg` and `sea-<state>-dark.svg` from
+  `stillPicture()`, in the colours of `tokens.css` for each scheme, and the pages choose between
+  them with `<picture>` and `prefers-color-scheme`. A picture carries its colours as attributes:
+  served under the site's policy, an SVG's own `<style>` would be blocked, so it has none.
 - Output is minified ES2022 with no source maps shipped.
 - `public/assets/` is ignored by Git. `pnpm -r build` reaches the site, so CI and `deploy.yml`
   build it before they test and upload, with no change to either workflow's build step.
@@ -271,7 +274,7 @@ The package README is the contract Diagrams' sister change consumes. It covers:
     `restyle()` re-reads `--sea-*`, so a page with its own scheme switch (the Diagrams
     playground has one) can recolour the sea without a media query;
   - `heightAt` and `slopeAt`;
-  - `stillPicture(state)`;
+  - `stillPicture(state, { scheme, colours })`, one picture per scheme;
   - `STATES`.
 - **The colours** it reads from the canvas's computed style: `--sea-bg`, `--sea-point`,
   `--sea-crest` and `--sea-wind`, falling back to the brand's values.

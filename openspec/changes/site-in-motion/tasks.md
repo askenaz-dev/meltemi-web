@@ -28,8 +28,8 @@
   - the `figures` counts, and option errors that name the option and value.
 
   Verify tests that the package knows exactly the four states, that `ide` reports at least three sails, that `diagrams` reports links, and that an unknown state or a progress outside 0 to 1 throws.
-- [ ] 2.7 `stillPicture(state)`: an SVG of the state at rest, with light and dark rules on `--sea-*` and the brand's values as fallbacks. Verify tests that every state's picture parses, weighs at most 30 KB, and has no `<script>`, `href` or external `url(`.
-- [ ] 2.8 Write the package README as the contract for products (design D13), and add the sixth crossing, the motion package, to `docs/repositories.md`. Verify `pnpm lint` passes and every API the README names is exported, checked by a test that imports them.
+- [x] 2.7 `stillPicture(state, { scheme, colours })`: an SVG of the state at rest for one scheme, its colours as attributes, with the brand's values as fallbacks (design D7: a picture's own `<style>` would be blocked by the site's policy). Verify tests that every state's picture parses, weighs at most 30 KB in both schemes, carries the colours given, and has no `<script>`, `<style>`, `href` or external `url(`.
+- [x] 2.8 Write the package README as the contract for products (design D13), and add the sixth crossing, the motion package, to `docs/repositories.md`. Verify `pnpm lint` passes and every API the README names is exported, checked by a test that imports them.
 
 ## 3. The site in motion
 
@@ -39,7 +39,7 @@
   - the reveal and pause-button styles, with every hidden state scoped under `html.motion`.
 
   Verify the new tests that hero rules use tokens only and that no rule hides content outside `html.motion`.
-- [ ] 3.2 Put the hero on every product page in both languages: the canvas, the inline mark copied from the IDE's brand file, the still picture `/assets/sea-<state>.svg`, `data-sea`, and the pause button with its labels in the page's language. Give the legal pages and the 404 `data-sea="still"` with their still picture and no script. Have the build write the still pictures. Verify the tests that every product page has its hero, twins declare the same state, the mark's paths and stops equal the brand file's, and the button labels match the language.
+- [ ] 3.2 Put the hero on every product page in both languages: the canvas, the inline mark copied from the IDE's brand file, the still pictures `/assets/sea-<state>-light.svg` and `-dark.svg` in a `<picture>`, `data-sea`, and the pause button with its labels in the page's language. Give the legal pages and the 404 `data-sea="still"` with their still picture and no script. Have the build write the still pictures. Verify the tests that every product page has its hero, twins declare the same state, the mark's paths and stops equal the brand file's, and the button labels match the language.
 - [ ] 3.3 In `src/site.ts`:
   - the `html.motion` marker after the reduced-motion check;
   - Motion's `scroll()` feeding `setProgress` and `setWind`;
