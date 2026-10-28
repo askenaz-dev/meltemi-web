@@ -46,3 +46,7 @@ One commit per task, referencing `(fleet-and-wind N.M)`. Gates at every task: `p
   points up and the wind's trails down, sparser and shorter; the wind masked behind the column;
   boats that surge with gusts, sail faster with the wind and heel to 6 degrees. Verify the
   package and site tests, `pnpm site:browser`, and the owner's second look.
+- [x] 3.3 The owner's third look (design D9): the wind cleared every frame, each particle drawing
+  its own short streak that appears, travels a range and fades, sparser. Verify the scenario
+  "Trails that fade and never pile up", the package and site tests, `pnpm site:browser`, the share
+  of the wind canvas painted staying flat over 90 s, and the owner's look in production.

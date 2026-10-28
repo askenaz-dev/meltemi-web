@@ -16,6 +16,10 @@ export interface Recorder {
   readonly fills: string[];
   /** The fill styles in use at each `fillRect()`, in order. */
   readonly rects: string[];
+  /** Every polyline drawn: `moveTo` starts one, `lineTo` extends it, as flat x, y pairs. */
+  readonly lines: number[][];
+  /** The `globalAlpha` in use at each `stroke()`, in order. */
+  readonly alphas: number[];
 }
 
 /** A 2D context that records what it is asked to do. */
@@ -23,10 +27,14 @@ export function recordingContext(): Recorder & Record<string, unknown> {
   const calls: string[] = [];
   const fills: string[] = [];
   const rects: string[] = [];
+  const lines: number[][] = [];
+  const alphas: number[] = [];
   const ctx: Recorder & Record<string, unknown> = {
     calls,
     fills,
     rects,
+    lines,
+    alphas,
     fillStyle: "",
     strokeStyle: "",
     globalAlpha: 1,
@@ -34,18 +42,21 @@ export function recordingContext(): Recorder & Record<string, unknown> {
     lineCap: "butt",
     globalCompositeOperation: "source-over",
   };
-  for (const name of [
-    "clearRect",
-    "beginPath",
-    "rect",
-    "moveTo",
-    "lineTo",
-    "closePath",
-    "stroke",
-    "setTransform",
-  ]) {
+  for (const name of ["clearRect", "beginPath", "rect", "closePath", "setTransform"]) {
     ctx[name] = () => calls.push(name);
   }
+  ctx["moveTo"] = (x: number, y: number) => {
+    calls.push("moveTo");
+    lines.push([x, y]);
+  };
+  ctx["lineTo"] = (x: number, y: number) => {
+    calls.push("lineTo");
+    lines.at(-1)?.push(x, y);
+  };
+  ctx["stroke"] = () => {
+    calls.push("stroke");
+    alphas.push(ctx.globalAlpha);
+  };
   ctx["fill"] = () => {
     calls.push("fill");
     fills.push(ctx.fillStyle);

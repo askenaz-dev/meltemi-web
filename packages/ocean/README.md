@@ -100,7 +100,9 @@ wind.start();
 `createWind(canvas, options)` returns a `Wind` handle. The wind draws on a canvas that covers
 whatever surface you give it, with Canvas 2D at one
 device pixel per CSS pixel: particles carried by a smooth flow, the gust bent by noise of
-position and slow time, leaving trails that persist and fade, the way wind maps draw wind. Put
+position and slow time, each drawing a short streak that appears, travels a range, fades and
+starts again elsewhere, the way wind maps draw wind. The canvas is cleared every frame, so
+nothing piles up however long the page stays open. Put
 the canvas behind the page (`position: fixed; inset: 0; pointer-events: none`) and the wind
 blows across every section. The handle: `renderer` (`"2d"` or `"none"`), `frames`, `strength`,
 `particles`, `start()`, `stop()`, `setStrength(s)` (0 to 1, else it throws), `restyle()` (re-reads

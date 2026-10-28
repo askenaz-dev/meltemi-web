@@ -44,15 +44,18 @@ Given the fleet's elements, the package SHALL only set each one's transform: a t
 ## ADDED Requirements
 
 ### Requirement: A wind across a surface
-`createWind(canvas, options)` SHALL draw the wind on a canvas with Canvas 2D: particles carried by a smooth flow, the gust bent by noise of position and time, leaving trails that fade, in the colour of the canvas's `--sea-wind`. A strength between 0 and 1 SHALL speed the streams. The handle SHALL start, stop, set the strength, re-read its colour, resize and be destroyed; without a 2D context it SHALL report `renderer: "none"` and draw nothing.
-
-#### Scenario: Trails that persist and fade
-- **WHEN** a test drives the wind for 2 seconds of simulated time on a recording context
-- **THEN** every frame fades the surface once and strokes one segment per particle, and no frame clears the surface
+`createWind(canvas, options)` SHALL draw the wind on a canvas with Canvas 2D: particles carried by a smooth flow, the gust bent by noise of position and time, each drawing a short streak in the colour of the canvas's `--sea-wind`. A strength between 0 and 1 SHALL speed the streams. The handle SHALL start, stop, set the strength, re-read its colour, resize and be destroyed; without a 2D context it SHALL report `renderer: "none"` and draw nothing.
 
 #### Scenario: A strength outside the range
 - **WHEN** `setStrength` receives a value below 0, above 1 or not a number
 - **THEN** it throws an error naming the option and the value it received
+
+### Requirement: Streaks that never pile up
+Each streak SHALL appear, travel a range, fade and start again elsewhere, its length SHALL be bounded whatever its speed, and nothing a streak drew SHALL remain on the surface once it has passed, however long the wind blows.
+
+#### Scenario: Trails that fade and never pile up
+- **WHEN** a test drives the wind for 20 seconds of simulated time on a recording context
+- **THEN** every frame starts from a cleared surface, no streak drawn is longer than its tail, the streaks are fainter at their tails and at the ends of their ranges, and the wind still draws in the last frame
 
 ### Requirement: The wind moves only when allowed
 Under `reducedMotion` the wind SHALL draw one frame of static streamlines and request no animation frame. While the document is hidden it SHALL request none, and it SHALL resume when the document shows.

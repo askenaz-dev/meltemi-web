@@ -58,6 +58,9 @@ re-reads it. The loop stops while the document is hidden and with the pause. Und
 motion it draws one frame: static streamlines integrated along the field. The simplex noise is
 the public-domain algorithm, about sixty lines, with tests of range and determinism.
 
+The persistent canvas faded by `destination-out` is replaced by D9: on an 8-bit canvas it never
+fades a faint trail to zero, and the ghosts piled up.
+
 **Why.** The owner asked for "una librería más pro". The professional look of wind is a
 technique, not a library: particles on a smooth field with persistent fading trails. The
 libraries considered ship none of it: `three.js` (MIT, ~150 KB gzipped) is a 3D scene graph
@@ -105,6 +108,30 @@ no surface behind them fight the trails, and the boats could answer the wind mor
 - the wind's canvas masked to 55% behind the column where the words are, full at the margins;
 - the boats surge and ease with gusts (a slow noise over the hero multiplies their pace by 0.7 to
   1.3), sail faster with the scroll's wind (`0.14 + 0.2 · wind`), and heel up to 6 degrees.
+
+### D9. The owner's third look: a wind that never piles up (2026-10-28)
+
+Seen in production: after a while the wind "queda como un espagueti". Measured on the home page at
+1440×900, the share of the wind canvas painted grew from 2.1% after 1.5 s to 2.6% at 45 s and
+3.1% at 90 s, and kept growing. The cause is the technique of D3, not its numbers: fading a
+persistent canvas by painting it over with `destination-out` never takes a faint pixel to zero on
+an 8-bit canvas (95% of an alpha below about 10/255 rounds back to itself), so every trail leaves
+a ghost, and the ghosts pile up into a tangle. Lowering the alpha or shortening `RETAIN` only
+slows the pile.
+
+So the wind is drawn the other way round:
+
+- the canvas is cleared every frame, and every particle draws its own streak whole from a short
+  tail of the points it left, one every 6 CSS pixels, at most 60 pixels of tail, whatever its speed;
+- a particle travels a range of 140 to 320 pixels, appearing over its first 15% and fading over its
+  last 35%, and then starts again elsewhere: that is the "range of movement" the owner asked for;
+- the opacity falls along the tail and over the range in steps, 4 along and 5 over, so a frame is
+  at most 20 strokes, never one per segment; butt caps where two steps meet, so no joint is
+  painted twice;
+- sparser: 11,000 px² per particle, between 100 and 800 (from 8,000, between 200 and 1,400).
+
+Measured the same way, the share painted stays at 0.6–0.7% from 1.5 s to 90 s. The static frame
+under reduced motion keeps its streamlines.
 
 ### D7. Checks
 

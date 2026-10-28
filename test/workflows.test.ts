@@ -116,6 +116,8 @@ describe("deploy.yml", () => {
     expect(text).toMatch(/branches: \[main\]/);
     at(text, '- "packages/identity/**"');
     at(text, '- "packages/site/**"');
+    // The site bundles the sea and the wind: a change to them alone must reach production.
+    at(text, '- "packages/ocean/**"');
     expect(text).toMatch(/group: deploy\n\s+cancel-in-progress: false/);
   });
 
