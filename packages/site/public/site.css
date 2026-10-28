@@ -112,6 +112,30 @@ body {
   }
 }
 
+/* The wind blows across the whole page: a fixed canvas behind everything, hidden until the sea
+   draws, and the page above it. Cards keep their surfaces, so the wind flows between them. */
+.wind {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+html.sea .wind {
+  visibility: visible;
+}
+
+.top,
+.hero,
+main,
+.foot {
+  position: relative;
+  z-index: 1;
+}
+
 /* The hero keeps a band of sea below its text: the stage behind both is that band and the sky
    above it, so the horizon (46% of the stage, as the package draws it) meets the band's top. */
 .hero.sea {
@@ -203,6 +227,29 @@ html.sea .sea-mark {
   overflow: visible;
 }
 
+/* The fleet: copies of the mark, hidden until the sea places them, pivoting on their keels. */
+.sea-boat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  transform-origin: 50% 86%;
+  overflow: visible;
+  visibility: hidden;
+}
+
+html.sea .sea-boat {
+  visibility: visible;
+}
+
+.sea-boat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
 /* The wind draws the mark as the page opens: its m from end to end, then the hull out of the
    sea. Pure CSS, so it plays even if the script never arrives, and never under reduced motion.
    It waits 0.4 s, hidden: when the script puts the mark on its wave in that time, it rewinds the
@@ -249,15 +296,22 @@ html.sea .sea-mark {
   right: var(--sp-4);
   bottom: var(--sp-4);
   z-index: 2;
-  min-height: var(--touch-min);
-  padding: 0 var(--sp-4);
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--surface);
   color: var(--text-muted);
-  font: inherit;
-  font-size: var(--fs-caption);
   cursor: pointer;
+}
+
+.sea-pause svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
 }
 
 .sea-pause:hover,

@@ -7,7 +7,14 @@ import { tmpdir } from "node:os";
 import { join, relative, resolve, sep } from "node:path";
 import { gzipSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
-import { STATES, type SeaState } from "../../ocean/src/index.js";
+import {
+  MARK_GRADIENT,
+  MARK_HULL,
+  MARK_M,
+  STATES,
+  fleetSize,
+  type SeaState,
+} from "../../ocean/src/index.js";
 import { definitionOf } from "../../ocean/src/states.js";
 import { BUILT, SITE, buildSite, stillColours } from "../scripts/build.js";
 import {
@@ -880,16 +887,27 @@ export function heroProblems(html: string, url: string): string[] {
   if (!has("source", "srcset", `/assets/sea-${state}-dark.svg`)) {
     problems.push(`no still picture /assets/sea-${state}-dark.svg`);
   }
-  const script = tags(html).some(
-    (t) => t.name === "script" && t.attrs["src"] === "/assets/site.js",
-  );
+  const page = tags(html);
+  const script = page.some((t) => t.name === "script" && t.attrs["src"] === "/assets/site.js");
+  const windCanvas = page.some((t) => t.name === "canvas" && t.attrs["class"] === "wind");
   if (state === "still") {
     if (has("canvas", "class", "sea-canvas")) problems.push("a canvas on a still page");
+    if (windCanvas) problems.push("a wind canvas on a still page");
     if (script) problems.push("a script on a still page");
     return problems;
   }
   if (!has("canvas", "class", "sea-canvas")) problems.push("no hero canvas");
+  if (!windCanvas) problems.push("no wind canvas");
   if (!has("div", "class", "sea-mark")) problems.push("no mark");
+  const boats = hero.filter((t) => t.name === "div" && t.attrs["class"] === "sea-boat").length;
+  if (boats !== fleetSize(state as SeaState) - 1) {
+    problems.push(`${boats} boats for a fleet of ${fleetSize(state as SeaState)}`);
+  }
+  const uses = (id: string) =>
+    hero.filter((t) => t.name === "use" && t.attrs["href"] === `#${id}`).length;
+  if (uses("sea-mark-m") !== boats || uses("sea-mark-hull") !== boats) {
+    problems.push("a boat that is not a use of the lead mark's paths");
+  }
   if (!has("button", "class", "sea-pause")) problems.push("no pause button");
   if (!script) problems.push("no /assets/site.js");
   return problems;
@@ -921,16 +939,22 @@ export function markDifferences(html: string, brand: string): string[] {
   return differences;
 }
 
-/** The pause button's labels against the page's language. */
+/** The pause button's accessible name and glyph against the page's language. */
 export function labelProblems(html: string, url: string): string[] {
   const button = tags(heroOf(html)).find((t) => t.name === "button");
   if (!button) return [];
   const want = PAUSE_LABELS[isSpanish(url) ? "es" : "en"];
-  const text = /<button[^>]*>([^<]*)<\/button>/.exec(heroOf(html))?.[1]?.trim();
+  const inside = /<button[^>]*>([\s\S]*?)<\/button>/.exec(heroOf(html))?.[1] ?? "";
+  const words = inside.replace(/<svg[\s\S]*?<\/svg>/, "").trim();
   const problems: string[] = [];
+  if (button.attrs["aria-label"] !== want.pause) problems.push("its label");
+  if (button.attrs["title"] !== want.pause) problems.push("its title");
   if (button.attrs["data-label-pause"] !== want.pause) problems.push("its pause label");
   if (button.attrs["data-label-play"] !== want.play) problems.push("its play label");
-  if (text !== want.pause) problems.push("its text");
+  if (words !== "") problems.push(`words inside: ${JSON.stringify(words)}`);
+  if (!/<svg[^>]*aria-hidden="true"[^>]*>[\s\S]*<path[^>]*class="sea-pause-glyph"/.test(inside)) {
+    problems.push("no glyph");
+  }
   if (button.attrs["aria-pressed"] !== "false") problems.push("aria-pressed");
   if (button.attrs["type"] !== "button") problems.push("its type");
   return problems;
@@ -1023,7 +1047,7 @@ describe("a sea in every hero", () => {
   it("names a mark that drifts from the brand", () => {
     const drifted = home
       .replace(`stop-color="#22D3EE"`, `stop-color="#ff00ff"`)
-      .replace(`<path class="sea-mark-hull"`, `<path filter="url(#glow)" class="sea-mark-hull"`);
+      .replace(`<path id="sea-mark-hull"`, `<path filter="url(#glow)" id="sea-mark-hull"`);
     expect(markDifferences(drifted, brand)).toEqual(["its gradient stops", "a filter"]);
     expect(markDifferences(home.replace("M45 199C87", "M45 199C88"), brand)).toEqual(["its paths"]);
   });
@@ -1040,9 +1064,45 @@ describe("a sea in every hero", () => {
     expect(offenders, "marks resting off their state's place").toEqual([]);
   });
 
-  it("names a button labelled in another language", () => {
+  it("names a button labelled in another language, or with words", () => {
     const spanish = read("es/index.html");
-    expect(labelProblems(spanish, "/")).toEqual(["its pause label", "its play label", "its text"]);
+    expect(labelProblems(spanish, "/")).toEqual([
+      "its label",
+      "its title",
+      "its pause label",
+      "its play label",
+    ]);
+    const wordy = home.replace("</svg></button>", "</svg>Pause</button>");
+    expect(labelProblems(wordy, "/")).toEqual(['words inside: "Pause"']);
+  });
+
+  it("names a short fleet, and a boat that is not the mark", () => {
+    const short = home.replace(/<div class="sea-boat"[\s\S]*?<\/div>\n/, "");
+    expect(heroProblems(short, "/")).toEqual(["2 boats for a fleet of 4"]);
+    const other = home.replace('<use href="#sea-mark-hull" />', '<use href="#other" />');
+    expect(heroProblems(other, "/")).toEqual(["a boat that is not a use of the lead mark's paths"]);
+    expect(heroProblems(home.replace(/<canvas class="wind"[^>]*><\/canvas>\n/, ""), "/")).toEqual([
+      "no wind canvas",
+    ]);
+  });
+
+  it("keeps the package's mark the brand file's", () => {
+    const theirs = markOf(brand);
+    expect(theirs.paths).toEqual([MARK_M, MARK_HULL]);
+    expect(theirs.stops).toEqual([`0 ${MARK_GRADIENT.from}`, `1 ${MARK_GRADIENT.to}`]);
+  });
+
+  it("blows the wind across the page: a fixed layer behind it, shown once the sea draws", () => {
+    const rules = cssRules(read("site.css"));
+    const wind = rules.find(({ selector }) => selector === ".wind");
+    expect(wind?.body).toMatch(/position:\s*fixed/);
+    expect(wind?.body).toMatch(/pointer-events:\s*none/);
+    expect(wind?.body).toMatch(/visibility:\s*hidden/);
+    expect(rules.find(({ selector }) => selector === "html.sea .wind")?.body).toMatch(
+      /visibility:\s*visible/,
+    );
+    const above = rules.find(({ selector }) => selector === ".top, .hero, main, .foot");
+    expect(above?.body).toMatch(/z-index:\s*1/);
   });
 });
 
