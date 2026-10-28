@@ -67,7 +67,9 @@
   - complete pages with JavaScript off.
 
   Verify `pnpm site:browser` passes.
-- [ ] 4.3 Add a `browser` job on `ubuntu-latest` to `ci.yml`, and update `test/workflows.test.ts` for it. Verify `pnpm test` passes and the job is green on the pull request.
+- [x] 4.3 Add a `browser` job on `ubuntu-latest` to `ci.yml`, and update `test/workflows.test.ts` for it. Verify `pnpm test` passes and the job is green on the pull request.
+
+  Green on askenaz-dev/meltemi-web#10 (2026-10-28): the `browser` job passed the nine checks in the runner's Chrome in under 3 minutes, beside the matrix and Terraform.
 
 ## 5. Publishing `@meltemi/ocean`
 
