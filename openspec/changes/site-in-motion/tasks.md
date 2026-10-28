@@ -10,18 +10,18 @@
 
 ## 2. The sea, the wind and the mark in `@meltemi/ocean`
 
-- [ ] 2.1 Wind particles along a flow field toward the mark's gust, fading inside the mark's clear space (design D1, D3). Verify unit tests that the flow points to the upper right and that particles inside the clear-space box have zero opacity.
-- [ ] 2.2 The Canvas 2D renderer on the same wave function, and the `renderer: "none"` handle. Verify tests with fake canvases that a canvas without WebGL2 reports `"2d"` and one without any context reports `"none"` and draws nothing.
-- [ ] 2.3 `restyle()`: the handle re-reads `--sea-*` from the canvas and the next frame uses them, with no new context. Verify a test that changes the properties on a fake canvas, calls `restyle()` and reads the new colours in the next frame's uniforms or fill styles.
-- [ ] 2.4 The mark's placement: a translation onto the sea's height and a tilt from the slope clamped to 4 degrees, written to `transform` only. Verify the test that runs 10 seconds of simulated time on a fake mark, sees no other attribute change and no rotation above 4 degrees.
-- [ ] 2.5 The frame loop:
+- [x] 2.1 Wind particles along a flow field toward the mark's gust, fading inside the mark's clear space (design D1, D3). Verify unit tests that the flow points to the upper right and that particles inside the clear-space box have zero opacity.
+- [x] 2.2 The Canvas 2D renderer on the same wave function, and the `renderer: "none"` handle. Verify tests with fake canvases that a canvas without WebGL2 reports `"2d"` and one without any context reports `"none"` and draws nothing.
+- [x] 2.3 `restyle()`: the handle re-reads `--sea-*` from the canvas and the next frame uses them, with no new context. Verify a test that changes the properties on a fake canvas, calls `restyle()` and reads the new colours in the next frame's uniforms or fill styles.
+- [x] 2.4 The mark's placement: a translation onto the sea's height and a tilt from the slope clamped to 4 degrees, written to `transform` only. Verify the test that runs 10 seconds of simulated time on a fake mark, sees no other attribute change and no rotation above 4 degrees.
+- [x] 2.5 The frame loop:
   - `start` and `stop`;
   - one frame and no loop under `reducedMotion`;
   - no frame while the document is hidden or the canvas is out of view;
   - a device-pixel-ratio cap, and points halved when the p95 frame time exceeds 20 ms.
 
   Verify the tests with injected `requestAnimationFrame`, `document` and `IntersectionObserver` stubs.
-- [ ] 2.6 The states:
+- [x] 2.6 The states:
   - `ide`: five sails that converge on the mark's heading with progress;
   - `diagrams`: nine points that lift and link into a three-node flow;
   - `still`;

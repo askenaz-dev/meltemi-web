@@ -1,12 +1,17 @@
 // `createSea`: a sea state drawn on a canvas, with a handle to drive it (specification
 // `ocean-package`, "A sea on a canvas"). The handle owns the frame loop, which runs only while
-// motion is allowed, the document is visible and the canvas is in view.
+// motion is allowed, the document is visible and the canvas is in view; it places the mark, if
+// the page gave one, and moves nothing else of the page.
 
-import { paletteOf, type StyleSource } from "./colors.js";
-import type { Frame, Quality, Renderer, Shape } from "./frame.js";
+import { paletteOf, type Palette, type StyleSource } from "./colors.js";
+import { compose, type SceneFigures } from "./compose.js";
+import type { Quality, Renderer } from "./frame.js";
+import { placeMark, type MarkElement } from "./mark.js";
+import { canvasRenderer, type Context2D } from "./render-2d.js";
 import { webglRenderer } from "./render-webgl.js";
 import { viewOf, type View } from "./scene.js";
 import { definitionOf, type SeaState } from "./states.js";
+import { particles, step, type Particle } from "./wind.js";
 
 export interface SeaOptions {
   /** The sea state to draw. */
@@ -17,23 +22,23 @@ export interface SeaOptions {
   readonly progress?: number;
   /** The wind's strength, between 0 and 1. */
   readonly wind?: number;
+  /** The mark's element, placed on the sea by its transform only. */
+  readonly mark?: MarkElement | null;
 }
 
-export interface Figures {
-  /** The sails following the mark. */
-  readonly sails: number;
-  /** The links the wind draws between points. */
-  readonly links: number;
-}
+export type Figures = SceneFigures;
 
 export interface Sea {
   readonly renderer: "webgl2" | "2d" | "none";
   readonly state: SeaState;
   /** How many frames have been drawn. */
   readonly frames: number;
+  /** What the last frame drew: following sails, links, the sails' spread and the mark's place. */
   readonly figures: Figures;
   readonly progress: number;
   readonly wind: number;
+  /** The lattice's density: halved after slow frames. */
+  readonly quality: Quality;
   /** Starts the loop, or draws the one frame a still or reduced sea shows. */
   start(): void;
   /** Stops the loop; the last frame stays on the canvas. */
@@ -58,11 +63,12 @@ export interface Environment {
     removeEventListener(type: "visibilitychange", listener: () => void): void;
   };
   readonly IntersectionObserver?: new (
-    callback: (entries: { readonly isIntersecting: boolean }[]) => void,
+    callback: (entries: readonly { readonly isIntersecting: boolean }[]) => void,
   ) => { observe(target: Element): void; disconnect(): void };
   devicePixelRatio(): number;
   coarsePointer(): boolean;
   style(element: Element): StyleSource | undefined;
+  random(): number;
 }
 
 function browserEnvironment(): Environment {
@@ -75,6 +81,7 @@ function browserEnvironment(): Environment {
     devicePixelRatio: () => g.devicePixelRatio ?? 1,
     coarsePointer: () => g.matchMedia?.("(pointer: coarse)").matches ?? false,
     style: (el) => g.getComputedStyle?.(el),
+    random: Math.random,
   };
 }
 
@@ -90,7 +97,7 @@ export function percentile95(times: readonly number[]): number {
   return sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))]!;
 }
 
-/** Frames measured before the quality is judged, and the p95 above which it is halved. */
+/** Frames measured before the quality is judged, and the p95 above which points are halved. */
 export const JUDGED_FRAMES = 90;
 export const SLOW_FRAME_MS = 20;
 
@@ -101,13 +108,14 @@ function checkUnit(name: string, value: number): number {
   return value;
 }
 
-/** Picks a renderer for the canvas: WebGL2 first, then Canvas 2D, else none. */
-export type RendererFactory = (
-  canvas: HTMLCanvasElement,
-  palette: ReturnType<typeof paletteOf>,
-) => Renderer | undefined;
+/** The canvas the sea draws on, as far as choosing a renderer goes. */
+export interface CanvasLike {
+  getContext(kind: "webgl2", options?: WebGLContextAttributes): WebGL2RenderingContext | null;
+  getContext(kind: "2d"): Context2D | null;
+}
 
-export const chooseRenderer: RendererFactory = (canvas, palette) => {
+/** Picks a renderer: WebGL2 first, then Canvas 2D, else none. */
+export function chooseRenderer(canvas: CanvasLike, palette: Palette): Renderer | undefined {
   const gl = canvas.getContext("webgl2", {
     alpha: true,
     premultipliedAlpha: true,
@@ -118,27 +126,37 @@ export const chooseRenderer: RendererFactory = (canvas, palette) => {
     try {
       return webglRenderer(gl, palette);
     } catch {
+      // A context whose programs fail cannot become 2D: the canvas keeps nothing and the still
+      // picture beneath it shows.
       return undefined;
     }
   }
-  return undefined;
-};
+  const ctx = canvas.getContext("2d");
+  return ctx ? canvasRenderer(ctx, palette) : undefined;
+}
+
+/** How many wind particles a canvas of this area carries. */
+export function windCount(view: View, quality: Quality): number {
+  const count = Math.round((view.width * view.height) / 9000);
+  const capped = Math.min(110, Math.max(36, count));
+  return quality === "high" ? capped : Math.round(capped / 2);
+}
 
 /** Draws a sea state on a canvas and returns its handle. */
 export function createSea(
   canvas: HTMLCanvasElement,
   options: SeaOptions,
   environment?: Partial<Environment>,
-  factory: RendererFactory = chooseRenderer,
 ): Sea {
   const env: Environment = { ...browserEnvironment(), ...environment };
   const definition = definitionOf(options.state);
   let progress = checkUnit("progress", options.progress ?? 0);
   let wind = checkUnit("wind", options.wind ?? 0.6);
   const still = options.reducedMotion === true || !definition.animated;
+  const mark = options.mark ?? undefined;
 
   let palette = paletteOf(env.style(canvas));
-  const renderer = factory(canvas, palette);
+  const renderer = chooseRenderer(canvas as unknown as CanvasLike, palette);
 
   let frames = 0;
   let running = false;
@@ -151,6 +169,8 @@ export function createSea(
   let seaTime = 0;
   let last: number | undefined;
   const times: number[] = [];
+  let wake: Particle[] = [];
+  let figures: Figures = { sails: definition.sails, links: 0, spread: 0, markX: 0 };
 
   const visible = () => !(env.document?.hidden ?? false);
 
@@ -164,21 +184,31 @@ export function createSea(
     if (canvas.width !== w) canvas.width = w;
     if (canvas.height !== h) canvas.height = h;
     renderer?.resize(w, h);
+    const count = windCount(view, quality);
+    if (wake.length !== count) wake = particles(count, env.random);
   };
-
-  const shapes = (): Shape[] => [];
 
   const draw = () => {
     if (!renderer || destroyed) return;
-    const frame: Frame = {
+    const scene = compose({
+      view,
+      t: seaTime,
+      state: definition.state,
+      progress,
+      wind,
+      particles: wake,
+      mark: mark ? { width: mark.offsetWidth, height: mark.offsetHeight } : undefined,
+    });
+    if (mark) placeMark(mark, scene.placement);
+    figures = scene.figures;
+    renderer.draw({
       view,
       dpr,
       t: seaTime,
       state: definition.state,
       quality,
-      shapes: shapes(),
-    };
-    renderer.draw(frame);
+      shapes: scene.shapes,
+    });
     frames += 1;
   };
 
@@ -194,10 +224,12 @@ export function createSea(
         percentile95(times) > SLOW_FRAME_MS
       ) {
         quality = "low";
+        measure();
       }
     }
     last = now;
     seaTime += dt;
+    step(wake, dt, seaTime, wind, env.random);
     draw();
     schedule();
   };
@@ -239,13 +271,16 @@ export function createSea(
       return frames;
     },
     get figures() {
-      return { sails: definition.sails, links: definition.links };
+      return figures;
     },
     get progress() {
       return progress;
     },
     get wind() {
       return wind;
+    },
+    get quality() {
+      return quality;
     },
     start() {
       if (destroyed || !renderer) return;
@@ -263,7 +298,7 @@ export function createSea(
     },
     setProgress(value) {
       progress = checkUnit("progress", value);
-      if (!running) draw();
+      if (!running && frames > 0) draw();
     },
     setWind(value) {
       wind = checkUnit("wind", value);
@@ -271,7 +306,7 @@ export function createSea(
     restyle() {
       palette = paletteOf(env.style(canvas));
       renderer?.restyle(palette);
-      if (!running) draw();
+      if (!running && frames > 0) draw();
     },
     resize() {
       measure();
