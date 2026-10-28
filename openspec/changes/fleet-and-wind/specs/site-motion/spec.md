@@ -16,11 +16,11 @@ links and buttons of every page SHALL stay in the page's HTML above both drawing
 - **THEN** `pnpm test` fails naming the page and what is missing
 
 ### Requirement: The mark is drawn by the wind and stays the brand's
-When the page loads, the hero SHALL draw the lead mark's `m` stroke from its start to the north-east tip in at most 1.6 seconds and raise its hull from the sea. Every other boat SHALL be a `<use>` of the lead mark's two paths, so the brand's shape exists once in the page. After the intro, the page SHALL move every boat only by translation, a scale from its depth and a tilt of at most 4 degrees, following the wave beneath it. The mark's paths and colours SHALL stay those of the IDE's `brand/meltemi-mark-gradient.svg`, with no filter, glow, shadow, mast or wave added.
+When the page loads, the hero SHALL draw the lead mark's `m` stroke from its start to the north-east tip in at most 1.6 seconds and raise its hull from the sea. Every other boat SHALL be a `<use>` of the lead mark's two paths, so the brand's shape exists once in the page. After the intro, the page SHALL move every boat only by translation, a scale from its depth and a heel of at most 6 degrees, following the wave beneath it, surging and easing with the gusts. The mark's paths and colours SHALL stay those of the IDE's `brand/meltemi-mark-gradient.svg`, with no filter, glow, shadow, mast or wave added.
 
 #### Scenario: The mark after the intro
 - **WHEN** the browser check reads the hero's lead mark 2 seconds after load
-- **THEN** its path data and gradient stops equal the brand file's, it carries no `filter`, and its transform is a translation, a scale and a rotation of at most 4 degrees
+- **THEN** its path data and gradient stops equal the brand file's, it carries no `filter`, and its transform is a translation, a scale and a rotation of at most 6 degrees
 
 #### Scenario: A mark that drifts from the brand
 - **WHEN** a page's lead mark has a path, a gradient stop or a filter that differs from the IDE's brand file, or a boat references anything but the lead mark's paths
@@ -28,16 +28,16 @@ When the page loads, the hero SHALL draw the lead mark's `m` stroke from its sta
 
 ### Requirement: Each page has its own sea state
 Each page SHALL declare one sea state and draw it, each with a fleet of marks sailing to the right and re-entering from the left, forever:
-- `home`: a fleet of four, the lead nearest.
-- `ide`: "one heading, many sails": a fleet of seven.
-- `diagrams`: a fleet of three, and points of the sea that lift and link into nodes and edges forming a small flow diagram.
+- `home`: a fleet of six, the lead nearest.
+- `ide`: "one heading, many sails": a fleet of nine.
+- `diagrams`: a fleet of five, and points of the sea that lift and link into nodes and edges forming a small flow diagram.
 - `still`: no motion, for the legal pages and the 404: the still picture with its one boat at rest.
 
 A page and its Spanish twin SHALL declare the same state, and a page SHALL carry exactly the boats its state sails.
 
 #### Scenario: The IDE page's fleet
 - **WHEN** the browser check opens `/ide/` and waits 2 seconds without scrolling
-- **THEN** the drawing reports the `ide` state with seven boats, and every boat's horizontal position has grown
+- **THEN** the drawing reports the `ide` state with nine boats, and every boat's horizontal position has grown
 
 #### Scenario: The fleet loops
 - **WHEN** the browser check reads a boat's position on `/`, then reads it again after the boat has left the right edge

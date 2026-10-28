@@ -27,7 +27,7 @@ const MOVING: Readonly<Record<string, string>> = {
   "/diagrams/": "diagrams",
 };
 /** How many boats each state sails, the lead included (`fleetSize`). */
-const MOVING_FLEET: Readonly<Record<string, number>> = { home: 4, ide: 7, diagrams: 3 };
+const MOVING_FLEET: Readonly<Record<string, number>> = { home: 6, ide: 9, diagrams: 5 };
 const twin = (url: string) => (url === "/" ? "/es/" : `/es${url}`);
 const MOVING_URLS = Object.keys(MOVING).flatMap((url) => [url, twin(url)]);
 
@@ -335,7 +335,7 @@ const heroes: Check = async (browser, origin) => {
         mark.transform,
       );
     if (!tilt) failures.push(`${url}: the mark's transform is "${mark.transform}"`);
-    else if (Math.abs(Number(tilt[1])) > 4) failures.push(`${url}: the mark tilts ${tilt[1]}°`);
+    else if (Math.abs(Number(tilt[1])) > 6) failures.push(`${url}: the mark heels ${tilt[1]}°`);
     if (!mark.inHero) failures.push(`${url}: the mark is not in the hero`);
     if (parseFloat(mark.drawn) > 0.001 || mark.hull !== "1") {
       failures.push(`${url}: the mark is not drawn after 2 s (${mark.drawn}, ${mark.hull})`);
@@ -406,7 +406,7 @@ const crossing: Check = async (browser, origin) => {
   return failures;
 };
 
-/** The IDE's fleet of seven sails together; the Diagrams links appear with the scroll. */
+/** The IDE's fleet of nine sails together; the Diagrams links appear with the scroll. */
 const stories: Check = async (browser, origin) => {
   const failures: string[] = [];
   for (const url of ["/ide/", "/es/ide/", "/diagrams/", "/es/diagrams/"]) {
@@ -419,14 +419,14 @@ const stories: Check = async (browser, origin) => {
       continue;
     }
     if (url.includes("/ide/")) {
-      if (top.figures.boats !== 7) failures.push(`${url}: ${top.figures.boats} boats`);
+      if (top.figures.boats !== 9) failures.push(`${url}: ${top.figures.boats} boats`);
       const before = [...top.figures.xs];
       await page.waitForTimeout(1000);
       const after = (await report(page))!.figures.xs;
       const stuck = after.filter((x, i) => !(x > before[i]! || x < before[i]! - 200)).length;
       if (stuck) failures.push(`${url}: ${stuck} boats did not sail in a second`);
     } else {
-      if (top.figures.boats !== 3) failures.push(`${url}: ${top.figures.boats} boats`);
+      if (top.figures.boats !== 5) failures.push(`${url}: ${top.figures.boats} boats`);
       await scrollHero(page, 0.95);
       const end = await report(page);
       if (!end || !(end.figures.links > top.figures.links)) {
@@ -659,7 +659,7 @@ const CHECKS: readonly [string, Check][] = [
     heroes,
   ],
   ["the fleet sails on its own, and the wind rises with the scroll", crossing],
-  ["the IDE's fleet of seven sails together, and the Diagrams links appear", stories],
+  ["the IDE's fleet of nine sails together, and the Diagrams links appear", stories],
   ["reduced motion draws one frame, the mark at rest", reduced],
   ["the pause button stops and resumes, and stores nothing", pause],
   ["no frame off screen or in a hidden tab", idle],

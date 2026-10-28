@@ -21,10 +21,10 @@ const DRIFT_X = 0.045;
 const DRIFT_Y = -0.03;
 
 /** How much of a trail survives each frame at 60 frames per second. */
-const RETAIN = 0.955;
+const RETAIN = 0.95;
 
 /** The trails' opacity over the page. */
-const ALPHA = 0.5;
+const ALPHA = 0.32;
 
 /** The flow's direction at a point and time, as a unit vector (dx right, dy down). */
 export function flowAt(x: number, y: number, t: number, noise: Noise2): readonly [number, number] {
@@ -39,7 +39,7 @@ export function speedAt(x: number, y: number, t: number, strength: number, noise
 }
 
 /** How many particles a surface of this size carries. */
-export function particleCount(width: number, height: number, density = 6000): number {
+export function particleCount(width: number, height: number, density = 8000): number {
   return Math.min(1400, Math.max(200, Math.round((width * height) / density)));
 }
 
@@ -175,7 +175,7 @@ export function createWind(
     ctx.globalCompositeOperation = "source-over";
     ctx.strokeStyle = colour.css;
     ctx.globalAlpha = ALPHA * colour.a;
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.1;
     ctx.lineCap = "round";
   };
 

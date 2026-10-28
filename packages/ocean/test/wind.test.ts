@@ -47,7 +47,7 @@ describe("the wind's field", () => {
 
   it("carries a few hundred particles on a laptop screen, and never too many", () => {
     expect(particleCount(1280, 800)).toBe(200);
-    expect(particleCount(3840, 2160)).toBe(1382);
+    expect(particleCount(3840, 2160)).toBe(1037);
     expect(particleCount(7680, 4320)).toBe(1400);
     expect(particleCount(320, 480)).toBe(200);
   });

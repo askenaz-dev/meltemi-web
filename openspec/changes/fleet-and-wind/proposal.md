@@ -24,7 +24,7 @@ The owner read meltemi.dev with the sea on it and asked for four things:
 - **A fleet of marks.** `@meltemi/ocean` places a fleet of elements, all copies of the mark
   (`<use>` of the one inline mark), on the sea: the lead boat nearest, the others farther and
   smaller, all sailing to the right and re-entering from the left when they leave, forever.
-  Every state has a fleet (`home` 4, `ide` 7, `diagrams` 3); the IDE's triangle sails and the
+  Every state has a fleet (`home` 6, `ide` 9, `diagrams` 5); the IDE's triangle sails and the
   scroll-driven crossing go. The scroll through the hero freshens the wind, which speeds the
   fleet. The still pictures carry the fleet at rest.
 - **A wind across the page.** `createWind(canvas, options)` draws wind on a canvas that covers

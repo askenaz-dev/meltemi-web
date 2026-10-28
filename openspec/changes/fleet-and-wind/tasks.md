@@ -40,4 +40,9 @@ One commit per task, referencing `(fleet-and-wind N.M)`. Gates at every task: `p
   nine checks in Chromium 153.
 ## 3. Sign-off
 
-- [ ] 3.1 Owner: the fleet, the wind and the button on `home`, `ide` and `diagrams`, both themes.
+- [x] 3.1 Owner: the fleet, the wind and the button on `home`, `ide` and `diagrams`, both themes.
+  Seen in production on 2026-10-28: "kudos, te quedó genial", with four adjustments (design D8).
+- [x] 3.2 The owner's round: fleets of six, nine and five that re-enter at the edge; the sea's
+  points up and the wind's trails down, sparser and shorter; the wind masked behind the column;
+  boats that surge with gusts, sail faster with the wind and heel to 6 degrees. Verify the
+  package and site tests, `pnpm site:browser`, and the owner's second look.

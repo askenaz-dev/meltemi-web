@@ -24,8 +24,8 @@ the mark: the lead is the inline mark with the brand's two paths; the others are
 `<svg class="sea-boat"><use href="#sea-mark-m"/><use href="#sea-mark-hull"/></svg>`, so the
 brand's paths exist once in the page and every boat is exactly the mark. The package writes each
 element's `transform` only: `translate(x, y) scale(s) rotate(a)`, the keel on the wave at the
-boat's depth, the scale from the depth (the lead at 1, the farthest at about 0.35), the tilt at
-most 4 degrees. `fleetSize(state)` says how many a state sails; the page carries that many.
+boat's depth, the scale from the depth (the lead at 1, the farthest at about 0.35), the heel at
+most 6 degrees. `fleetSize(state)` says how many a state sails; the page carries that many.
 
 **Why.** The spec's "placed, never redrawn" rule keeps the mark the brand's; `<use>` keeps the
 page honest (one shape, checked against the brand file) and cheap.
@@ -90,6 +90,21 @@ the wind within a frame. The spec keeps "labelled" through `aria-label`.
 from `mark-shape.ts`) and places each boat with `<use transform="translate(…) scale(…)">`, at
 the fleet's rest positions, deterministically. The wind in the stills becomes a few streamlines
 from the same field. The 30 KB budget holds: a `<use>` is about seventy bytes.
+
+### D8. The owner's round (2026-10-28)
+
+Seen in production: "a veces se queda sin barcos", the water reads less than the wind, words with
+no surface behind them fight the trails, and the boats could answer the wind more. So:
+
+- fleets of six, nine and five (from four, seven and three), and a boat that leaves re-enters just
+  off the left edge, pushed left only as far as another boat's box forces, so the hero is never
+  empty;
+- the sea's points a little larger (3.3 px at the near row, from 2.6), the wind's trails at 0.32
+  alpha (from 0.5), sparser (8000 px² per particle, from 6000) and shorter (0.95 retained per frame,
+  from 0.955);
+- the wind's canvas masked to 55% behind the column where the words are, full at the margins;
+- the boats surge and ease with gusts (a slow noise over the hero multiplies their pace by 0.7 to
+  1.3), sail faster with the scroll's wind (`0.14 + 0.2 · wind`), and heel up to 6 degrees.
 
 ### D7. Checks
 
