@@ -132,9 +132,14 @@ body {
   height: calc(var(--sea-band) / 0.54);
   z-index: 0;
   pointer-events: none;
-  /* The sky behind the hero's words fades out, so the wind blows over the sea and never across a
-     line of text. A mask: only its alpha counts. */
-  mask-image: linear-gradient(to bottom, transparent 14%, black 46%);
+  /* The wind blows over the sea: the stage fades out between the horizon (the band's top) and the
+     gap under the hero's words, so nothing it draws crosses a line of text, however short the
+     hero. A mask: only its alpha counts. */
+  mask-image: linear-gradient(
+    to top,
+    black var(--sea-band),
+    transparent calc(var(--sea-band) + var(--sp-4))
+  );
 }
 
 .sea-stage picture,
