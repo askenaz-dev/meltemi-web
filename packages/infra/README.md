@@ -30,13 +30,13 @@ never disagree about who owns what.
 
 ## The pipelines
 
-| Workflow          | When                                               | What                                                                                     |
-| ----------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `ci.yml`          | Every push and pull request                        | `terraform fmt`, `validate` and `test` (the stages against mocked providers), no secret  |
-| `infra-plan.yml`  | Pull requests that change this folder              | The plan, as the pull request's comment, replaced on every push                          |
-| `infra-apply.yml` | Pushes to `main` that change this folder, and hand | The plan, saved, and that plan applied; the outputs as the run's summary                 |
-| `infra-drift.yml` | Mondays at 06:00 UTC, and by hand                  | A plan; a difference opens or updates the issue "Infrastructure drift", none closes it   |
-| `registrar.yml`   | By hand, once                                      | Points `meltemi.dev` and `meltemi.page` at Dynadot to the zones' nameservers (see below) |
+| Workflow          | When                                                          | What                                                                                     |
+| ----------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `ci.yml`          | Every push and pull request                                   | `terraform fmt`, `validate` and `test` (the stages against mocked providers), no secret  |
+| `infra-plan.yml`  | Pull requests that change this folder                         | The plan, as the pull request's comment, replaced on every push                          |
+| `infra-apply.yml` | Successful push CI for current `main`, and validated recovery | The plan, saved, and that plan applied; the outputs as the run's summary                 |
+| `infra-drift.yml` | Mondays at 06:00 UTC, and by hand                             | A plan; a difference opens or updates the issue "Infrastructure drift", none closes it   |
+| `registrar.yml`   | By hand, once                                                 | Points `meltemi.dev` and `meltemi.page` at Dynadot to the zones' nameservers (see below) |
 
 All but `ci.yml` run in the `infrastructure` environment, which holds the bootstrap. Product
 pipelines never see it: theirs is `production`, which Terraform fills.
@@ -170,3 +170,12 @@ The Workers read the new value when their isolates restart. Rotating the signing
 `SESSION_PUBLIC_KEYS` in `packages/identity/wrangler.jsonc`, keeping the old public key for thirty
 days. **Importing:** a resource that exists already (a zone added by hand, a Store created in the
 dashboard) is brought in with an `import` block in a pull request.
+
+## Approved automatic delivery
+
+`infra-apply.yml` now validates a successful push/main CI run through the API, checks out that
+exact SHA and applies only while it is still current main. Recovery requires `ci_run_id` and
+uses the same checks; [RELEASING.md](../../RELEASING.md) describes the commands. Web and Diagrams
+version tags cannot be moved or deleted; their creation remains available to release workflows.
+`VSCE_PAT` stays optional for historical Diagrams recovery. New Marketplace publication may use
+GitHub OIDC after the publisher policy is configured; `OVSX_PAT` remains a separate requirement.
