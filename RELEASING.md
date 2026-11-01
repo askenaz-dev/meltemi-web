@@ -26,7 +26,8 @@ The immutable tags are `vX.Y.Z` for identity and `ocean-vX.Y.Z` for ocean. They 
 source SHA. The version and `meltemiRelease.sourceSha` are stamped only in the packaging checkout;
 the source manifest is a version floor, not a report of npm's latest version. Terraform declares
 update/deletion protection on the version tags in Web and Diagrams, without preventing creation.
-Untagged source predating this automation is refused: use its historical release path instead.
+All source predating this automation is refused, including historically tagged SHAs: use its
+historical release path instead. Its packages do not carry this automation's source metadata.
 
 The build runs once and npm archives plus `plan.json` become an artifact named for source, run and
 attempt. Failed-only reruns read the successful prepare job's artifact output; full reruns create a

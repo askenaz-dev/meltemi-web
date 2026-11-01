@@ -87,6 +87,11 @@ export function npmTag(version, latest) {
   if (latest && !isVersion(latest)) throw new Error("npm latest is not a stable version");
   return !latest || compareVersions(version, latest) > 0 ? "latest" : `release-${version}`;
 }
+export function assertAutomaticSource(workflow) {
+  if (!workflow.includes("automatic-main-releases")) {
+    throw new Error("Source predates automatic-main-releases; use its historical release path");
+  }
+}
 async function reserve() {
   const sourceSha = process.env.SOURCE_SHA;
   if (
@@ -98,22 +103,10 @@ async function reserve() {
   const plan = { sourceSha, ciRunId: process.env.CI_RUN_ID, packages: [] };
   const tags = tagsOfSource();
   const commits = command("git", ["rev-list", "--first-parent", sourceSha]).split("\n");
-  const automatic = readFileSync(".github/workflows/release.yml", "utf8").includes(
-    "automatic-main-releases",
-  );
+  assertAutomaticSource(readFileSync(".github/workflows/release.yml", "utf8"));
   for (const pkg of PACKAGES) {
     const path = join(pkg.directory, "package.json");
     const manifest = JSON.parse(readFileSync(path, "utf8"));
-    const exact = tags.some(
-      (tag) =>
-        tag.sha === sourceSha &&
-        tag.name.startsWith(pkg.prefix) &&
-        isVersion(tag.name.slice(pkg.prefix.length)),
-    );
-    if (!automatic && !exact)
-      throw new Error(
-        "Untagged source predates automatic-main-releases; use its historical release path",
-      );
     const history = [];
     let crossedFloor = false;
     for (const sha of commits) {
@@ -146,7 +139,7 @@ async function reserve() {
       await api("/git/refs", { method: "POST", body: { ref: `refs/tags/${tag}`, sha: sourceSha } });
     }
     manifest.version = version;
-    if (automatic) manifest.meltemiRelease = { sourceSha };
+    manifest.meltemiRelease = { sourceSha };
     writeFileSync(path, `${JSON.stringify(manifest, null, 2)}\n`);
     const previousTag = commits
       .slice(1)

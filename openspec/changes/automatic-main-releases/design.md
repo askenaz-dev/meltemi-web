@@ -19,7 +19,8 @@ CI also retains queued main pushes (the platform limit is 100 pending workflows;
 be recovered using a successful CI run id). Each package reuses its exact source tag or derives
 the version from its nearest first-parent ancestor tag plus commit distance. A greater manifest
 floor anchors a new base at its introduction; a smaller manual bump cannot regress the ancestor
-version. Descendant tags never influence an old SHA. Untagged pre-automation source is refused.
+version. Descendant tags never influence an old SHA. All pre-automation source is refused,
+including exact historical tags, whose packages lack the source metadata this workflow verifies.
 Tags are created without force and point to the CI source SHA, never an untested bot commit.
 
 Only the packaging checkout receives the assigned version and `meltemiRelease.sourceSha`.

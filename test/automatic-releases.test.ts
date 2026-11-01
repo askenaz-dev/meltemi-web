@@ -8,6 +8,7 @@ import { currentSource, resolveSource, validateRun } from "../scripts/ci-source.
 import { githubApi } from "../scripts/github-api.mjs";
 import {
   allocateVersion,
+  assertAutomaticSource,
   checkPublished,
   npmTag,
   publishGithub,
@@ -148,6 +149,12 @@ describe("GitHub channel recovery", () => {
 });
 
 describe("deterministic source versions", () => {
+  it("refuses legacy source even if its SHA already has a historical version tag", () => {
+    expect(() => assertAutomaticSource("name: Release\non:\n  push:\n    tags: ['v*']\n")).toThrow(
+      /historical release path/,
+    );
+    expect(() => assertAutomaticSource("# automatic-main-releases\nname: Release\n")).not.toThrow();
+  });
   const history = [
     { sha, version: "0.2.0" },
     { sha: "parent", version: "0.2.0" },
