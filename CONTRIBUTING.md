@@ -32,11 +32,13 @@ Nothing is configured or deployed from a machine ([decision 0004](docs/decisions
 - **Infrastructure** is a pull request that changes `packages/infra`; `infra-plan.yml` writes its
   plan on the pull request, and merging applies that change (`infra-apply.yml`). A difference made
   in a dashboard shows up as the issue "Infrastructure drift".
-- **Code** reaches production when it reaches `main`: `deploy.yml` applies the identity
-  migrations and uploads the identity Worker and the site.
-- **The packages** are released by pushing a tag equal to their version: `v<x.y.z>` for
-  `packages/identity`, which `release.yml` publishes as `@meltemi/identity` with provenance and a
-  GitHub release, and `ocean-v<x.y.z>` for `packages/ocean`, published as `@meltemi/ocean` with
-  provenance.
+- **Code** reaches production after successful push CI for the current `main` SHA: `deploy.yml`
+  applies the identity migrations and uploads the identity Worker and site. Infrastructure apply
+  has the same CI/current-head gate; an older recovery cannot roll production back.
+- **The packages** receive automatic patch releases from each approved main commit, with
+  independent versions and immutable source tags (`v<x.y.z>` for identity, `ocean-v<x.y.z>` for
+  ocean). CI source is checked out exactly; only the packaging copy is stamped, with no bot
+  commit to main. npm and GitHub publish independently. See [RELEASING.md](RELEASING.md) for
+  version derivation, queues, provenance and recovery with a validated CI run id.
 - **Secrets** are never typed into a Worker: they live in the Secrets Store, generated or received
   by Terraform. The values only a person can obtain are the bootstrap of `packages/infra/README.md`.

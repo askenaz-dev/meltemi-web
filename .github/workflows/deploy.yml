@@ -1,67 +1,117 @@
 name: Deploy
 
-# Every push to main that changes a Worker: the identity service's migrations, then its code, then
-# the family site's files, uploaded with wrangler onto the Workers that Terraform declared
-# (packages/infra). This workflow creates nothing and sets no secret: the production environment
-# holds what Terraform put there, a deploy token that can only upload Workers and migrate D1, and
-# the ids the configuration needs. The IDE's release workflow dispatches it once a release is out,
-# and the IDE's latest release is written into the IDE's pages before the site is uploaded
-# (change ide-releases).
-
+# Only the current, CI-approved main SHA reconciles production. IDE notices use the same gate.
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-    paths:
-      - "packages/identity/**"
-      - "packages/site/**"
-      # The site bundles the sea and the wind at build time: a change to them is a change to the
-      # site's files, and without this path it would never reach production.
-      - "packages/ocean/**"
-      - "scripts/deploy-config.mjs"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful push/main CI run; omitted IDE notices resolve current main CI
+        required: false
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: deploy
   cancel-in-progress: false
+  queue: max
 
 jobs:
-  deploy:
+  source:
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
-    environment: production
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
-      SECRETS_STORE_ID: ${{ vars.SECRETS_STORE_ID }}
+    outputs:
+      sha: ${{ steps.ci.outputs.sha }}
+      current: ${{ steps.ci.outputs.current }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .automation
+          persist-credentials: false
+      - name: Validate CI and resolve current main for an IDE notice
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id || inputs.ci_run_id }}
+          ALLOW_CURRENT: "true"
+        run: node .automation/scripts/ci-source.mjs resolve
+
+  deploy:
+    needs: source
+    if: needs.source.outputs.current == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .automation
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          path: source
+          persist-credentials: false
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: source/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: source/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - name: The identity Worker's configuration, with the ids Terraform gave
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          D1_DATABASE_ID: ${{ vars.D1_DATABASE_ID }}
+          SECRETS_STORE_ID: ${{ vars.SECRETS_STORE_ID }}
         run: node scripts/deploy-config.mjs packages/identity/wrangler.jsonc
+      - name: Refuse to deploy superseded source
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.source.outputs.sha }}
+        run: node ../.automation/scripts/ci-source.mjs current
       - name: Identity migrations
-        working-directory: packages/identity
+        if: steps.current.outputs.current == 'true'
+        working-directory: source/packages/identity
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler d1 migrations apply DB --remote -c wrangler.deploy.json
       - name: Identity Worker
-        working-directory: packages/identity
+        if: steps.current.outputs.current == 'true'
+        working-directory: source/packages/identity
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy -c wrangler.deploy.json
       - name: The IDE's latest release, written into its pages
-        # Asked with this run's own read-only token; when GitHub does not answer, the pages keep
-        # their committed sentence and the deploy goes on.
-        working-directory: packages/site
+        if: steps.current.outputs.current == 'true'
+        working-directory: source/packages/site
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/ide-release.mjs public
       - name: Family site
-        working-directory: packages/site
+        if: steps.current.outputs.current == 'true'
+        working-directory: source/packages/site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy

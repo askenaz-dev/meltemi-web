@@ -115,7 +115,9 @@ read the drafts before the site is published.
 
 ## Deployment
 
-`.github/workflows/deploy.yml` uploads `public/` with `wrangler deploy` on every push to `main`.
+`.github/workflows/deploy.yml` uploads `public/` with `wrangler deploy` after successful push CI
+for the current `main` SHA. Older recovery runs do not roll production back. See
+[RELEASING.md](../../RELEASING.md) for validation and recovery.
 Everything else is declared in `packages/infra` and applied by its pipeline: the Worker
 `meltemi-site` itself, the zone `meltemi.dev`, and the Custom Domain `meltemi.dev` that replaces
 the GitHub Pages records when `apex_on_github_pages` turns `false`. `wrangler.jsonc` therefore has
