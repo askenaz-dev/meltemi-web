@@ -264,12 +264,43 @@ describe("the infrastructure's workflows", () => {
     expect(text).not.toMatch(/terraform apply/);
   });
 
-  it("apply on main the very plan they made, one run at a time", () => {
+  it("runs this temporary operation only by dispatch, with a pinned source and a strict plan guard", () => {
     const text = read("infra-apply.yml");
-    expect(text).toMatch(/branches: \[main\]/);
+    expect(text).toMatch(/^on:\n {2}workflow_dispatch:/m);
+    expect(text).not.toMatch(/^\s+(push|pull_request|workflow_run|schedule):/m);
+    at(text, "github.ref == 'refs/heads/codex/ovsx-bootstrap-only'");
+    at(text, "ref: d48ed8ed0725b4672c1b7656c8fc4cffe452683a");
+    at(text, "ref: ${{ github.workflow_sha }}");
+    at(
+      text,
+      'cp "$GITHUB_WORKSPACE/operation/scripts/ovsx-bootstrap-override.tf" ovsx_bootstrap_override.tf',
+    );
     expect(text).toMatch(/group: infrastructure\n\s+cancel-in-progress: false/);
-    expect(at(text, "-out=apply.tfplan")).toBeLessThan(
-      at(text, "terraform apply -no-color -lock-timeout=5m apply.tfplan"),
+    const plan = at(text, "-out=ovsx.tfplan");
+    const guard = at(
+      text,
+      'terraform show -json ovsx.tfplan | node "$GITHUB_WORKSPACE/operation/scripts/ovsx-bootstrap-plan.mjs"',
+    );
+    const apply = at(text, "terraform apply -no-color -lock-timeout=5m ovsx.tfplan");
+    expect(plan).toBeLessThan(guard);
+    expect(guard).toBeLessThan(apply);
+    expect(apply).toBeLessThan(at(text, "-out=ovsx-verify.tfplan"));
+    at(text, 'if [ "$code" != 0 ]; then');
+    at(text, 'ovsx-bootstrap-plan.mjs" --verify');
+    at(text, 'if [ -z "$TF_VAR_ovsx_pat" ]; then');
+    expect(
+      text.match(/-target='github_actions_secret\.release\["meltemi-diagrams\/OVSX_PAT"\]'/g),
+    ).toHaveLength(2);
+    expect(text).not.toMatch(/upload-artifact|set -x|terraform output|terraform show -json[^\n]*>/);
+    expect(text.match(/umask 077/g)).toHaveLength(2);
+    at(
+      text,
+      "gh api repos/askenaz-dev/meltemi-diagrams/actions/secrets/OVSX_PAT --jq '{name, updated_at}'",
+    );
+    at(text, "if: always()");
+    at(
+      text,
+      "rm -f source/packages/infra/ovsx.tfplan source/packages/infra/ovsx-verify.tfplan source/packages/infra/ovsx_bootstrap_override.tf",
     );
   });
 

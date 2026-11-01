@@ -1,15 +1,8 @@
 name: Infrastructure apply
 
-# Every push to main that changes the infrastructure applies it: the plan is made, saved and that
-# very plan is applied, one run at a time. The outputs (ids, nameservers, domains; never a secret)
-# are the run's summary.
-
+# Temporary operation branch only. Do not merge this replacement of the normal apply workflow.
+# Dispatch only after the operator has supplied OVSX_PAT in the infrastructure environment.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "packages/infra/**"
-      - ".github/workflows/infra-apply.yml"
   workflow_dispatch:
 
 permissions:
@@ -21,11 +14,13 @@ concurrency:
 
 jobs:
   apply:
+    if: github.repository == 'askenaz-dev/meltemi-web' && github.ref == 'refs/heads/codex/ovsx-bootstrap-only'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: infrastructure
     defaults:
       run:
-        working-directory: packages/infra
+        working-directory: source/packages/infra
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
@@ -43,51 +38,74 @@ jobs:
       TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
       TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
       TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}
-      # The narrow notice token when it exists; until then the admin token, by the owner's choice
-      # of 2026-10-23 (change ide-releases, design: "The owner's choice").
       TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Operation controls at this workflow revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: operation
+          persist-credentials: false
+      - name: Existing Terraform declarations from approved main
+        uses: actions/checkout@v4
+        with:
+          ref: d48ed8ed0725b4672c1b7656c8fc4cffe452683a
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.15"
           terraform_wrapper: false
-      - name: The Cloudflare token and the state bucket, as this runner sees them
+      - name: Check bootstrap and authenticate the state backend
         run: |
-          answer="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)"
-          status="$(echo "$answer" | jq -r '.result.status // empty')"
-          if [ "$status" != "active" ]; then
-            echo "::error::Cloudflare refuses the token from this runner: $(echo "$answer" | jq -c '.errors')."
-            echo "A token restricted to some client IP addresses cannot be used from GitHub's runners."
+          if [ -z "$TF_VAR_ovsx_pat" ]; then
+            echo '::error::OVSX_PAT is missing from the infrastructure environment.'
             exit 1
           fi
-          account="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/${{ vars.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts" | jq -c '.success, .errors')"
-          echo "An account call from this runner answers: $account"
-          # R2's S3 credentials are the token's id and the SHA-256 of its value (Cloudflare's R2 docs),
-          # derived here so that they always belong to the token the environment holds.
-          key_id="$(echo "$answer" | jq -r '.result.id')"
+          answer="$(curl --fail --silent --show-error -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)"
+          if [ "$(jq -r '.result.status // empty' <<< "$answer")" != active ]; then
+            echo '::error::The infrastructure token is not active.'
+            exit 1
+          fi
+          key_id="$(jq -r '.result.id // empty' <<< "$answer")"
+          if [ -z "$key_id" ]; then exit 1; fi
           secret="$(printf %s "$CLOUDFLARE_API_TOKEN" | sha256sum | cut -d' ' -f1)"
           echo "::add-mask::$secret"
           echo "AWS_ACCESS_KEY_ID=$key_id" >> "$GITHUB_ENV"
           echo "AWS_SECRET_ACCESS_KEY=$secret" >> "$GITHUB_ENV"
-          if AWS_ACCESS_KEY_ID="$key_id" AWS_SECRET_ACCESS_KEY="$secret" aws s3api list-objects-v2 \
-            --bucket meltemi-terraform-state --endpoint-url "$AWS_ENDPOINT_URL_S3" --region auto --max-items 1 > /dev/null; then
-            echo "The token is active and R2 accepts the state bucket's credentials."
-          else
-            echo "::error::R2 refuses the state bucket's credentials derived from the token (it needs Workers R2 Storage)."
+      - name: Remove the incidental repository and D1 dependency for this operation
+        run: cp "$GITHUB_WORKSPACE/operation/scripts/ovsx-bootstrap-override.tf" ovsx_bootstrap_override.tf
+      - run: terraform init -no-color -lockfile=readonly
+      - name: Plan only the Open VSX secret and validate its entire scope
+        run: |
+          umask 077
+          terraform plan -no-color -lock-timeout=5m \
+            -target='github_actions_secret.release["meltemi-diagrams/OVSX_PAT"]' -out=ovsx.tfplan
+          terraform show -json ovsx.tfplan | node "$GITHUB_WORKSPACE/operation/scripts/ovsx-bootstrap-plan.mjs"
+      - name: Apply exactly the validated plan
+        run: terraform apply -no-color -lock-timeout=5m ovsx.tfplan
+      - name: Verify the targeted plan has no differences
+        run: |
+          umask 077
+          set +e
+          terraform plan -no-color -lock-timeout=5m -detailed-exitcode \
+            -target='github_actions_secret.release["meltemi-diagrams/OVSX_PAT"]' -out=ovsx-verify.tfplan
+          code=$?
+          set -e
+          if [ "$code" != 0 ]; then
+            echo '::error::The Open VSX secret did not converge to an unchanged plan.'
             exit 1
           fi
-      - run: terraform init
-      - name: Plan
-        run: terraform plan -no-color -lock-timeout=5m -out=apply.tfplan
-      - name: Apply that plan
-        run: terraform apply -no-color -lock-timeout=5m apply.tfplan
-      - name: Outputs
+          terraform show -json ovsx-verify.tfplan | node "$GITHUB_WORKSPACE/operation/scripts/ovsx-bootstrap-plan.mjs" --verify
+      - name: Verify destination metadata without reading the token
         run: |
-          {
-            echo "### Outputs"
-            echo
-            echo '```json'
-            terraform output -json
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          metadata="$(gh api repos/askenaz-dev/meltemi-diagrams/actions/secrets/OVSX_PAT --jq '{name, updated_at}')"
+          if [ "$(jq -r '.name' <<< "$metadata")" != OVSX_PAT ]; then exit 1; fi
+          printf '%s\n' "$metadata" >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove sensitive runner-local plans
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: rm -f source/packages/infra/ovsx.tfplan source/packages/infra/ovsx-verify.tfplan source/packages/infra/ovsx_bootstrap_override.tf
