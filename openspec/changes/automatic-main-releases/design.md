@@ -32,8 +32,9 @@ names include source/run/attempt and are passed as prepare outputs for failed-on
 
 Separate npm and GitHub matrix jobs consume the artifact, with fail-fast disabled. npm checks
 existing versions and source metadata, publishes with provenance, and only advances latest to a
-greater version. Older releases use a version-specific dist-tag. npm provenance names the CI
-source/tag while preserving the authentic builder workflow identity. GitHub releases use generated
+greater version. Older releases use a version-specific dist-tag. npm provenance preserves the
+authentic runner ref/SHA and workflow identity required by the OIDC certificate; package metadata,
+immutable tags and the integrity manifest identify the separately validated CI source. GitHub releases use generated
 notes bounded by the same package's previous tag and immutable source tags. Drafts upload the
 tarball and source/version/integrity manifest before publishing. Identity owns latest; ocean releases
 are visible but never replace that pointer. No update changes assets of an existing release.

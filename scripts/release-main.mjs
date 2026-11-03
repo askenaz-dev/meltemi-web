@@ -195,9 +195,10 @@ export async function publishNpm(plan, pkg, dependencies = {}) {
       ],
       {
         stdio: "inherit",
-        // npm's provenance reads these source coordinates. The builder workflow identity remains
-        // the authentic workflow_run context (GITHUB_WORKFLOW_REF and the OIDC token are untouched).
-        env: { ...process.env, GITHUB_SHA: plan.sourceSha, GITHUB_REF: `refs/tags/${pkg.tag}` },
+        // npm verifies these coordinates against the runner's OIDC certificate. Keep the
+        // authentic workflow ref/SHA, including recovery of an older approved source. The
+        // package's meltemiRelease metadata and release manifest identify that source.
+        env: { ...process.env },
       },
     );
   }
