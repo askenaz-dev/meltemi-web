@@ -91,7 +91,6 @@ body {
 
 .hero {
   padding: var(--sp-8) 0 var(--sp-6);
-  border-bottom: 1px solid var(--hair);
 }
 
 /* ---- the sea (decision 0006) ---------------------------------------------- */
@@ -188,6 +187,13 @@ main,
 .sea-still {
   object-fit: cover;
   object-position: center bottom;
+}
+
+/* Let the sea meet the page without an edge. Fade only the drawing: the sailing marks and
+   pause control keep their full contrast, and the stage's upper mask still protects the text. */
+.sea-still,
+.sea-canvas {
+  mask-image: linear-gradient(to top, transparent, black var(--sp-8));
 }
 
 /* Once the sea draws, the still picture beneath it steps aside for the canvas, which stays out of
