@@ -50,6 +50,11 @@ Existing versions SHALL be checked and reused, and latest pointers SHALL never m
 - WHEN a release older than latest is retried
 - THEN it is published or confirmed without replacing latest.
 
+#### Scenario: Provenance on main or historical recovery
+- WHEN npm publishes from a main workflow execution, including recovery of older approved source
+- THEN provenance preserves the runner ref and SHA authenticated by its OIDC certificate
+- AND package metadata and the integrity manifest identify the approved packaged source.
+
 ### Requirement: Reconciliation does not deploy superseded source
 
 Deploy and infrastructure apply SHALL check that approved source still equals main immediately

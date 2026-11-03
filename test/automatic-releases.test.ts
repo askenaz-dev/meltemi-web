@@ -231,17 +231,28 @@ describe("npm recovery and provenance", () => {
     expect(() => checkPublished(metadata, newer, pkg.integrity)).toThrow(/differs/);
     expect(() => checkPublished(metadata, sha, "other")).toThrow(/differs/);
   });
-  it("publishes an absolute archive with CI source provenance, preserving builder identity", async () => {
-    const command = vi.fn();
-    const registry = async () => ({ versions: {}, "dist-tags": { latest: "0.2.4" } });
-    await publishNpm({ sourceSha: sha }, pkg, { command, registry });
-    const [, args, options] = command.mock.calls[0]!;
-    expect(isAbsolute(args[1])).toBe(true);
-    expect(args).toContain("release-0.2.3");
-    expect(options.env.GITHUB_SHA).toBe(sha);
-    expect(options.env.GITHUB_REF).toBe("refs/tags/v0.2.3");
-    expect(options.env.GITHUB_WORKFLOW_REF).toBe(process.env.GITHUB_WORKFLOW_REF);
-  });
+  it.each([sha, newer])(
+    "preserves authenticated provenance when the runner SHA is %s",
+    async (runnerSha) => {
+      const command = vi.fn();
+      const registry = async () => ({ versions: {}, "dist-tags": { latest: "0.2.4" } });
+      vi.stubEnv("GITHUB_SHA", runnerSha);
+      vi.stubEnv("GITHUB_REF", "refs/heads/main");
+      vi.stubEnv("GITHUB_WORKFLOW_REF", `${repo}/.github/workflows/release.yml@refs/heads/main`);
+      try {
+        await publishNpm({ sourceSha: sha }, pkg, { command, registry });
+        const [, args, options] = command.mock.calls[0]!;
+        expect(isAbsolute(args[1])).toBe(true);
+        expect(args).toContain("release-0.2.3");
+        expect(args).toContain("--provenance");
+        expect(options.env.GITHUB_SHA).toBe(runnerSha);
+        expect(options.env.GITHUB_REF).toBe("refs/heads/main");
+        expect(options.env.GITHUB_WORKFLOW_REF).toBe(process.env.GITHUB_WORKFLOW_REF);
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    },
+  );
   it("an older identical retry does not publish or promote anything", async () => {
     const command = vi.fn();
     const registry = async () => ({

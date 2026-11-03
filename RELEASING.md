@@ -39,9 +39,10 @@ archive, the integrity check stops it rather than overwriting that package versi
 npm and GitHub jobs run independently for each package. A registry outage does not suppress its
 GitHub release or the other package's npm result. npm uses provenance and verifies the source SHA
 and archive integrity of a version already present. It advances `latest` only to a newer version;
-older releases use a `release-X.Y.Z` dist-tag. The npm subprocess receives the validated source SHA
-and immutable tag as its provenance source coordinates. The workflow identity and OIDC token
-remain those of the actual builder workflow revision.
+older releases use a `release-X.Y.Z` dist-tag. npm provenance retains the actual runner's ref,
+SHA and workflow identity, which must match its OIDC certificate. It identifies the publication
+execution; for an older recovery that revision can differ from the packaged source. The package's
+`meltemiRelease.sourceSha`, immutable tag and integrity manifest identify the CI-approved source.
 
 GitHub drafts are published after the tarball and its source/version/integrity manifest have been
 uploaded; partial uploads resume without replacing existing assets. Notes use the prior ancestor
