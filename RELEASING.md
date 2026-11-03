@@ -57,6 +57,16 @@ An old recovery still publishes its immutable release, but cannot roll productio
 back. All current approved pushes reconcile production; there are no path filters. Terraform
 changes still belong in reviewed code; nothing runs `apply` locally.
 
+Deploy and apply share the `production-reconciliation` workflow concurrency group, with no
+cancellation and `queue: max`. The queue covers Terraform's plan as well as apply, so a Web
+deployment cannot change Worker metadata during the provider's consistency check. Releases use
+their separate queue. GitHub concurrency is scoped to this repository; it does not coordinate
+deployments initiated by the Diagrams repository.
+
+Both Web Wrangler configurations explicitly enable observability, logs and invocation logs,
+matching Terraform. Leaving the setting out makes Wrangler disable observability and creates
+drift on the next infrastructure plan.
+
 The IDE's release notice continues dispatching `deploy.yml` without inputs. That resolves only a
 successful push CI run for current main. If current CI is pending or failed, the notice fails with
 an explanation; the later successful main CI deploy will include the IDE's latest release.

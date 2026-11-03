@@ -63,3 +63,28 @@ before mutation and SHALL skip superseded source. They SHALL never bypass CI dur
 #### Scenario: Retry after a newer push
 - WHEN the selected successful run's SHA no longer equals main
 - THEN deploy and apply skip, while release remains recoverable for that SHA.
+
+### Requirement: Production reconciliation has one writer per repository
+
+Deploy and infrastructure apply SHALL share one workflow-level concurrency group, retain queued
+runs and never cancel an active reconciliation. The lock SHALL cover Terraform planning through
+apply and the complete Wrangler deployment. Package release SHALL keep its independent queue.
+
+#### Scenario: The same approved push starts both workflows
+- WHEN deploy and infrastructure apply become ready together
+- THEN one workflow waits until the other finishes before planning or changing production.
+
+#### Scenario: A waiting source becomes old
+- WHEN main advances while a reconciliation waits for its shared group
+- THEN its existing current-head checks skip the superseded source after it starts.
+
+### Requirement: Web deploy preserves declared Worker observability
+
+Identity and site Wrangler configurations SHALL explicitly enable observability, logs and
+invocation logs consistently with Terraform's Worker configuration. Generated identity deploy
+configuration SHALL preserve those settings when replacing binding placeholders.
+
+#### Scenario: Wrangler deploy follows infrastructure apply
+- WHEN either Web Worker is deployed after Terraform enables its observability
+- THEN deployment retains the declared enabled settings instead of restoring Wrangler's
+  disabled default.

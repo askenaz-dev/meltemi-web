@@ -116,7 +116,6 @@ describe("deploy.yml", () => {
     expect(text).toContain("needs: source");
     expect(text).toContain("if: needs.source.outputs.current == 'true'");
     expect(text).toContain("node ../.automation/scripts/ci-source.mjs current");
-    expect(text).toMatch(/group: deploy\n\s+cancel-in-progress: false\n\s+queue: max/);
   });
 
   it("deploys from the production environment with the deploy token only", () => {
@@ -147,6 +146,15 @@ describe("deploy.yml", () => {
 });
 
 describe("approved delivery workflows", () => {
+  it("holds one retained production queue across Wrangler deploy and Terraform plan/apply", () => {
+    for (const name of ["deploy.yml", "infra-apply.yml"]) {
+      expect(read(name), name).toMatch(
+        /^concurrency:\n(?: {2}#[^\n]*\n)* {2}group: production-reconciliation\n {2}cancel-in-progress: false\n {2}queue: max$/m,
+      );
+    }
+    expect(read("release.yml")).not.toContain("group: production-reconciliation");
+  });
+
   for (const name of ["release.yml", "deploy.yml", "infra-apply.yml"]) {
     it(`${name} validates CI before checking out exact source`, () => {
       const text = read(name);
@@ -246,7 +254,6 @@ describe("the infrastructure's workflows", () => {
     const text = read("infra-apply.yml");
     expect(text).toContain("if: needs.source.outputs.current == 'true'");
     expect(text).toContain("if: steps.current.outputs.current == 'true'");
-    expect(text).toMatch(/group: infrastructure\n\s+cancel-in-progress: false/);
     expect(at(text, "-out=apply.tfplan")).toBeLessThan(
       at(text, "terraform apply -no-color -lock-timeout=5m apply.tfplan"),
     );

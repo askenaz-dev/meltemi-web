@@ -19,7 +19,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: infrastructure
+  # Shared with deploy: hold the same queue from Terraform refresh through the saved plan's apply.
+  group: production-reconciliation
   cancel-in-progress: false
   queue: max
 
