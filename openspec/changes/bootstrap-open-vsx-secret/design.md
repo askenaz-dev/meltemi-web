@@ -68,6 +68,11 @@ provider operation or apply is involved.
 
 ## Execution
 
-Publish the reviewed operation branch. Wait until the parent operator confirms the environment
-secret is ready, then dispatch that branch. Record the run and verification before closing the
-operation. No unresolved implementation choices remain; no dispatch is authorized yet.
+The operator confirmed the environment secret was ready on 2026-11-03. The first dispatch
+stopped before planning because of the platform-checksum issue described above. After that
+correction, [run 41665657409](https://github.com/askenaz-dev/meltemi-web/actions/runs/41665657409)
+at revision `bac1791034d179965fc76b3b3c482baa621efc41` completed: one allowed creation, no other
+changes, and an unchanged verification plan. The destination metadata reports `OVSX_PAT`
+created and updated at `2026-11-03T15:36:55Z`; `NPM_TOKEN` retained its prior update time.
+The run uploaded no artifacts and cleaned up its sensitive plans. This operation did not
+merge a branch, run a full infrastructure apply or publish any product.
