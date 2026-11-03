@@ -18,7 +18,8 @@ permissions:
   actions: read
 
 concurrency:
-  group: deploy
+  # Shared with infra-apply: Wrangler must not change Worker metadata during its saved plan/apply.
+  group: production-reconciliation
   cancel-in-progress: false
   queue: max
 

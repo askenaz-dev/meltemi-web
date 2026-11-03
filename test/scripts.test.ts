@@ -71,6 +71,14 @@ describe("release-tag", () => {
 });
 
 describe("deploy-config", () => {
+  it.each(["identity", "site"])("preserves Terraform's enabled observability for %s", (name) => {
+    const config = parseJsonc(readFileSync(join(ROOT, "packages", name, "wrangler.jsonc"), "utf8"));
+    expect(deployConfig(config, { database: DATABASE, store: STORE }).observability).toEqual({
+      enabled: true,
+      logs: { enabled: true, invocation_logs: true },
+    });
+  });
+
   it("reads the committed file, with its placeholders", () => {
     expect(identity.d1_databases[0].database_id).toBe(DATABASE_PLACEHOLDER);
     expect(

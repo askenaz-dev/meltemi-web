@@ -29,4 +29,24 @@ Production verification, 2026-11-03:
   authentic ref/SHA instead; source identity remains in package metadata and the release manifest.
 - Correction checked locally: typecheck, lint, build and 2,209 tests pass (one optional skip).
   Regression tests cover both current-source publication and recovery from a newer runner SHA.
-- Corrected remote publication and recovery remain to be confirmed after integration.
+- Recovery run `41693090631` passed all channels without replacing either GitHub asset.
+  Public npm metadata for identity `0.2.15` and ocean `0.1.5` matches the original source
+  `533375e` and GitHub archive integrity; their provenance names the authenticated runner `7fec39f`.
+- The next approved main source `7fec39f` triggered release `41693598001` successfully, publishing
+  identity `0.2.16` and ocean `0.1.6`. Deployment `41693598093` passed; all 24 public landing
+  combinations (six EN/ES routes, two schemes and two widths) passed against the exact source CSS.
+
+Production reconciliation correction, 2026-11-03:
+
+- Infrastructure run `41693598158` planned zero creates, six in-place updates and zero destroys,
+  then failed its provider consistency check because concurrent Wrangler deployment changed the
+  identity/site Workers' `deployed_on` timestamps. The deployment itself succeeded.
+- [x] 4.1 Give deploy and apply one retained production queue, preserving every source/CI guard.
+- [x] 4.2 Declare matching observability in both Web Wrangler configurations and cover the
+  shared queue and generated identity configuration in local regression tests.
+- [x] 4.3 Run typecheck, lint, build, workspace tests and strict specification validation.
+- [ ] 4.4 Verify CI and the first serialized production reconciliation after integration.
+
+Local correction checks: focused workflow/configuration tests 40/40; full workspace 2,212 passed,
+one optional skip; typecheck, lint, build and strict OpenSpec validation passed. Wrangler dry-runs
+accepted the identity and site configurations without uploading anything.

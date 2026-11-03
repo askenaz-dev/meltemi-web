@@ -35,6 +35,8 @@ Nothing is configured or deployed from a machine ([decision 0004](docs/decisions
 - **Code** reaches production after successful push CI for the current `main` SHA: `deploy.yml`
   applies the identity migrations and uploads the identity Worker and site. Infrastructure apply
   has the same CI/current-head gate; an older recovery cannot roll production back.
+  Deploy and apply share a retained production queue so Wrangler cannot change Worker metadata
+  between Terraform's plan and apply. Their declared observability settings must agree.
 - **The packages** receive automatic patch releases from each approved main commit, with
   independent versions and immutable source tags (`v<x.y.z>` for identity, `ocean-v<x.y.z>` for
   ocean). CI source is checked out exactly; only the packaging copy is stamped, with no bot

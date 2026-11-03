@@ -43,8 +43,19 @@ are visible but never replace that pointer. No update changes assets of an exist
 
 Deploy and Terraform apply require the validated SHA still to be main's head. They check it
 again immediately before the first remote mutation. Superseded commits still receive releases,
-but do not deploy or apply stale configuration. Both workflows serialize and retain pending
-runs. No path filter is needed: every current approved commit reconciles the intended state.
+but do not deploy or apply stale configuration. Deploy and apply share the workflow-level
+`production-reconciliation` concurrency group, with cancellation disabled and `queue: max`.
+The group covers the plan as well as apply: Wrangler must not change a Worker's `deployed_on`
+between Terraform's refresh and its provider consistency check. Independent groups caused that
+failure in production run `41693598158`; retrying after deploy stops can recover the apply,
+but cannot prevent the next overlap. A shared group prevents it within this repository;
+GitHub concurrency does not lock deployments from the separate Diagrams repository.
+
+Identity and site Wrangler configurations explicitly enable observability and invocation logs,
+matching Terraform's Worker settings. Omitting the setting makes Wrangler disable it and causes
+the next infrastructure plan to restore it. No path filter is needed: every current approved
+commit reconciles the intended state. Read-only infrastructure workflows retain their own groups
+and Terraform's state lock; release publication remains independent of production reconciliation.
 
 ## D5 — Verification and limits
 
