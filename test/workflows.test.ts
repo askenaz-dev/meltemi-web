@@ -271,6 +271,12 @@ describe("the infrastructure's workflows", () => {
     at(text, "github.ref == 'refs/heads/codex/ovsx-bootstrap-only'");
     at(text, "ref: d48ed8ed0725b4672c1b7656c8fc4cffe452683a");
     at(text, "ref: ${{ github.workflow_sha }}");
+    at(text, "terraform init -no-color");
+    expect(text).not.toMatch(/-lockfile=readonly|-upgrade/);
+    at(text, "terraform version -json | jq -e '.provider_selections == {");
+    at(text, '"registry.terraform.io/cloudflare/cloudflare": "5.28.0"');
+    at(text, '"registry.terraform.io/hashicorp/random": "3.9.1"');
+    at(text, '"registry.terraform.io/integrations/github": "6.13.0"');
     at(
       text,
       'cp "$GITHUB_WORKSPACE/operation/scripts/ovsx-bootstrap-override.tf" ovsx_bootstrap_override.tf',

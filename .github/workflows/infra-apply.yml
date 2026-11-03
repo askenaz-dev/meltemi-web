@@ -78,7 +78,14 @@ jobs:
           echo "AWS_SECRET_ACCESS_KEY=$secret" >> "$GITHUB_ENV"
       - name: Remove the incidental repository and D1 dependency for this operation
         run: cp "$GITHUB_WORKSPACE/operation/scripts/ovsx-bootstrap-override.tf" ovsx_bootstrap_override.tf
-      - run: terraform init -no-color -lockfile=readonly
+      - name: Initialize pinned providers and record runner-platform checksums
+        run: |
+          terraform init -no-color
+          terraform version -json | jq -e '.provider_selections == {
+            "registry.terraform.io/cloudflare/cloudflare": "5.28.0",
+            "registry.terraform.io/hashicorp/random": "3.9.1",
+            "registry.terraform.io/integrations/github": "6.13.0"
+          }' > /dev/null
       - name: Plan only the Open VSX secret and validate its entire scope
         run: |
           umask 077

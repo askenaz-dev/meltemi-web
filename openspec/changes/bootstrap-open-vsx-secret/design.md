@@ -11,6 +11,12 @@ manual-only job and pins the Terraform checkout to main commit
 `d48ed8ed0725b4672c1b7656c8fc4cffe452683a`. A separate checkout provides the reviewed validator.
 The operation retains the shared `infrastructure` concurrency group and environment.
 
+Provider versions remain those in the pinned source lock file. Initialization may add the
+runner platform's checksums to its ephemeral copy, then explicitly verifies the three selected
+versions. A first dispatch on 2026-11-03 stopped before planning because `-lockfile=readonly`
+prevented recording Linux hashes; no resource was applied. Allowing normal initialization
+retains signed-provider verification and does not enable upgrades.
+
 The plan targets `github_actions_secret.release["meltemi-diagrams/OVSX_PAT"]`. The normal
 repository lookup brings both D1 databases into the graph through `local.repositories`.
 A temporary runner-local override sets only `repository = each.value.repository`, the same
