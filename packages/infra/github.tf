@@ -144,6 +144,29 @@ resource "github_repository_ruleset" "main" {
   }
 }
 
+# Version reservations are permanent. Creation is permitted to the release workflow's token;
+# neither a retry nor a person can move/delete a reserved source tag.
+resource "github_repository_ruleset" "family_version_tags" {
+  for_each = local.repositories
+
+  repository  = github_repository.family[each.key].name
+  name        = "version tags"
+  target      = "tag"
+  enforcement = "active"
+
+  conditions {
+    ref_name {
+      include = each.key == "meltemi-web" ? ["refs/tags/v*", "refs/tags/ocean-v*"] : ["refs/tags/v*"]
+      exclude = []
+    }
+  }
+
+  rules {
+    update   = true
+    deletion = true
+  }
+}
+
 # The IDE's release path (change ide-releases; the IDE's change release-con-el-push). A commit that
 # carries a new version on the IDE's `main` publishes a release with nobody in between, so the
 # doors next to that one are closed here, as loose resources that name the repository. The

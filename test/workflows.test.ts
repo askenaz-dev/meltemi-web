@@ -68,9 +68,9 @@ describe("the workflows", () => {
 describe("ci.yml", () => {
   const text = read("ci.yml");
 
-  it("runs on pushes to main and on pull requests, cancelling a superseded run", () => {
+  it("runs on pushes to main and pull requests, retaining queued main runs", () => {
     expect(text).toMatch(/push:\n\s+branches: \[main\]\n\s+pull_request:/);
-    expect(text).toMatch(/cancel-in-progress: true/);
+    expect(text).toMatch(/cancel-in-progress: false\n\s+queue: max/);
   });
 
   it("checks the workspace on Node 22 and 24, on Linux and Windows", () => {
@@ -112,13 +112,11 @@ describe("ci.yml", () => {
 describe("deploy.yml", () => {
   const text = read("deploy.yml");
 
-  it("runs on pushes to main that change a Worker, one at a time, never cancelled", () => {
-    expect(text).toMatch(/branches: \[main\]/);
-    at(text, '- "packages/identity/**"');
-    at(text, '- "packages/site/**"');
-    // The site bundles the sea and the wind: a change to them alone must reach production.
-    at(text, '- "packages/ocean/**"');
-    expect(text).toMatch(/group: deploy\n\s+cancel-in-progress: false/);
+  it("deploys only current CI-approved main, retaining queued runs", () => {
+    expect(text).toContain("needs: source");
+    expect(text).toContain("if: needs.source.outputs.current == 'true'");
+    expect(text).toContain("node ../.automation/scripts/ci-source.mjs current");
+    expect(text).toMatch(/group: deploy\n\s+cancel-in-progress: false\n\s+queue: max/);
   });
 
   it("deploys from the production environment with the deploy token only", () => {
@@ -141,67 +139,47 @@ describe("deploy.yml", () => {
     const config = at(text, "node scripts/deploy-config.mjs packages/identity/wrangler.jsonc");
     const migrate = at(text, "wrangler d1 migrations apply DB --remote -c wrangler.deploy.json");
     const identity = at(text, "wrangler deploy -c wrangler.deploy.json");
-    const site = at(text, "working-directory: packages/site");
+    const site = at(text, "working-directory: source/packages/site");
     expect(config).toBeLessThan(migrate);
     expect(migrate).toBeLessThan(identity);
     expect(identity).toBeLessThan(site);
   });
 });
 
-describe("release.yml", () => {
-  const text = read("release.yml");
-
-  /** The publish job's step that runs `needle`, from its `- ` to the next step. */
-  const stepOf = (needle: string) => {
-    const index = at(text, needle);
-    const start = text.lastIndexOf("\n      - ", index);
-    const end = text.indexOf("\n      - ", index);
-    return text.slice(start, end < 0 ? undefined : end);
-  };
-
-  it("runs on version tags and checks the tag before anything is published", () => {
-    expect(text).toMatch(/tags: \["v\*", "ocean-v\*"\]/);
-    expect(at(text, "scripts/release-tag.mjs")).toBeLessThan(at(text, "npm publish"));
-    expect(text).toMatch(/publish:\n\s+needs: check/);
-  });
-
-  it("checks each tag against its own package: v the identity, ocean-v the ocean", () => {
-    at(
-      text,
-      'ocean-v*) node scripts/release-tag.mjs "$GITHUB_REF_NAME" packages/ocean/package.json ocean-v ;;',
-    );
-    at(
-      text,
-      '*) node scripts/release-tag.mjs "$GITHUB_REF_NAME" packages/identity/package.json ;;',
-    );
-  });
-
-  it("builds and publishes only the package its tag names", () => {
-    for (const [name, prefix] of [
-      ["identity", "v"],
-      ["ocean", "ocean-v"],
-    ] as const) {
-      const guard = `if: startsWith(github.ref_name, '${prefix}')`;
-      expect(stepOf(`pnpm --filter @meltemi/${name} run build`), name).toContain(guard);
-      const publish = stepOf(`name: Publish @meltemi/${name}`);
-      expect(publish, name).toContain(guard);
-      expect(publish, name).toContain(`working-directory: packages/${name}`);
-      expect(publish.indexOf(`npm view "@meltemi/${name}@\${version}" version`), name).toBeLessThan(
-        publish.indexOf("npm publish --access public --provenance"),
+describe("approved delivery workflows", () => {
+  for (const name of ["release.yml", "deploy.yml", "infra-apply.yml"]) {
+    it(`${name} validates CI before checking out exact source`, () => {
+      const text = read(name);
+      expect(text).toContain("workflow_run:");
+      expect(text).toContain("workflows: [CI]");
+      expect(text).toContain("types: [completed]");
+      expect(text).toContain("github.event.workflow_run.conclusion == 'success'");
+      expect(text).toContain("github.event.workflow_run.event == 'push'");
+      expect(text).toContain("github.event.workflow_run.head_branch == 'main'");
+      expect(text).toContain(
+        "github.event.workflow_run.head_repository.full_name == github.repository",
       );
-    }
-    expect(stepOf("name: GitHub release")).toContain("if: startsWith(github.ref_name, 'v')");
-  });
-
-  it("publishes with provenance, skipping a version npm already has", () => {
-    expect(text).toMatch(/id-token: write/);
-    at(text, "npm publish --access public --provenance");
-    expect(at(text, 'npm view "@meltemi/identity@${version}" version')).toBeLessThan(
-      at(text, "npm publish"),
-    );
-  });
-
-  it("names the npm token only", () => {
+      expect(text).toContain("github.ref == 'refs/heads/main'");
+      expect(text).toContain("ref: ${{ github.workflow_sha }}");
+      expect(at(text, "ci-source.mjs resolve")).toBeLessThan(
+        at(text, "ref: ${{ needs.source.outputs.sha }}"),
+      );
+      expect(text).toContain("ci_run_id:");
+      expect(text).not.toMatch(/^ {2}push:/m);
+      expect(text).not.toContain("paths:");
+      expect(text).toContain("queue: max");
+    });
+  }
+  it("publishes npm and GitHub independently from the prepared artifact", () => {
+    const text = read("release.yml");
+    expect(text).toContain("group: release-main");
+    expect(text).toContain("id-token: write");
+    expect(text.match(/needs: \[source, prepare\]/g)).toHaveLength(2);
+    expect(text.match(/fail-fast: false/g)).toHaveLength(2);
+    expect(text).toContain('release-main.mjs npm "$PACKAGE"');
+    expect(text).toContain('release-main.mjs github "$PACKAGE"');
+    expect(text).toContain("name: ${{ needs.prepare.outputs.artifact }}");
+    expect(text).toContain("$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT");
     expect(secretsOf(text)).toEqual(["NPM_TOKEN"]);
   });
 });
@@ -264,9 +242,10 @@ describe("the infrastructure's workflows", () => {
     expect(text).not.toMatch(/terraform apply/);
   });
 
-  it("apply on main the very plan they made, one run at a time", () => {
+  it("apply only current approved main, using the saved plan", () => {
     const text = read("infra-apply.yml");
-    expect(text).toMatch(/branches: \[main\]/);
+    expect(text).toContain("if: needs.source.outputs.current == 'true'");
+    expect(text).toContain("if: steps.current.outputs.current == 'true'");
     expect(text).toMatch(/group: infrastructure\n\s+cancel-in-progress: false/);
     expect(at(text, "-out=apply.tfplan")).toBeLessThan(
       at(text, "terraform apply -no-color -lock-timeout=5m apply.tfplan"),

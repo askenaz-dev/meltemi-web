@@ -1,31 +1,60 @@
 name: Infrastructure apply
 
-# Every push to main that changes the infrastructure applies it: the plan is made, saved and that
-# very plan is applied, one run at a time. The outputs (ids, nameservers, domains; never a secret)
-# are the run's summary.
+# Current main with successful push CI: the saved plan is applied, one run at a time.
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-    paths:
-      - "packages/infra/**"
-      - ".github/workflows/infra-apply.yml"
   workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful push/main CI run to recover
+        required: true
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: infrastructure
   cancel-in-progress: false
+  queue: max
 
 jobs:
+  source:
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository) ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.ci.outputs.sha }}
+      current: ${{ steps.ci.outputs.current }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .automation
+          persist-credentials: false
+      - name: Validate the CI run through GitHub
+        id: ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id || inputs.ci_run_id }}
+        run: node .automation/scripts/ci-source.mjs resolve
+
   apply:
+    needs: source
+    if: needs.source.outputs.current == 'true'
     runs-on: ubuntu-latest
     environment: infrastructure
     defaults:
       run:
-        working-directory: packages/infra
+        working-directory: source/packages/infra
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
@@ -48,6 +77,15 @@ jobs:
       TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .automation
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          path: source
+          persist-credentials: false
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.15"
@@ -80,7 +118,14 @@ jobs:
       - run: terraform init
       - name: Plan
         run: terraform plan -no-color -lock-timeout=5m -out=apply.tfplan
+      - name: Refuse to apply superseded source
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.source.outputs.sha }}
+        run: node ../../../.automation/scripts/ci-source.mjs current
       - name: Apply that plan
+        if: steps.current.outputs.current == 'true'
         run: terraform apply -no-color -lock-timeout=5m apply.tfplan
       - name: Outputs
         run: |
