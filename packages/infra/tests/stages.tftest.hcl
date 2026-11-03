@@ -94,6 +94,14 @@ run "first_apply" {
     error_message = "No release secret exists before the owner has the tokens."
   }
   assert {
+    condition     = length(github_repository_ruleset.family_version_tags) == 2 && alltrue([for ruleset in github_repository_ruleset.family_version_tags : ruleset.target == "tag" && ruleset.enforcement == "active" && ruleset.rules[0].update == true && ruleset.rules[0].deletion == true && ruleset.rules[0].creation != true])
+    error_message = "Web and Diagrams version tags cannot move or be deleted; creation stays open."
+  }
+  assert {
+    condition     = toset(github_repository_ruleset.family_version_tags["meltemi-web"].conditions[0].ref_name[0].include) == toset(["refs/tags/v*", "refs/tags/ocean-v*"]) && github_repository_ruleset.family_version_tags["meltemi-diagrams"].conditions[0].ref_name[0].include == tolist(["refs/tags/v*"])
+    error_message = "Only Web has ocean tags; both repositories protect v tags."
+  }
+  assert {
     condition     = github_repository_ruleset.ide_main.repository == "meltemi" && github_repository_ruleset.ide_main.target == "branch" && github_repository_ruleset.ide_main.conditions[0].ref_name[0].include == tolist(["~DEFAULT_BRANCH"]) && github_repository_ruleset.ide_main.rules[0].deletion == true && github_repository_ruleset.ide_main.rules[0].non_fast_forward == true
     error_message = "The IDE's main is never deleted or rewritten."
   }

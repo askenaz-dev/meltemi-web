@@ -80,7 +80,7 @@ events are such fetches.
    an hour. The reference verifier is a module of the identity package with no Cloudflare
    dependency, and `@meltemi/identity/testing` mints sessions for a product's own tests. The
    package README is the full contract for products. The package is published on npm as
-   `@meltemi/identity`, with provenance, by this repository's release workflow; Meltemi Diagrams
+   `@meltemi/identity`, with provenance, after approved main CI by this repository's release workflow; Meltemi Diagrams
    depends on it from `packages/cloud`.
 2. **Account deletion events**: a `POST` to each product's events address, signed with
    `Meltemi-Signature`, retried for seven days. A product deletes what it holds for that `sub`.
@@ -109,9 +109,10 @@ events are such fetches.
    WebGL2 or Canvas 2D and gives still pictures for pages where nothing moves. It has no
    dependency, makes no request and keeps nothing. The site bundles it from its sources; products
    install the published package, which this repository's release workflow publishes with
-   provenance on tags `ocean-v<x.y.z>`, and dress it in their own tokens through four CSS
+   provenance after approved main CI (immutable tags `ocean-v<x.y.z>`), and dress it in their own tokens through four CSS
    properties. The [package README](../packages/ocean/README.md) is the full contract. Meltemi
-   Diagrams wears it on the playground's load screen and empty canvas (its change `playground-sea`).
+   Diagrams plans to wear it on the playground's load screen and empty canvas; its change
+   `playground-sea` is not implemented yet.
 
 Each product owns its own data, API, storage and quotas. The identity service never holds a
 product's data and never receives a provider's token from a product.
@@ -136,3 +137,6 @@ and everything runs as GitHub pipelines ([decision 0004](decisions/0004-delivery
 repository delivers first (the zones, every Worker's entity, storage and secrets, the identity
 service, the site, the published package); Meltemi Diagrams then installs the package and uploads
 its two Workers onto what `packages/infra` declared.
+
+Current automatic delivery, exact CI source, independent channels and recovery are documented in
+[RELEASING.md](../RELEASING.md). Pushing tags alone no longer starts Web publication.
