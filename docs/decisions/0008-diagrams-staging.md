@@ -11,18 +11,21 @@ Until now each Worker of the family had one environment: Diagrams' deploy took C
 straight to production, and nothing ran a suite against a host that was not production. Every
 Worker, database, bucket, domain, secret and GitHub environment of the family is declared in this
 repository's `packages/infra` ([decision 0004](0004-delivery.md)), so the twin is declared here
-too, and so is the KV namespace per environment that the authorization server keeps its state in.
+too.
 
 ## Decision
 
 - **A twin per environment, in the same Terraform root.** Two more entries of `local.workers`,
   `meltemi-diagrams-staging` at `staging.diagrams.meltemi.dev` and
   `meltemi-diagrams-publish-staging` at `staging.meltemi.page`, with no `workers.dev` and no
-  preview address, and their own D1 database `meltemi-diagrams-staging`, R2 bucket
-  `meltemi-diagrams-staging-blobs` and KV namespace `meltemi-diagrams-oauth-staging`; production
-  gains `meltemi-diagrams-oauth`. Flat resources, as every other one here: no module for two
+  preview address, and their own D1 database `meltemi-diagrams-staging` and R2 bucket
+  `meltemi-diagrams-staging-blobs`. Flat resources, as every other one here: no module for two
   entries. A precondition refuses two Workers with one name or one host, and the plan test
-  refuses a staging database, bucket or namespace with a production name.
+  refuses a staging database or bucket with a production name.
+- **No KV.** Diagrams' OAuth authorization server keeps its clients, grants and tokens in each
+  environment's D1 database. The first apply of this change could not create the two KV
+  namespaces it then declared (this root's Cloudflare token has no KV permission), and the Free
+  plan's thousand KV writes a day would not last a dozen agents refreshing their tokens hourly.
 - **Staged like the portal.** The staging Custom Domains wait for `staging_deployed`: the apply
   that declares the Workers leaves it `false`, Diagrams' deploy uploads their first versions, and
   a commit then sets it `true`.
@@ -36,9 +39,9 @@ too, and so is the KV namespace per environment that the authorization server ke
   product `diagrams-staging`, so deleting an account reaches staging too.
 - **The `staging` environment of the Diagrams repository**, deployable from `main` only, holds the
   same deploy token as `production` and the names production's deploy reads, with staging's values
-  (`CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`, `SECRETS_STORE_ID`), plus `OAUTH_KV_ID`,
-  `R2_BUCKET_NAME` and `SECRETS_SUFFIX` (`_STAGING`). Production gains `OAUTH_KV_ID` and
-  `R2_BUCKET_NAME`; its suffix is empty, which GitHub reads from a variable that is not set.
+  (`CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`, `SECRETS_STORE_ID`), plus `R2_BUCKET_NAME` and
+  `SECRETS_SUFFIX` (`_STAGING`). Production gains `R2_BUCKET_NAME`; its suffix is empty, which
+  GitHub reads from a variable that is not set.
 - **The acceptance suite's tokens are received variables.** `mcp_test_tokens` (sensitive, empty
   by default) holds the `mdg_` tokens of two test accounts per environment; the infrastructure
   workflows pass it from four secrets of the `infrastructure` environment, one per token so that
@@ -46,8 +49,8 @@ too, and so is the KV namespace per environment that the authorization server ke
   `MELTEMI_TOKEN_2` of its environment. Nothing is set by hand in the Diagrams repository.
 - **No new token permission.** Cloudflare's Workers authorization says that deploying a Worker
   needs no separate permission on the resources it binds, and Wrangler (4.151.3) looks up an R2
-  bucket at deploy (the reason for "Workers R2 Storage Read") but never a KV namespace whose `id`
-  the configuration gives. The Diagrams deploy token keeps its groups.
+  bucket at deploy (the reason for "Workers R2 Storage Read"). The Diagrams deploy token keeps
+  its groups.
 
 ## Alternatives considered
 

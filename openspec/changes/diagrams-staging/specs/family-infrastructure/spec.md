@@ -7,8 +7,8 @@ Terraform SHALL declare `meltemi-diagrams-staging` with the Custom Domain
 `staging.diagrams.meltemi.dev` and `meltemi-diagrams-publish-staging` with `staging.meltemi.page`,
 with no `workers.dev` and no preview address, their domains attached only once `attach_domains`
 and `var.staging_deployed` are true, the D1 database `meltemi-diagrams-staging`,
-the R2 bucket `meltemi-diagrams-staging-blobs`, and the KV namespaces `meltemi-diagrams-oauth`
-and `meltemi-diagrams-oauth-staging`.
+and the R2 bucket `meltemi-diagrams-staging-blobs`; no KV namespace, since Diagrams' OAuth server
+keeps its state in each environment's database.
 
 #### Scenario: Staged domains
 - **WHEN** the mocked plan runs with `staging_deployed = false`, then `true`
@@ -16,11 +16,11 @@ and `meltemi-diagrams-oauth-staging`.
 
 #### Scenario: The storage
 - **WHEN** the mocked plan lists its resources
-- **THEN** it holds the staging database, the staging bucket and the two namespaces, and production's database and bucket are unchanged
+- **THEN** it holds the staging database and the staging bucket, no KV namespace, and production's database and bucket are unchanged
 
 #### Scenario: A name that collides
 - **WHEN** a staging resource is given a production name
-- **THEN** the plan (a Worker's name or host) or the plan test (a database, bucket or namespace) fails naming it
+- **THEN** the plan (a Worker's name or host) or the plan test (a database or bucket) fails naming it
 
 ### Requirement: Staging's secrets and the identity product
 The Store SHALL hold `FORMS_SECRET_STAGING`, `EVENTS_SECRET_DIAGRAMS_STAGING` and
