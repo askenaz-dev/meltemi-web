@@ -288,13 +288,14 @@ run "release_tokens" {
   }
 }
 
-# The notice token reaches the IDE's release environment and the Diagrams repository once the
-# owner has it: both products' release workflows start this repository's deploy with it.
+# The notice token reaches the IDE's release environment and, the narrow one only, the Diagrams
+# repository: both products' release workflows start this repository's deploy with it.
 run "ide_notice_token" {
   command = plan
 
   variables {
-    web_dispatch_token = "dispatch-token"
+    web_dispatch_token        = "dispatch-token"
+    narrow_web_dispatch_token = "dispatch-token"
   }
 
   assert {
@@ -308,6 +309,25 @@ run "ide_notice_token" {
   assert {
     condition     = !contains(keys(github_actions_secret.release), "meltemi-web/WEB_DISPATCH_TOKEN")
     error_message = "This repository does not receive its own notice token."
+  }
+}
+
+# The admin token the workflows pass in the narrow token's place reaches the IDE's release
+# environment only, never a repository secret of Diagrams.
+run "admin_fallback_stays_with_the_ide" {
+  command = plan
+
+  variables {
+    web_dispatch_token = "admin-token"
+  }
+
+  assert {
+    condition     = length(github_actions_environment_secret.ide_web_dispatch) == 1
+    error_message = "The IDE's release environment receives the fallback."
+  }
+  assert {
+    condition     = !contains(keys(github_actions_secret.release), "meltemi-diagrams/WEB_DISPATCH_TOKEN")
+    error_message = "Diagrams' repository never receives the admin token."
   }
 }
 

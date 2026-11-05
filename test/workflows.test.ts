@@ -276,6 +276,7 @@ describe("the infrastructure's workflows", () => {
         "github_client_secret",
         "google_client_secret",
         "web_dispatch_token",
+        "narrow_web_dispatch_token",
       ]) {
         expect(text, `${name}: ${variable}`).toContain(`TF_VAR_${variable}:`);
       }
@@ -286,6 +287,14 @@ describe("the infrastructure's workflows", () => {
     for (const name of infra) {
       expect(read(name), name).toContain(
         "TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}",
+      );
+    }
+  });
+
+  it("hand Diagrams' repository the narrow token only, never the admin token", () => {
+    for (const name of infra) {
+      expect(read(name), name).toContain(
+        "TF_VAR_narrow_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN }}\n",
       );
     }
   });

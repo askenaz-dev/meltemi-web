@@ -133,7 +133,14 @@ variable "ovsx_pat" {
 }
 
 variable "web_dispatch_token" {
-  description = "A fine-grained token of `askenaz-dev` with access to `meltemi-web` only and the permission Actions (read and write), with which the IDE's and Diagrams' release workflows start this repository's deploy; empty until it exists."
+  description = "A fine-grained token of `askenaz-dev` with access to `meltemi-web` only and the permission Actions (read and write), with which the IDE's release workflow starts this repository's deploy; empty until it exists."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "narrow_web_dispatch_token" {
+  description = "The same notice token as `web_dispatch_token`, but only the narrow one and never the admin token the workflows pass in its place: Diagrams' release workflow holds it as a repository secret (change docs-portal); empty until the owner creates it."
   type        = string
   sensitive   = true
   default     = ""

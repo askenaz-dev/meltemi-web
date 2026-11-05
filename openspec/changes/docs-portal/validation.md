@@ -107,4 +107,6 @@ and resolves the current CI-approved source itself.
 3. A commit sets `docs_deployed`'s default to `true` in `packages/infra/variables.tf`: the next
    apply attaches `docs.meltemi.dev`. The test runs name `docs_deployed` where they depend on it,
    so the flip changes no test.
-4. When the owner sets `web_dispatch_token`, Diagrams gets its `WEB_DISPATCH_TOKEN`; then task 5.2b.
+4. When the owner creates the narrow `WEB_DISPATCH_TOKEN` in the `infrastructure` environment,
+   Diagrams gets its `WEB_DISPATCH_TOKEN` (`narrow_web_dispatch_token`); the admin token the
+   workflows pass to the IDE in its place never reaches Diagrams. Then task 5.2b.

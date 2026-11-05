@@ -107,14 +107,14 @@ locals {
     "meltemi-diagrams/VSCE_PAT"  = { repository = "meltemi-diagrams", name = "VSCE_PAT", present = nonsensitive(var.vsce_pat != "") }
     "meltemi-diagrams/OVSX_PAT"  = { repository = "meltemi-diagrams", name = "OVSX_PAT", present = nonsensitive(var.ovsx_pat != "") }
     # Diagrams' release workflow tells this repository's deploy a release is out (change docs-portal),
-    # with the notice token the IDE's release environment holds.
-    "meltemi-diagrams/WEB_DISPATCH_TOKEN" = { repository = "meltemi-diagrams", name = "WEB_DISPATCH_TOKEN", present = nonsensitive(var.web_dispatch_token != "") }
+    # with the narrow notice token only: a repository secret, where the admin fallback never goes.
+    "meltemi-diagrams/WEB_DISPATCH_TOKEN" = { repository = "meltemi-diagrams", name = "WEB_DISPATCH_TOKEN", present = nonsensitive(var.narrow_web_dispatch_token != "") }
   }
   release_values = {
     NPM_TOKEN          = var.npm_token
     VSCE_PAT           = var.vsce_pat
     OVSX_PAT           = var.ovsx_pat
-    WEB_DISPATCH_TOKEN = var.web_dispatch_token
+    WEB_DISPATCH_TOKEN = var.narrow_web_dispatch_token
   }
 }
 

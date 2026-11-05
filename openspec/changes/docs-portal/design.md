@@ -173,7 +173,10 @@ for the motivation.
     uploads it, the next apply attaches the domain. `deploy_groups.web` gains "Workers AI Read"
     (the build's embeddings; the precondition names a missing group). `github.tf` gains
     `github_actions_secret` `WEB_DISPATCH_TOKEN` for the Diagrams repository from
-    `var.web_dispatch_token`, present when the owner has it. `deploy.yml` gains the job `docs`
+    `var.narrow_web_dispatch_token`, fed by `secrets.WEB_DISPATCH_TOKEN` alone: the workflows
+    pass `GH_ADMIN_TOKEN` as `web_dispatch_token` while the narrow token is missing (the owner's
+    choice for the IDE's `release` environment), and that admin token must never become a
+    repository secret of Diagrams. `deploy.yml` gains the job `docs`
     after `deploy`, same source and queue: `pnpm --filter @meltemi/docs build --from release`
     with `GH_TOKEN`, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, then `wrangler deploy`
     in `packages/docs`; a product whose archive cannot be read fails the job and leaves the
