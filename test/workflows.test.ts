@@ -261,6 +261,10 @@ describe("the infrastructure's workflows", () => {
           "ADMIN_SUBS",
           "CLOUDFLARE_API_TOKEN",
           "GH_ADMIN_TOKEN",
+          "MCP_TEST_TOKEN_2_PRODUCTION",
+          "MCP_TEST_TOKEN_2_STAGING",
+          "MCP_TEST_TOKEN_PRODUCTION",
+          "MCP_TEST_TOKEN_STAGING",
           "NPM_TOKEN",
           "OAUTH_GITHUB_CLIENT_SECRET",
           "OAUTH_GOOGLE_CLIENT_SECRET",
@@ -279,6 +283,7 @@ describe("the infrastructure's workflows", () => {
         "web_dispatch_token",
         "narrow_web_dispatch_token",
         "sponsors_webhook_secret",
+        "mcp_test_tokens",
       ]) {
         expect(text, `${name}: ${variable}`).toContain(`TF_VAR_${variable}:`);
       }
@@ -298,6 +303,19 @@ describe("the infrastructure's workflows", () => {
       expect(read(name), name).toContain(
         "TF_VAR_narrow_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN }}\n",
       );
+    }
+  });
+
+  it("hand Terraform the acceptance suite's four tokens, one secret each, in their environments' places", () => {
+    for (const name of infra) {
+      const text = read(name);
+      const value = /TF_VAR_mcp_test_tokens: >-\n((?: {8}.+\n)+)/.exec(text)?.[1];
+      expect(value, name).toBeDefined();
+      const tokens = JSON.parse(value!.replace(/\$\{\{ secrets\.(\w+) \}\}/g, "$1")) as unknown;
+      expect(tokens, name).toEqual({
+        staging: { token: "MCP_TEST_TOKEN_STAGING", token_2: "MCP_TEST_TOKEN_2_STAGING" },
+        production: { token: "MCP_TEST_TOKEN_PRODUCTION", token_2: "MCP_TEST_TOKEN_2_PRODUCTION" },
+      });
     }
   });
 

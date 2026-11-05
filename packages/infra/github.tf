@@ -1,6 +1,7 @@
-# The family's repositories on GitHub, their `production` environments and what the pipelines
-# read there. `meltemi-web` holds this root and existed before it (its `infrastructure`
-# environment and that environment's secrets are the bootstrap, set by hand); it is imported.
+# The family's repositories on GitHub, their `production` environments (and Diagrams' `staging`,
+# change diagrams-staging) and what the pipelines read there. `meltemi-web` holds this root and
+# existed before it (its `infrastructure` environment and that environment's secrets are the
+# bootstrap, set by hand); it is imported.
 # The IDE repository (askenaz-dev/meltemi) is not managed here as a repository: only what its
 # release path relies on is declared, at the end of this file (change ide-releases).
 
@@ -11,14 +12,12 @@ locals {
       homepage    = "https://meltemi.dev"
       topics      = ["meltemi", "cloudflare-workers", "identity", "terraform"]
       token       = "web"
-      database    = cloudflare_d1_database.identity.id
     }
     "meltemi-diagrams" = {
       description = "Meltemi Diagrams: diagrams as code, canvas editing and animated exports."
       homepage    = "https://diagrams.meltemi.dev"
       topics      = ["meltemi", "diagrams-as-code", "architecture", "c4", "vscode-extension"]
       token       = "diagrams"
-      database    = cloudflare_d1_database.diagrams.id
     }
   }
 }
@@ -67,25 +66,77 @@ resource "github_repository_environment" "production" {
   }
 }
 
-# What the deploy workflows read: the token as a secret; the ids, which are not secret, as
-# variables that the workflow writes into the Worker's configuration at deploy time.
-resource "github_actions_environment_secret" "cloudflare_api_token" {
-  for_each = local.repositories
+# Diagrams' staging twin (change diagrams-staging): the environment from which its deploy uploads
+# the staging Workers before production's, deployable from `main` only.
+resource "github_repository_environment" "diagrams_staging" {
+  repository  = github_repository.family["meltemi-diagrams"].name
+  environment = "staging"
 
-  repository  = github_repository.family[each.key].name
-  environment = github_repository_environment.production[each.key].environment
+  deployment_branch_policy {
+    protected_branches     = false
+    custom_branch_policies = true
+  }
+}
+
+resource "github_repository_environment_deployment_policy" "diagrams_staging_main" {
+  repository     = github_repository.family["meltemi-diagrams"].name
+  environment    = github_repository_environment.diagrams_staging.environment
+  branch_pattern = "main"
+}
+
+# What the deploy workflows read, per environment: the token as a secret; the ids and names, which
+# are not secret, as variables that the workflow writes into the Workers' configurations at deploy
+# time. Staging reads the names production reads, with its own values, and SECRETS_SUFFIX, the
+# suffix of the Store secrets it binds where production binds them bare. Production's suffix is
+# empty and is not set: GitHub reads a variable that is not set as an empty string, and its
+# documentation does not say that it accepts an empty value.
+locals {
+  deploy_environments = {
+    "meltemi-web/production" = {
+      repository  = "meltemi-web"
+      environment = github_repository_environment.production["meltemi-web"].environment
+      variables = {
+        D1_DATABASE_ID = cloudflare_d1_database.identity.id
+      }
+    }
+    "meltemi-diagrams/production" = {
+      repository  = "meltemi-diagrams"
+      environment = github_repository_environment.production["meltemi-diagrams"].environment
+      variables = {
+        D1_DATABASE_ID = cloudflare_d1_database.diagrams.id
+        R2_BUCKET_NAME = cloudflare_r2_bucket.diagrams_blobs.name
+        OAUTH_KV_ID    = cloudflare_workers_kv_namespace.diagrams_oauth.id
+      }
+    }
+    "meltemi-diagrams/staging" = {
+      repository  = "meltemi-diagrams"
+      environment = github_repository_environment.diagrams_staging.environment
+      variables = {
+        D1_DATABASE_ID = cloudflare_d1_database.diagrams_staging.id
+        R2_BUCKET_NAME = cloudflare_r2_bucket.diagrams_staging_blobs.name
+        OAUTH_KV_ID    = cloudflare_workers_kv_namespace.diagrams_oauth_staging.id
+        SECRETS_SUFFIX = "_STAGING"
+      }
+    }
+  }
+}
+
+resource "github_actions_environment_secret" "cloudflare_api_token" {
+  for_each = local.deploy_environments
+
+  repository  = github_repository.family[each.value.repository].name
+  environment = each.value.environment
   secret_name = "CLOUDFLARE_API_TOKEN"
-  value       = cloudflare_api_token.deploy[each.value.token].value
+  value       = cloudflare_api_token.deploy[local.repositories[each.value.repository].token].value
 }
 
 locals {
   deploy_variables = merge([
-    for repository, settings in local.repositories : {
-      for name, value in {
+    for key, settings in local.deploy_environments : {
+      for name, value in merge(settings.variables, {
         CLOUDFLARE_ACCOUNT_ID = var.cloudflare_account_id
-        D1_DATABASE_ID        = settings.database
         SECRETS_STORE_ID      = cloudflare_secrets_store.family.id
-      } : "${repository}/${name}" => { repository = repository, name = name, value = value }
+      }) : "${key}/${name}" => { repository = settings.repository, environment = settings.environment, name = name, value = value }
     }
   ]...)
 }
@@ -94,9 +145,77 @@ resource "github_actions_environment_variable" "deploy" {
   for_each = local.deploy_variables
 
   repository    = github_repository.family[each.value.repository].name
-  environment   = github_repository_environment.production[each.value.repository].environment
+  environment   = each.value.environment
   variable_name = each.value.name
   value         = each.value.value
+}
+
+# The production environments' token and ids were keyed by repository alone before staging.
+moved {
+  from = github_actions_environment_secret.cloudflare_api_token["meltemi-web"]
+  to   = github_actions_environment_secret.cloudflare_api_token["meltemi-web/production"]
+}
+
+moved {
+  from = github_actions_environment_secret.cloudflare_api_token["meltemi-diagrams"]
+  to   = github_actions_environment_secret.cloudflare_api_token["meltemi-diagrams/production"]
+}
+
+moved {
+  from = github_actions_environment_variable.deploy["meltemi-web/CLOUDFLARE_ACCOUNT_ID"]
+  to   = github_actions_environment_variable.deploy["meltemi-web/production/CLOUDFLARE_ACCOUNT_ID"]
+}
+
+moved {
+  from = github_actions_environment_variable.deploy["meltemi-web/D1_DATABASE_ID"]
+  to   = github_actions_environment_variable.deploy["meltemi-web/production/D1_DATABASE_ID"]
+}
+
+moved {
+  from = github_actions_environment_variable.deploy["meltemi-web/SECRETS_STORE_ID"]
+  to   = github_actions_environment_variable.deploy["meltemi-web/production/SECRETS_STORE_ID"]
+}
+
+moved {
+  from = github_actions_environment_variable.deploy["meltemi-diagrams/CLOUDFLARE_ACCOUNT_ID"]
+  to   = github_actions_environment_variable.deploy["meltemi-diagrams/production/CLOUDFLARE_ACCOUNT_ID"]
+}
+
+moved {
+  from = github_actions_environment_variable.deploy["meltemi-diagrams/D1_DATABASE_ID"]
+  to   = github_actions_environment_variable.deploy["meltemi-diagrams/production/D1_DATABASE_ID"]
+}
+
+moved {
+  from = github_actions_environment_variable.deploy["meltemi-diagrams/SECRETS_STORE_ID"]
+  to   = github_actions_environment_variable.deploy["meltemi-diagrams/production/SECRETS_STORE_ID"]
+}
+
+# The acceptance suite's tokens (Diagrams' change agent-mcp): two test accounts' `mdg_` tokens per
+# environment, as MELTEMI_TOKEN and MELTEMI_TOKEN_2 of that environment, each present only once the
+# owner has it. The map below holds names only, never a value.
+locals {
+  mcp_test_secrets = nonsensitive({
+    for secret in flatten([
+      for environment, tokens in var.mcp_test_tokens : [
+        for field, name in { token = "MELTEMI_TOKEN", token_2 = "MELTEMI_TOKEN_2" } : {
+          key                      = "meltemi-diagrams/${environment}/${name}"
+          environment              = environment
+          field                    = field
+          name                     = name
+        } if tokens[field] != null && tokens[field] != ""
+      ]
+    ]) : secret.key => secret
+  })
+}
+
+resource "github_actions_environment_secret" "mcp_test_token" {
+  for_each = local.mcp_test_secrets
+
+  repository  = github_repository.family["meltemi-diagrams"].name
+  environment = local.deploy_environments["meltemi-diagrams/${each.value.environment}"].environment
+  secret_name = each.value.name
+  value       = var.mcp_test_tokens[each.value.environment][each.value.field]
 }
 
 # The release workflows' tokens, as repository secrets, present only once the owner has them.

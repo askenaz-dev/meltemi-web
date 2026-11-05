@@ -47,6 +47,12 @@ variable "docs_deployed" {
   default     = false
 }
 
+variable "staging_deployed" {
+  description = "Whether Meltemi Diagrams' staging Workers, meltemi-diagrams-staging and meltemi-diagrams-publish-staging, have their first versions, uploaded by Diagrams' deploy (its change agent-mcp): a Custom Domain needs one, so staging.diagrams.meltemi.dev and staging.meltemi.page attach in the commit after that deploy (change diagrams-staging), as docs.meltemi.dev waits for docs_deployed."
+  type        = bool
+  default     = false
+}
+
 variable "existing_zone_ids" {
   description = "Zones the account already has, by name (\"meltemi.dev\", \"meltemi.page\"), added in the dashboard before Terraform: imported instead of created. `pnpm infra:bootstrap` finds them."
   type        = map(string)
@@ -71,7 +77,7 @@ variable "existing_secrets_store_id" {
 }
 
 variable "rotations" {
-  description = "Generated secrets to rotate, by name: changing an entry (a date is a good value) replaces STATE_SECRET, FORMS_SECRET or EVENTS_SECRET_DIAGRAMS (with IDENTITY_EVENTS_SECRET) in the next apply."
+  description = "Generated secrets to rotate, by name: changing an entry (a date is a good value) replaces STATE_SECRET, FORMS_SECRET, FORMS_SECRET_STAGING, EVENTS_SECRET_DIAGRAMS (with IDENTITY_EVENTS_SECRET) or EVENTS_SECRET_DIAGRAMS_STAGING (with IDENTITY_EVENTS_SECRET_STAGING) in the next apply."
   type        = map(string)
   default     = {}
 }
@@ -151,4 +157,19 @@ variable "narrow_web_dispatch_token" {
   type        = string
   sensitive   = true
   default     = ""
+}
+
+variable "mcp_test_tokens" {
+  description = "The `mdg_` tokens of the two test accounts with which Meltemi Diagrams' acceptance suite signs in (its change agent-mcp), by environment, { staging = { token, token_2 }, production = { token, token_2 } }: written as MELTEMI_TOKEN and MELTEMI_TOKEN_2 of that environment of the Diagrams repository; each is empty, and its secret absent, until the owner has created the accounts on that host."
+  type = map(object({
+    token   = optional(string, "")
+    token_2 = optional(string, "")
+  }))
+  sensitive = true
+  default   = {}
+
+  validation {
+    condition     = alltrue([for environment in keys(var.mcp_test_tokens) : contains(["staging", "production"], environment)])
+    error_message = "mcp_test_tokens names the environments staging and production only."
+  }
 }

@@ -28,6 +28,22 @@ output "diagrams_bucket" {
   value = cloudflare_r2_bucket.diagrams_blobs.name
 }
 
+output "diagrams_oauth_kv_id" {
+  value = cloudflare_workers_kv_namespace.diagrams_oauth.id
+}
+
+output "diagrams_staging_database_id" {
+  value = cloudflare_d1_database.diagrams_staging.id
+}
+
+output "diagrams_staging_bucket" {
+  value = cloudflare_r2_bucket.diagrams_staging_blobs.name
+}
+
+output "diagrams_oauth_staging_kv_id" {
+  value = cloudflare_workers_kv_namespace.diagrams_oauth_staging.id
+}
+
 output "secrets_store_id" {
   value = cloudflare_secrets_store.family.id
 }
