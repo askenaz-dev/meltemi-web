@@ -47,9 +47,10 @@ locals {
     GOOGLE_CLIENT_SECRET   = var.google_client_secret
     EVENTS_SECRET_DIAGRAMS = random_password.diagrams_events_secret.result
     # Meltemi Diagrams' main Worker (meltemi-diagrams, packages/cloud).
-    FORMS_SECRET           = random_password.forms_secret.result
-    IDENTITY_EVENTS_SECRET = random_password.diagrams_events_secret.result
-    ADMIN_SUBS             = var.admin_subs
+    FORMS_SECRET            = random_password.forms_secret.result
+    IDENTITY_EVENTS_SECRET  = random_password.diagrams_events_secret.result
+    ADMIN_SUBS              = var.admin_subs
+    SPONSORS_WEBHOOK_SECRET = var.sponsors_webhook_secret
   }
 }
 
@@ -60,8 +61,8 @@ resource "cloudflare_secrets_store_secret" "family" {
   account_id = var.cloudflare_account_id
   store_id   = cloudflare_secrets_store.family.id
   name       = each.value
-  # A Store secret cannot be empty: an unset administrator list is stored as a single space, which
-  # the Worker reads as nobody.
+  # A Store secret cannot be empty: an unset administrator list or webhook secret is stored as a
+  # single space, which the Worker reads as nobody, or as unset.
   value  = local.secrets[each.value] == "" ? " " : local.secrets[each.value]
   scopes = ["workers"]
 }

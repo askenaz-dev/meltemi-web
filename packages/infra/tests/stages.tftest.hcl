@@ -75,8 +75,8 @@ run "first_apply" {
     error_message = "No Worker has a workers.dev address or preview addresses."
   }
   assert {
-    condition     = toset(keys(cloudflare_secrets_store_secret.family)) == toset(["SESSION_PRIVATE_KEY", "STATE_SECRET", "GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "EVENTS_SECRET_DIAGRAMS", "FORMS_SECRET", "IDENTITY_EVENTS_SECRET", "ADMIN_SUBS"])
-    error_message = "The Store holds the eight secrets of the two products."
+    condition     = toset(keys(cloudflare_secrets_store_secret.family)) == toset(["SESSION_PRIVATE_KEY", "STATE_SECRET", "GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "EVENTS_SECRET_DIAGRAMS", "FORMS_SECRET", "IDENTITY_EVENTS_SECRET", "ADMIN_SUBS", "SPONSORS_WEBHOOK_SECRET"])
+    error_message = "The Store holds the nine secrets of the two products."
   }
   assert {
     condition     = alltrue([for secret in cloudflare_secrets_store_secret.family : secret.scopes == tolist(["workers"])])

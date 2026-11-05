@@ -38,6 +38,7 @@ jobs:
       TF_VAR_github_client_secret: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
       TF_VAR_google_client_secret: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
       TF_VAR_admin_subs: ${{ secrets.ADMIN_SUBS }}
+      TF_VAR_sponsors_webhook_secret: ${{ secrets.SPONSORS_WEBHOOK_SECRET }}
       TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
       TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
       TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}

@@ -95,6 +95,7 @@ describe("the Terraform root", () => {
       "GOOGLE_CLIENT_SECRET",
       "IDENTITY_EVENTS_SECRET",
       "SESSION_PRIVATE_KEY",
+      "SPONSORS_WEBHOOK_SECRET",
       "STATE_SECRET",
     ]);
     for (const [, name, value] of entries) {
