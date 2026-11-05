@@ -7,7 +7,7 @@
       `cloudflare_r2_bucket.diagrams_staging_blobs` and the two
       `cloudflare_workers_kv_namespace` resources, with outputs. Verify `pnpm infra:fmt`,
       `pnpm infra:validate` and the staged-domains and storage cases of `pnpm infra:test`.
-- [ ] 1.2 Add the staging secrets to `secrets.tf` with their rotations, and the product
+- [x] 1.2 Add the staging secrets to `secrets.tf` with their rotations, and the product
       `diagrams-staging` to `packages/identity/wrangler.jsonc`'s `PRODUCTS` with the
       `EVENTS_SECRET_DIAGRAMS_STAGING_STORE` binding (and `deploy-config.mjs` if it names the
       bindings). Verify the identity configuration tests and the secrets case of `pnpm infra:test`.

@@ -36,6 +36,28 @@ The branch holds two pull requests' worth of commits, in order:
 | `pnpm infra:test`                               | 26 runs passed, 0 failed (15 before; new: `staging_staged`, `staging_attached`, `staging_before_domains`, `staging_storage`, `staging_secrets`, `staging_rotation`, `staging_environment`, `mcp_test_tokens_present`, `mcp_test_tokens_staging_only`, `mcp_test_tokens_empty`, `mcp_test_tokens_unknown_environment`; extended: `first_apply`, `domains_attach`, `docs_attached`) |
 | `openspec validate "diagrams-staging" --strict` | Valid                                                                                                                                                                                   |
 
+## Gates of the second landing (the identity commit)
+
+The branch's last commit adds the product `diagrams-staging`
+(`https://staging.diagrams.meltemi.dev/_identity/events`) to `PRODUCTS` in
+`packages/identity/wrangler.jsonc` and the binding `EVENTS_SECRET_DIAGRAMS_STAGING_STORE` of the
+Store secret `EVENTS_SECRET_DIAGRAMS_STAGING`. `scripts/deploy-config.mjs` writes the Store's id
+into every binding and names none, so it does not change; its test counts six bindings.
+
+| Gate                                            | Result                                                                                                                                       |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm typecheck`                                | Green in every package                                                                                                                       |
+| `pnpm lint`                                     | ESLint clean; Prettier: all matched files formatted                                                                                          |
+| `pnpm build`                                    | Green                                                                                                                                        |
+| `pnpm test`                                     | 55 files, 2,312 passed, 1 skipped; `packages/identity` and `test/scripts.test.ts`: 29 files, 1,937 tests                                     |
+| `pnpm infra:fmt`, `infra:validate`, `infra:test` | Formatted; valid; 26 runs passed (unchanged by this commit)                                                                                |
+| `openspec validate "diagrams-staging" --strict` | Valid                                                                                                                                        |
+
+The scenario "The product listed" is `packages/identity/test/config.test.ts`: the committed
+variables read as a production environment list `diagrams` and `diagrams-staging` with `https:`
+events addresses and their secret names, the Worker binds `EVENTS_SECRET_DIAGRAMS_STAGING`, and
+every product listed has its secret bound.
+
 ## The scenarios, where each is checked
 
 | Scenario (spec delta)                 | Check                                                                                                                                                                                                                                   |
@@ -45,7 +67,7 @@ The branch holds two pull requests' worth of commits, in order:
 | A name that collides                  | Renaming the staging bucket and database to `meltemi-diagrams-blobs` and `meltemi-diagrams` failed `staging_storage` with "A staging database has a production name: meltemi-diagrams." and "The staging bucket has production's name: meltemi-diagrams-blobs."; renaming the staging publish Worker to `meltemi-diagrams-publish` failed every plan on the precondition "Each Worker needs a name and a host of its own: meltemi-diagrams-publish is given twice." Both reverted |
 | The secrets                           | `first_apply` (the Store's twelve names), `staging_secrets` (with the generated values given at plan: staging's two events names equal, staging's values differ from production's, no `ADMIN_SUBS_STAGING` or `SPONSORS_WEBHOOK_SECRET_STAGING`), `files.test.ts` (each name from a variable or a `random_password`; the twin names read the same resource) |
 | A rotation                            | `staging_rotation`: only `random_password.diagrams_events_secret_staging` changes its keeper; both its names read that one resource                                                                                                    |
-| The product listed                    | The second landing (below)                                                                                                                                                                                                              |
+| The product listed                    | The second landing (above)                                                                                                                                                                                                              |
 | The environment's values              | `staging_environment`: the environment and its `main` policy, the token in both environments, staging's six variables with staging's database, namespace and bucket and `_STAGING`, production's five, the web's three; `first_apply` counts 3 tokens and 14 variables |
 | Tokens absent                         | `first_apply` (default `{}`) and `mcp_test_tokens_empty` (four empty strings, what the workflows pass while the secrets are absent): no `MELTEMI_TOKEN` secret, the plan valid                                                         |
 | Tokens present                        | `mcp_test_tokens_present`, `mcp_test_tokens_staging_only`; the plan prints no value (below)                                                                                                                                             |
@@ -113,6 +135,11 @@ first three variables and the secret from `production`; the rest are new.
   apply writes them.
 - The staging Custom Domains attach only after Diagrams' first staging upload and a commit here
   setting `staging_deployed`; until then the suite cannot reach `staging.diagrams.meltemi.dev`.
+- The identity service names the twin `diagrams-staging`: staging's account calls (Diagrams'
+  `packages/cloud/src/routes/account.ts` signs them as `PRODUCT_NAME = "diagrams"` today) must be
+  signed as `diagrams-staging` with `IDENTITY_EVENTS_SECRET_STAGING`, or the service refuses them;
+  the product name becomes per environment on the Diagrams side. Its deletion events arrive
+  signed with that same secret.
 
 ## Not verified here
 

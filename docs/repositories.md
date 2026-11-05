@@ -90,11 +90,12 @@ events are such fetches.
    depends on it from `packages/cloud`.
 2. **Account deletion events**: a `POST` to each product's events address, signed with
    `Meltemi-Signature`, retried for seven days. A product deletes what it holds for that `sub`.
-   The Diagrams entry is
-   `PRODUCTS=[{"name":"diagrams","events":"https://diagrams.meltemi.dev/_identity/events"}]`
-   with the secret `EVENTS_SECRET_DIAGRAMS` (the name upper-cased); in development the address
-   is `http://localhost:8788/_identity/events`. Diagrams' `IDENTITY_EVENTS_SECRET` holds the
-   same value.
+   The Diagrams entries are
+   `PRODUCTS=[{"name":"diagrams","events":"https://diagrams.meltemi.dev/_identity/events"},{"name":"diagrams-staging","events":"https://staging.diagrams.meltemi.dev/_identity/events"}]`
+   with the secrets `EVENTS_SECRET_DIAGRAMS` and `EVENTS_SECRET_DIAGRAMS_STAGING` (the name
+   upper-cased, hyphens as underscores); in development the address is
+   `http://localhost:8788/_identity/events`. Diagrams' `IDENTITY_EVENTS_SECRET` holds the same
+   value as the first, and its staging twin's `IDENTITY_EVENTS_SECRET_STAGING` as the second.
 3. **The site's links**: the Diagrams page links to the app and the install commands; the IDE
    pages link to the releases, and each deploy writes the IDE's latest published release into
    `/ide/` from GitHub's public API. Nothing else is shared at run time.
@@ -137,7 +138,9 @@ events are such fetches.
    deploy token, the ids under the names production's deploy reads, `SECRETS_SUFFIX` and the
    acceptance suite's tokens `MELTEMI_TOKEN` and `MELTEMI_TOKEN_2`. Diagrams' deploy uploads
    staging, runs its suite there and only then uploads production (its change `agent-mcp`).
-   Staging signs in through `id.meltemi.dev`, as every host under the cookie's domain can.
+   Staging signs in through `id.meltemi.dev`, as every host under the cookie's domain can, and
+   the identity service lists it as the product `diagrams-staging`, so a deleted account is
+   deleted there too and staging's account calls are signed under that name.
 
 Each product owns its own data, API, storage and quotas. The identity service never holds a
 product's data and never receives a provider's token from a product.
