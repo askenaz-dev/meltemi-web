@@ -46,7 +46,7 @@ export function answerText(output: unknown): string {
     choices?: { message?: { content?: unknown } }[];
   } | null;
   const text = typeof o?.response === "string" ? o.response : o?.choices?.[0]?.message?.content;
-  if (typeof text !== "string") throw new Error("Workers AI gave no answer");
+  if (typeof text !== "string" || text.trim() === "") throw new Error("Workers AI gave no answer");
   return text;
 }
 
@@ -81,12 +81,15 @@ export function depsFor(env: Env, request: Request): AskDeps {
     },
     async answer({ system, user }) {
       if (!ai) throw new Error("no AI binding");
+      // GLM-4.7-Flash thinks before it answers unless told not to, and its thinking counts against
+      // the completion's tokens: with thinking on, 400 tokens end before the answer begins.
       const output = await ai.run(ASK_MODEL, {
         messages: [
           { role: "system", content: system },
           { role: "user", content: user },
         ],
-        max_tokens: MAX_TOKENS,
+        max_completion_tokens: MAX_TOKENS,
+        chat_template_kwargs: { enable_thinking: false },
       });
       return answerText(output);
     },
