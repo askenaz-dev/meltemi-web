@@ -158,8 +158,22 @@ describe("deploy.yml", () => {
     expect(current).toBeLessThan(build);
     expect(build).toBeLessThan(upload);
     expect(job).toContain("working-directory: source/packages/docs");
-    expect(job.match(/if: steps\.current\.outputs\.current == 'true'/g)).toHaveLength(2);
+    expect(job.match(/if: steps\.current\.outputs\.current == 'true'/g)).toHaveLength(3);
     expect(at(text, "\n  deploy:")).toBeLessThan(at(text, "\n  docs:"));
+  });
+
+  it("uploads the portal only once Terraform has declared its Worker", () => {
+    const job = text.slice(at(text, "\n  docs:"));
+    const declared = at(job, "/workers/workers/meltemi-docs");
+    const build = at(job, "run: pnpm --filter @meltemi/docs build --from release");
+    expect(declared).toBeLessThan(build);
+    expect(job).toContain('404)\n              echo "::notice::meltemi-docs is not declared yet');
+    expect(job).toContain("exit 1");
+    expect(
+      job.match(
+        /if: steps\.current\.outputs\.current == 'true' && steps\.declared\.outputs\.declared == 'true'/g,
+      ),
+    ).toHaveLength(2);
   });
 
   it("keeps the portal's pictures and embeddings between deploys, never a secret", () => {

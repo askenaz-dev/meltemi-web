@@ -100,7 +100,10 @@ and resolves the current CI-approved source itself.
 2. The same push's `deploy.yml` runs the `docs` job: `pnpm --filter @meltemi/docs build --from
    release` (GitHub's latest releases; Workers AI embeddings with the job's token, about 3,400
    passages the first time, cached in `.cache/` afterwards) and `wrangler deploy` of the first
-   version. A product whose archive cannot be read fails this job only.
+   version. A product whose archive cannot be read fails this job only. Deploy and the apply share
+   one queue in either order: when Deploy runs first, the job finds no `meltemi-docs` (Cloudflare
+   answers 404 by name), says so in a notice and uploads nothing, so the Worker is never created
+   outside Terraform; a dispatch of `deploy.yml` after the apply uploads the first version.
 3. A commit sets `docs_deployed`'s default to `true` in `packages/infra/variables.tf`: the next
    apply attaches `docs.meltemi.dev`. The test runs name `docs_deployed` where they depend on it,
    so the flip changes no test.
