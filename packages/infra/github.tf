@@ -105,7 +105,6 @@ locals {
       variables = {
         D1_DATABASE_ID = cloudflare_d1_database.diagrams.id
         R2_BUCKET_NAME = cloudflare_r2_bucket.diagrams_blobs.name
-        OAUTH_KV_ID    = cloudflare_workers_kv_namespace.diagrams_oauth.id
       }
     }
     "meltemi-diagrams/staging" = {
@@ -114,7 +113,6 @@ locals {
       variables = {
         D1_DATABASE_ID = cloudflare_d1_database.diagrams_staging.id
         R2_BUCKET_NAME = cloudflare_r2_bucket.diagrams_staging_blobs.name
-        OAUTH_KV_ID    = cloudflare_workers_kv_namespace.diagrams_oauth_staging.id
         SECRETS_SUFFIX = "_STAGING"
       }
     }

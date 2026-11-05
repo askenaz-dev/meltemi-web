@@ -132,7 +132,7 @@ events are such fetches.
 
 8. **Diagrams' staging twin** (change `diagrams-staging`, [decision 0008](decisions/0008-diagrams-staging.md)):
    this repository's Terraform declares the Workers `meltemi-diagrams-staging` and
-   `meltemi-diagrams-publish-staging`, their database, bucket and KV namespace, staging's secrets
+   `meltemi-diagrams-publish-staging`, their database and bucket, staging's secrets
    in the one Store, and the Diagrams repository's `staging` environment (branch `main`) with the
    deploy token, the ids under the names production's deploy reads, `SECRETS_SUFFIX` and the
    acceptance suite's tokens `MELTEMI_TOKEN` and `MELTEMI_TOKEN_2`. Diagrams' deploy uploads

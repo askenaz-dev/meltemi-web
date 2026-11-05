@@ -18,15 +18,8 @@ resource "cloudflare_r2_bucket" "diagrams_blobs" {
   name       = "meltemi-diagrams-blobs"
 }
 
-# The state of Meltemi Diagrams' OAuth authorization server (its change agent-mcp), bound as
-# `OAUTH_KV` by the main Worker: grants, clients and tokens, one namespace per environment.
-resource "cloudflare_workers_kv_namespace" "diagrams_oauth" {
-  account_id = var.cloudflare_account_id
-  title      = "meltemi-diagrams-oauth"
-}
-
 # Staging, production's twin for Meltemi Diagrams (change diagrams-staging): the same code,
-# uploaded by Diagrams' deploy before production's, onto its own database, bucket and namespace,
+# uploaded by Diagrams' deploy before production's, onto its own database and bucket,
 # so a suite that passes there says something about production and touches none of its data.
 resource "cloudflare_d1_database" "diagrams_staging" {
   account_id = var.cloudflare_account_id
@@ -38,10 +31,9 @@ resource "cloudflare_r2_bucket" "diagrams_staging_blobs" {
   name       = "meltemi-diagrams-staging-blobs"
 }
 
-resource "cloudflare_workers_kv_namespace" "diagrams_oauth_staging" {
-  account_id = var.cloudflare_account_id
-  title      = "meltemi-diagrams-oauth-staging"
-}
+# Diagrams' OAuth authorization server (its change agent-mcp) keeps its clients, grants and tokens
+# in each environment's D1 database, not in KV: this root's token has no KV permission, and the
+# Free plan's thousand KV writes a day would not last a dozen connected agents.
 
 locals {
   # Each Worker, its repository, and the host that serves it.

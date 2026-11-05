@@ -87,8 +87,8 @@ run "first_apply" {
     error_message = "One deploy token per product repository."
   }
   assert {
-    condition     = length(github_actions_environment_secret.cloudflare_api_token) == 3 && length(github_actions_environment_variable.deploy) == 14
-    error_message = "Each deploy environment gets its token: the web's production its three ids, Diagrams' production five values and its staging six."
+    condition     = length(github_actions_environment_secret.cloudflare_api_token) == 3 && length(github_actions_environment_variable.deploy) == 12
+    error_message = "Each deploy environment gets its token: the web's production its three ids, Diagrams' production four values and its staging five."
   }
   assert {
     condition     = length(github_actions_environment_secret.mcp_test_token) == 0
@@ -343,10 +343,6 @@ run "staging_storage" {
     error_message = "Staging has the database meltemi-diagrams-staging and the bucket meltemi-diagrams-staging-blobs."
   }
   assert {
-    condition     = cloudflare_workers_kv_namespace.diagrams_oauth.title == "meltemi-diagrams-oauth" && cloudflare_workers_kv_namespace.diagrams_oauth_staging.title == "meltemi-diagrams-oauth-staging"
-    error_message = "The authorization server has a KV namespace per environment."
-  }
-  assert {
     condition     = cloudflare_d1_database.identity.name == "meltemi-identity" && cloudflare_d1_database.diagrams.name == "meltemi-diagrams" && cloudflare_r2_bucket.diagrams_blobs.name == "meltemi-diagrams-blobs"
     error_message = "Production's databases and bucket keep their names."
   }
@@ -357,10 +353,6 @@ run "staging_storage" {
   assert {
     condition     = cloudflare_r2_bucket.diagrams_staging_blobs.name != cloudflare_r2_bucket.diagrams_blobs.name
     error_message = "The staging bucket has production's name: ${cloudflare_r2_bucket.diagrams_staging_blobs.name}."
-  }
-  assert {
-    condition     = cloudflare_workers_kv_namespace.diagrams_oauth_staging.title != cloudflare_workers_kv_namespace.diagrams_oauth.title
-    error_message = "The staging namespace has production's title: ${cloudflare_workers_kv_namespace.diagrams_oauth_staging.title}."
   }
   assert {
     condition     = length(distinct([for worker in cloudflare_worker.family : worker.name])) == length(cloudflare_worker.family) && !contains([for worker in cloudflare_worker.family : worker.name], cloudflare_worker.www.name)
@@ -437,16 +429,6 @@ run "staging_environment" {
     override_during = plan
     values          = { id = "d1-staging" }
   }
-  override_resource {
-    target          = cloudflare_workers_kv_namespace.diagrams_oauth
-    override_during = plan
-    values          = { id = "kv-production" }
-  }
-  override_resource {
-    target          = cloudflare_workers_kv_namespace.diagrams_oauth_staging
-    override_during = plan
-    values          = { id = "kv-staging" }
-  }
 
   assert {
     condition     = github_repository_environment.diagrams_staging.repository == "meltemi-diagrams" && github_repository_environment.diagrams_staging.environment == "staging" && github_repository_environment.diagrams_staging.deployment_branch_policy[0].custom_branch_policies == true && github_repository_environment.diagrams_staging.deployment_branch_policy[0].protected_branches == false
@@ -461,12 +443,12 @@ run "staging_environment" {
     error_message = "Both Diagrams environments hold the deploy token."
   }
   assert {
-    condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-diagrams/staging/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "OAUTH_KV_ID", "R2_BUCKET_NAME", "SECRETS_STORE_ID", "SECRETS_SUFFIX"]) && alltrue([for key, variable in github_actions_environment_variable.deploy : variable.environment == "staging" if startswith(key, "meltemi-diagrams/staging/")])
-    error_message = "Staging holds the account, its database, namespace and bucket, the Store and the suffix."
+    condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-diagrams/staging/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "R2_BUCKET_NAME", "SECRETS_STORE_ID", "SECRETS_SUFFIX"]) && alltrue([for key, variable in github_actions_environment_variable.deploy : variable.environment == "staging" if startswith(key, "meltemi-diagrams/staging/")])
+    error_message = "Staging holds the account, its database and bucket, the Store and the suffix."
   }
   assert {
-    condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-diagrams/production/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "OAUTH_KV_ID", "R2_BUCKET_NAME", "SECRETS_STORE_ID"])
-    error_message = "Production gains its namespace and bucket and no suffix, which GitHub then reads as empty."
+    condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-diagrams/production/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "R2_BUCKET_NAME", "SECRETS_STORE_ID"])
+    error_message = "Production gains its bucket and no suffix, which GitHub then reads as empty."
   }
   assert {
     condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-web/production/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "SECRETS_STORE_ID"])
@@ -475,10 +457,6 @@ run "staging_environment" {
   assert {
     condition     = github_actions_environment_variable.deploy["meltemi-diagrams/staging/D1_DATABASE_ID"].value == "d1-staging" && github_actions_environment_variable.deploy["meltemi-diagrams/production/D1_DATABASE_ID"].value == "d1-production"
     error_message = "Each environment reads its own database."
-  }
-  assert {
-    condition     = github_actions_environment_variable.deploy["meltemi-diagrams/staging/OAUTH_KV_ID"].value == "kv-staging" && github_actions_environment_variable.deploy["meltemi-diagrams/production/OAUTH_KV_ID"].value == "kv-production"
-    error_message = "Each environment reads its own namespace."
   }
   assert {
     condition     = github_actions_environment_variable.deploy["meltemi-diagrams/staging/R2_BUCKET_NAME"].value == "meltemi-diagrams-staging-blobs" && github_actions_environment_variable.deploy["meltemi-diagrams/production/R2_BUCKET_NAME"].value == "meltemi-diagrams-blobs"

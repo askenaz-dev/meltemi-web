@@ -86,6 +86,17 @@ checks the plan without credentials. See proposal.md for the motivation.
 - [The owner forgets to flip `staging_deployed`] → the plan test names the stage; the Custom
   Domain is the only thing waiting.
 
+## Settled after the first apply (5 November 2026)
+
+The first apply created the staging Workers, database, bucket, secrets and environment, then
+failed on the two KV namespaces: `POST /storage/kv/namespaces` answered "Unauthorized", because
+this root's Cloudflare token (step 3 of the bootstrap) has no Workers KV permission, so no
+environment variable was written. Rather than widen the owner's token, the namespaces and
+`OAUTH_KV_ID` are gone: Diagrams' authorization server keeps its state in each environment's D1
+database (its migration 0010), which also lifts the Free plan's thousand KV writes a day from a
+sign-in that writes about five entries and an hourly refresh about three. The paragraphs below
+that name the namespaces and `OAUTH_KV_ID` describe the first apply.
+
 ## Settled during apply (4 November 2026)
 
 1. **The deploy token needs no KV permission.** Cloudflare's Workers authorization
