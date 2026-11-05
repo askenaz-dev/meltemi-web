@@ -5,7 +5,8 @@
 ### Requirement: The staging twin of the Diagrams service
 Terraform SHALL declare `meltemi-diagrams-staging` with the Custom Domain
 `staging.diagrams.meltemi.dev` and `meltemi-diagrams-publish-staging` with `staging.meltemi.page`,
-attached only once `var.staging_deployed` is true, the D1 database `meltemi-diagrams-staging`,
+with no `workers.dev` and no preview address, their domains attached only once `attach_domains`
+and `var.staging_deployed` are true, the D1 database `meltemi-diagrams-staging`,
 the R2 bucket `meltemi-diagrams-staging-blobs`, and the KV namespaces `meltemi-diagrams-oauth`
 and `meltemi-diagrams-oauth-staging`.
 
@@ -19,7 +20,7 @@ and `meltemi-diagrams-oauth-staging`.
 
 #### Scenario: A name that collides
 - **WHEN** a staging resource is given a production name
-- **THEN** `terraform validate` or the plan test fails naming it
+- **THEN** the plan (a Worker's name or host) or the plan test (a database, bucket or namespace) fails naming it
 
 ### Requirement: Staging's secrets and the identity product
 The Store SHALL hold `FORMS_SECRET_STAGING`, `EVENTS_SECRET_DIAGRAMS_STAGING` and
@@ -42,14 +43,14 @@ be shared by both environments.
 
 ### Requirement: The Diagrams repository's staging environment and the test tokens
 The Diagrams repository SHALL have a `staging` environment restricted to `main`, with the deploy
-token as its secret and the variables `D1_DATABASE_ID`, `OAUTH_KV_ID`, `SECRETS_STORE_ID` and
-`SECRETS_SUFFIX` (`_STAGING`; production gains `OAUTH_KV_ID` and an empty suffix), and each
-environment SHALL receive `MELTEMI_TOKEN` and `MELTEMI_TOKEN_2` from `var.mcp_test_tokens` when
-the owner has them.
+token and the variables `CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`, `OAUTH_KV_ID`,
+`R2_BUCKET_NAME`, `SECRETS_STORE_ID` and `SECRETS_SUFFIX` (`_STAGING`); production SHALL gain
+`OAUTH_KV_ID` and `R2_BUCKET_NAME` and leave `SECRETS_SUFFIX` unset; each environment SHALL
+receive `MELTEMI_TOKEN` and `MELTEMI_TOKEN_2` from `var.mcp_test_tokens` when present.
 
 #### Scenario: The environment's values
 - **WHEN** the mocked plan lists the Diagrams repository's environments
-- **THEN** `staging` exists with the branch policy `main`, the four variables and the deploy token, and `production` has `OAUTH_KV_ID` and `SECRETS_SUFFIX` empty
+- **THEN** `staging` exists with the branch policy `main`, its six variables with staging's ids and the deploy token, and `production` has `OAUTH_KV_ID`, `R2_BUCKET_NAME` and no `SECRETS_SUFFIX`, which GitHub reads as empty
 
 #### Scenario: Tokens absent
 - **WHEN** `mcp_test_tokens` is empty
@@ -58,3 +59,7 @@ the owner has them.
 #### Scenario: Tokens present
 - **WHEN** `mcp_test_tokens.staging.token` is set
 - **THEN** the `staging` environment has `MELTEMI_TOKEN` and the plan prints no value
+
+#### Scenario: An environment Diagrams does not have
+- **WHEN** `mcp_test_tokens` names an environment other than `staging` and `production`
+- **THEN** the variable's validation refuses it

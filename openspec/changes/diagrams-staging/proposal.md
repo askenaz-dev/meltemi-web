@@ -51,9 +51,10 @@ None.
 ## Impact
 
 `packages/infra` (`workers.tf`, `secrets.tf`, `github.tf`, `variables.tf`, `outputs.tf`,
-`tests/stages.tftest.hcl`), `packages/identity/wrangler.jsonc` (`PRODUCTS`) and its deploy
-configuration (the new secret binding), `docs/repositories.md`, `packages/infra/README.md`, one
-decision note. The Diagrams repository's deploy workflow and its use of the environment are
+`tests/stages.tftest.hcl`, `test/files.test.ts`), the infrastructure workflows (the test tokens'
+variable) and `test/workflows.test.ts`, `packages/identity/wrangler.jsonc` (`PRODUCTS` and the new
+secret binding, in a second pull request; `scripts/deploy-config.mjs` names no binding and is
+unchanged), `docs/repositories.md`, `packages/infra/README.md`, one decision note. The Diagrams repository's deploy workflow and its use of the environment are
 `agent-mcp`'s. Nothing changes for the site or for production's Workers.
 
 ## Non-goals

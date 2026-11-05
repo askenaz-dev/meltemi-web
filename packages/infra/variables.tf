@@ -1,4 +1,4 @@
-# The settings of the family's infrastructure. The four switches below are code: the commit that
+# The settings of the family's infrastructure. The five switches below are code: the commit that
 # changes a default is the change, and its plan is reviewed on the pull request. The account and
 # the secret values come from the pipeline's environment as TF_VAR_<name>.
 
