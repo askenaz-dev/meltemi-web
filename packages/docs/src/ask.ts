@@ -184,6 +184,8 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   try {
     query = await deps.embed(question);
   } catch {
+    // Which call failed, never the error's words: they may quote the question.
+    console.error("ask: Workers AI gave no embedding");
     return refuse(503, "allowance");
   }
   if (query.length !== index.dimensions) return refuse(503, "index");
@@ -208,6 +210,7 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   try {
     raw = await deps.answer({ system: systemPrompt(lang), user: userPrompt(question, passages) });
   } catch {
+    console.error("ask: Workers AI gave no answer");
     return refuse(503, "allowance");
   }
   const { answer, cited } = cleanAnswer(raw, sources.length);

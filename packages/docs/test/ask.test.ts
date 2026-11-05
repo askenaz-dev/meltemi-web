@@ -290,12 +290,44 @@ describe("nothing of a question is kept", () => {
     expect(response.status).toBe(200);
     expect(runs.map((r) => r.model)).toEqual([EMBEDDING_MODEL, ASK_MODEL]);
     expect(runs[0]!.input).toEqual({ text: [QUESTION] });
-    expect(runs[1]!.input).toMatchObject({ max_tokens: 400 });
+    expect(runs[1]!.input).toMatchObject({
+      max_completion_tokens: 400,
+      chat_template_kwargs: { enable_thinking: false },
+    });
+    expect(runs[1]!.input).not.toHaveProperty("max_tokens");
     expect(network).not.toHaveBeenCalled();
     expect(await response.json()).toMatchObject({
       answer: "Give the story and a video format [1].",
       sources: [{ n: 1, title: "Stories" }],
     });
+  });
+
+  it("reads an empty answer, as a thinking model cut at its limit gives, as no answer", async () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const env: Env = {
+      ASSETS: {
+        fetch: async (request) =>
+          new URL(request.url).pathname === "/ask/index.bin"
+            ? new Response(productionBytes.slice())
+            : new Response("nope", { status: 404 }),
+      },
+      AI: {
+        async run(model, input) {
+          if (model === EMBEDDING_MODEL)
+            return {
+              shape: [1, 1024],
+              data: [Array.from(fakeEmbed((input as { text: string[] }).text[0]!))],
+            };
+          return { choices: [{ message: { content: null }, finish_reason: "length" }] };
+        },
+      },
+      ASK_LIMIT: { limit: async () => ({ success: true }) },
+    };
+    const response = await worker.fetch(post({ question: QUESTION, lang: "en" }), env);
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ reason: "allowance" });
+    expect(errors.mock.calls.flat().map(String)).toEqual(["ask: Workers AI gave no answer"]);
+    errors.mockRestore();
   });
 
   it("serves every other address from the assets", async () => {
