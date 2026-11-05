@@ -116,3 +116,88 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm exec wrangler deploy
+
+  # The documentation portal (change docs-portal): after the site, from the same approved source and
+  # in the same production queue. The build reads each product's latest release from GitHub and
+  # embeds the passages with Workers AI through this job's token; a product whose documentation
+  # cannot be read fails the build before anything is uploaded, and the portal stays as it was.
+  docs:
+    needs: [source, deploy]
+    if: needs.source.outputs.current == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .automation
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.source.outputs.sha }}
+          path: source
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: source/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: source/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: The pictures and embeddings of earlier builds
+        uses: actions/cache@v4
+        with:
+          path: source/packages/docs/.cache
+          key: docs-cache-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: docs-cache-
+      - name: Refuse to deploy superseded source
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.source.outputs.sha }}
+        run: node ../.automation/scripts/ci-source.mjs current
+      # Terraform declares meltemi-docs (infra-apply, the same queue). An upload before it would
+      # create the Worker outside Terraform and stop the apply that declares it, so until then the
+      # job says so and uploads nothing; the next deploy (a dispatch of this workflow) uploads it.
+      - name: Terraform has declared the portal's Worker
+        id: declared
+        if: steps.current.outputs.current == 'true'
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          status=$(curl -sS -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/workers/meltemi-docs")
+          case "$status" in
+            200) echo "declared=true" >> "$GITHUB_OUTPUT" ;;
+            404)
+              echo "::notice::meltemi-docs is not declared yet: Terraform's apply creates it, and the next deploy uploads the portal"
+              echo "declared=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Cloudflare answered $status when asked for the Worker meltemi-docs"
+              exit 1
+              ;;
+          esac
+      - name: The portal, from the products' latest releases
+        if: steps.current.outputs.current == 'true' && steps.declared.outputs.declared == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ needs.source.outputs.sha }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm --filter @meltemi/docs build --from release
+      - name: Documentation portal
+        if: steps.current.outputs.current == 'true' && steps.declared.outputs.declared == 'true'
+        working-directory: source/packages/docs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm exec wrangler deploy

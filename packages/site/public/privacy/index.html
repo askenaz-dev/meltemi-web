@@ -27,6 +27,7 @@
           <a href="/">Home</a>
           <a href="/ide/">IDE</a>
           <a href="/diagrams/">Diagrams</a>
+          <a href="https://docs.meltemi.dev/">Docs</a>
           <a class="lang" href="/es/privacy/" hreflang="es" lang="es">Español</a>
         </nav>
       </div>
@@ -45,7 +46,7 @@
           What the Meltemi site, the sign-in service and Meltemi Diagrams keep about you, where it
           is kept, and how to have it removed.
         </p>
-        <p><span class="pill">Last updated: 24 October 2026</span></p>
+        <p><span class="pill">Last updated: 4 November 2026</span></p>
       </div>
     </div>
 
@@ -58,6 +59,10 @@
             <li>The Meltemi IDE sends nothing to Meltemi and has no account.</li>
             <li>
               Meltemi Diagrams works without an account. Then your work stays in your browser.
+            </li>
+            <li>
+              A question asked in the documentation portal goes to Cloudflare Workers AI to be
+              answered, and is not stored.
             </li>
             <li>Signing in is optional, with GitHub or Google. Meltemi has no passwords.</li>
             <li>
@@ -94,6 +99,26 @@
           Some links lead to other sites, such as GitHub, which hosts the IDE's downloads. Their own
           notices apply there. The files of this site are served by Cloudflare; see
           <a href="#where">Where the data is processed</a>.
+        </p>
+      </section>
+
+      <section aria-labelledby="docs">
+        <h2 id="docs">The documentation portal</h2>
+        <p>
+          The documentation portal at <a href="https://docs.meltemi.dev/">docs.meltemi.dev</a> is
+          made of static pages too. It sets no cookie and runs no analytics, and its search runs in
+          your browser, from an index the portal itself serves: what you search for never leaves
+          your computer.
+        </p>
+        <p>
+          A question you type into its "Ask the docs" box is sent to Cloudflare Workers AI to be
+          answered: Workers AI turns it into numbers that find the closest passages of the
+          documentation, and writes the answer from those passages. The question is not stored:
+          the portal writes neither the question nor its answer to any log or store, and sends them
+          nowhere else. Like every request to the family's Workers, the request itself (when it
+          came, and from which address, never its words) is in Cloudflare's request logs. To limit
+          the questions to ten a minute, the portal counts them for a minute under a hash of your
+          address.
         </p>
       </section>
 

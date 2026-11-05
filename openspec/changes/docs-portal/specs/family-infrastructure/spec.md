@@ -6,8 +6,9 @@
 Terraform SHALL declare the Worker `meltemi-docs` for this repository with the Custom Domain
 `docs.meltemi.dev`, attached only once `var.docs_deployed` is true (a domain needs an uploaded
 version); this repository's deploy token SHALL also read Workers AI, for the build's embeddings;
-and the Diagrams repository SHALL receive `WEB_DISPATCH_TOKEN` from `var.web_dispatch_token`
-when the owner has it, as the IDE's does.
+and the Diagrams repository SHALL receive `WEB_DISPATCH_TOKEN` from
+`var.narrow_web_dispatch_token`, the narrow token only, never the admin token the workflows pass
+to the IDE's release environment in its place.
 
 #### Scenario: Staged domain
 - **WHEN** the mocked plan runs with `docs_deployed = false`
@@ -18,6 +19,11 @@ when the owner has it, as the IDE's does.
 - **WHEN** the mocked plan lists the permission groups
 - **THEN** the web deploy token has "Workers Scripts Write", "D1 Write" and "Workers AI Read",
   and the Diagrams one is unchanged
+
+#### Scenario: The admin fallback stays with the IDE
+- **WHEN** the mocked plan runs with `web_dispatch_token` set and `narrow_web_dispatch_token` empty
+- **THEN** the IDE's release environment holds `WEB_DISPATCH_TOKEN` and the Diagrams repository
+  holds none
 
 #### Scenario: A missing group
 - **WHEN** the account lists no group named "Workers AI Read"

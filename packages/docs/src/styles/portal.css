@@ -1,0 +1,737 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* The portal's look (design decision 8): Starlight dressed in the family's tokens (tokens.css),
+ * the lockup with its pill, the Ask dialog, the release in the footer, the pictures and the home.
+ * Unlayered, so it wins over Starlight's layered styles without fighting their specificity. No
+ * colour is written here that is not a token or a mix of tokens. */
+
+/* The motion vocabulary of the IDE client (desktop/ui/src/app.css): one duration per class of
+   movement and one easing. Nothing moves under reduced motion (the end of this file). */
+:root {
+  --dur-1: 120ms;
+  --dur-2: 160ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* ---- Starlight in the family's tokens ---------------------------------------------------- */
+
+:root {
+  --sl-font: var(--font-ui);
+  --sl-font-mono: var(--font-mono);
+
+  --sl-color-white: var(--text);
+  --sl-color-gray-1: var(--text);
+  --sl-color-gray-2: var(--text-muted);
+  --sl-color-gray-3: var(--text-muted);
+  --sl-color-gray-4: var(--text-faint);
+  --sl-color-gray-5: var(--border);
+  --sl-color-gray-6: var(--surface-2);
+  --sl-color-gray-7: var(--panel);
+  --sl-color-black: var(--bg);
+
+  --sl-color-accent-low: color-mix(in srgb, var(--accent) 16%, var(--bg));
+  --sl-color-accent: var(--accent);
+  --sl-color-accent-high: var(--focus);
+
+  --sl-color-text: var(--text);
+  --sl-color-text-accent: var(--accent);
+  --sl-color-text-invert: var(--bg);
+  --sl-color-bg: var(--bg);
+  --sl-color-bg-nav: var(--panel);
+  --sl-color-bg-sidebar: var(--bg);
+  --sl-color-bg-inline-code: var(--surface-2);
+  --sl-color-bg-accent: var(--accent);
+  --sl-color-hairline-light: var(--hair);
+  --sl-color-hairline: var(--hair);
+  --sl-color-hairline-shade: var(--border);
+  --sl-color-backdrop-overlay: color-mix(in srgb, var(--bg) 72%, transparent);
+
+  /* The asides speak the tokens' states: note is info, tip ok, caution warn, danger danger. */
+  --sl-color-blue-low: var(--tint-info);
+  --sl-color-blue: var(--info);
+  --sl-color-blue-high: var(--text);
+  --sl-color-green-low: var(--tint-ok);
+  --sl-color-green: var(--ok);
+  --sl-color-green-high: var(--text);
+  --sl-color-orange-low: var(--tint-warn);
+  --sl-color-orange: var(--warn);
+  --sl-color-orange-high: var(--text);
+  --sl-color-red-low: var(--tint-danger);
+  --sl-color-red: var(--danger);
+  --sl-color-red-high: var(--text);
+  --sl-color-purple-low: var(--sl-color-accent-low);
+  --sl-color-purple: var(--accent);
+  --sl-color-purple-high: var(--text);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.sl-markdown-content a:not(:where(.not-content *)) {
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+
+.sl-markdown-content :is(h1, h2, h3, h4) {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* ---- the lockup and its pill ------------------------------------------------------------- */
+
+.portal-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  text-decoration: none;
+  min-width: 0;
+}
+
+.portal-lockup {
+  height: 1.6rem;
+  width: auto;
+  display: block;
+}
+
+/* The lockup of the scheme: the reader's choice once Starlight has set it, the system's before. */
+.portal-lockup-dark {
+  display: none;
+}
+:root[data-theme="dark"] .portal-lockup-light {
+  display: none;
+}
+:root[data-theme="dark"] .portal-lockup-dark {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .portal-lockup-light {
+    display: none;
+  }
+  :root:not([data-theme]) .portal-lockup-dark {
+    display: block;
+  }
+}
+
+.portal-pill {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: var(--mel-aegean);
+  color: var(--surface);
+}
+:root[data-theme="dark"] .portal-pill {
+  background: var(--mel-wind);
+  color: var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .portal-pill {
+    background: var(--mel-wind);
+    color: var(--bg);
+  }
+}
+
+/* ---- the language: a link to the twin, as on the family's site ------------------------- */
+
+.portal-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 2.25rem;
+  padding: 0 var(--sp-2);
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  font-size: var(--sl-text-sm);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.portal-lang:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* ---- the search and the Ask button ------------------------------------------------------- */
+
+.portal-search {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.ask-open {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 2.5rem;
+  min-width: 2.5rem;
+  justify-content: center;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+.ask-open[hidden] {
+  display: none;
+}
+.ask-open svg {
+  color: var(--accent);
+}
+.ask-open:hover {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--sl-color-accent-low);
+}
+
+@media (max-width: 50rem) {
+  .ask-open span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .ask-open {
+    min-height: var(--touch-min);
+    min-width: var(--touch-min);
+    padding: 0;
+    border-radius: var(--radius-panel);
+  }
+}
+
+/* ---- the Ask dialog ---------------------------------------------------------------------- */
+
+.ask-dialog {
+  width: min(42rem, calc(100% - 2 * var(--sp-4)));
+  max-height: min(48rem, calc(100dvh - 2 * var(--sp-6)));
+  padding: 0;
+  margin: auto;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-panel) * 1.5);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-overlay);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(0.5rem) scale(0.985);
+  transition:
+    opacity var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out),
+    overlay var(--dur-2) var(--ease-out) allow-discrete,
+    display var(--dur-2) var(--ease-out) allow-discrete;
+}
+.ask-dialog[open] {
+  opacity: 1;
+  transform: none;
+}
+@starting-style {
+  .ask-dialog[open] {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.985);
+  }
+}
+.ask-dialog::backdrop {
+  background: var(--sl-color-backdrop-overlay, rgb(0 0 0 / 0.5));
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  transition:
+    opacity var(--dur-2) var(--ease-out),
+    overlay var(--dur-2) var(--ease-out) allow-discrete,
+    display var(--dur-2) var(--ease-out) allow-discrete;
+}
+.ask-dialog[open]::backdrop {
+  opacity: 1;
+}
+@starting-style {
+  .ask-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+.ask-frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  max-height: inherit;
+  overflow-y: auto;
+  padding: var(--sp-6);
+}
+
+.ask-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+.ask-head h2 {
+  margin: 0;
+  font-size: var(--sl-text-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.ask-close {
+  display: inline-grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  margin: calc(-1 * var(--sp-2));
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.ask-close:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.ask-intro,
+.ask-foot p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--sl-text-sm);
+  line-height: 1.55;
+}
+
+.ask-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ask-form textarea {
+  width: 100%;
+  min-height: 5.5rem;
+  resize: vertical;
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--sl-text-base);
+  line-height: 1.5;
+  transition: border-color var(--dur-1) var(--ease-out);
+}
+.ask-form textarea::placeholder {
+  color: var(--text-faint);
+}
+.ask-form textarea:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+.ask-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.ask-counter {
+  color: var(--text-faint);
+  font-size: var(--fs-caption);
+  font-variant-numeric: tabular-nums;
+}
+.ask-counter-full {
+  color: var(--warn);
+}
+.ask-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: var(--touch-min);
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--radius-panel);
+  background: var(--mel-aegean);
+  color: var(--surface);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    opacity var(--dur-1) var(--ease-out);
+}
+:root[data-theme="dark"] .ask-submit {
+  background: var(--accent);
+  color: var(--bg);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .ask-submit {
+    background: var(--accent);
+    color: var(--bg);
+  }
+}
+.ask-submit:hover {
+  background: var(--focus);
+}
+.ask-submit:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.ask-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.ask-result:not(:has(> :not([hidden]))) {
+  display: none;
+}
+
+.ask-status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0;
+  color: var(--text-muted);
+}
+.ask-status[hidden],
+.ask-answer[hidden],
+.ask-sources[hidden],
+.ask-problem[hidden] {
+  display: none;
+}
+.ask-dots {
+  display: inline-flex;
+  gap: 4px;
+}
+.ask-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ask-pulse 1.2s var(--ease-out) infinite;
+}
+.ask-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ask-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+@keyframes ask-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.ask-answer {
+  padding: var(--sp-4);
+  border-radius: var(--radius-panel);
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  animation: ask-arrive var(--dur-2) var(--ease-out);
+}
+.ask-answer p {
+  margin: 0;
+  line-height: 1.65;
+}
+.ask-answer p + p {
+  margin-top: var(--sp-3);
+}
+@keyframes ask-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ask-cite {
+  display: inline-block;
+  margin-inline: 0.1em;
+  padding: 0 0.3em;
+  border-radius: var(--radius-control);
+  background: var(--sl-color-accent-low);
+  color: var(--accent);
+  font-size: 0.8em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  vertical-align: 0.1em;
+}
+.ask-cite:hover {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.ask-sources h3 {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ask-sources ol {
+  margin: 0;
+  padding-inline-start: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.ask-sources li::marker {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.ask-sources a {
+  color: var(--accent);
+  font-weight: 500;
+}
+.ask-source-section {
+  margin-inline-start: var(--sp-2);
+  color: var(--text-faint);
+  font-size: var(--sl-text-sm);
+}
+
+.ask-problem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--sp-2) var(--sp-3);
+  align-items: start;
+  padding: var(--sp-4);
+  border-radius: var(--radius-panel);
+  background: var(--tint-info);
+  color: var(--text);
+}
+.ask-problem[data-kind="allowance"],
+.ask-problem[data-kind="limit"] {
+  background: var(--tint-warn);
+}
+.ask-problem > svg {
+  color: var(--info);
+  margin-top: 0.15rem;
+}
+.ask-problem p {
+  margin: 0;
+  line-height: 1.55;
+}
+.ask-search {
+  grid-column: 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 2.25rem;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--sl-text-sm);
+  cursor: pointer;
+}
+.ask-search:hover {
+  border-color: var(--accent);
+}
+
+.ask-foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--hair);
+}
+.ask-foot a {
+  color: var(--accent);
+}
+
+@media (max-width: 36rem) {
+  .ask-dialog {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100dvh;
+    height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+  }
+  .ask-frame {
+    padding: var(--sp-4);
+    height: 100%;
+  }
+}
+
+/* ---- the footer: the release a page comes from ------------------------------------------ */
+
+.portal-footer {
+  flex-direction: column;
+  gap: var(--sp-6);
+  margin-top: var(--sp-8);
+}
+.portal-release {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-4);
+  margin: 0;
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--hair);
+  color: var(--text-muted);
+  font-size: var(--sl-text-sm);
+}
+.portal-release a {
+  color: var(--accent);
+}
+.portal-release-date {
+  color: var(--text-faint);
+}
+.portal-source {
+  margin-inline-start: auto;
+}
+
+/* ---- a guide in one language only ------------------------------------------------------- */
+
+.portal-notice {
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + 3px);
+  border-inline-start: 3px solid var(--accent);
+  border-radius: var(--radius-panel);
+  background: var(--sl-color-accent-low);
+  color: var(--text);
+}
+.portal-notice a {
+  font-weight: 600;
+}
+
+/* ---- pictures drawn from the code ------------------------------------------------------- */
+
+.sl-markdown-content .meltemi-picture {
+  margin: var(--sp-3) 0 var(--sp-6);
+  padding: var(--sp-2);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  overflow-x: auto;
+}
+.meltemi-picture svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+  font-family: var(--font-ui);
+  border-radius: var(--radius-control);
+}
+
+/* ---- the home --------------------------------------------------------------------------- */
+
+.portal-hero-mark {
+  width: min(14rem, 60vw);
+  height: auto;
+}
+
+.portal-sea {
+  position: relative;
+  margin: calc(-1 * var(--sp-8)) 0 var(--sp-4);
+  aspect-ratio: 1600 / 640;
+  max-height: 16rem;
+  overflow: hidden;
+  border-radius: calc(var(--radius-panel) * 1.5);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
+}
+.portal-sea img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 60%;
+}
+.portal-sea-dark {
+  display: none;
+}
+:root[data-theme="dark"] .portal-sea-light {
+  display: none;
+}
+:root[data-theme="dark"] .portal-sea-dark {
+  display: block;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .portal-sea-light {
+    display: none;
+  }
+  :root:not([data-theme]) .portal-sea-dark {
+    display: block;
+  }
+}
+
+.portal-releases {
+  color: var(--text-muted);
+  font-size: var(--sl-text-sm);
+  text-align: center;
+}
+.portal-hints {
+  color: var(--text-muted);
+  text-align: center;
+}
+.portal-hints kbd {
+  padding: 0.1em 0.4em;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.sl-link-card {
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out);
+}
+.sl-link-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-overlay);
+}
+
+/* ---- reduced motion: nothing moves ------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  .ask-dialog,
+  .ask-dialog::backdrop {
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+  .ask-dots i {
+    animation: none !important;
+    opacity: 1;
+  }
+  .sl-link-card:hover {
+    transform: none;
+  }
+}

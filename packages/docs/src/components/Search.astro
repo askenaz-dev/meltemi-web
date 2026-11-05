@@ -1,0 +1,12 @@
+---
+// Starlight's search (Pagefind, in the reader's browser), with "Ask the docs" beside it when the
+// build made an index of passages (design decisions 1 and 6).
+import Default from "@astrojs/starlight/components/Search.astro";
+import ask from "../generated/ask.json";
+import Ask from "./Ask.astro";
+---
+
+<div class="portal-search">
+  <Default {...Astro.props} />
+  {ask.enabled && <Ask />}
+</div>

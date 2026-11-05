@@ -1,0 +1,15 @@
+---
+// The family's lockup with the portal's pill, as Meltemi Diagrams wears its DIAGRAMS pill: the
+// lockup of each scheme, shown by the reader's choice or, before any script, by the system's.
+import { messagesOf } from "../messages/index.ts";
+
+const { siteTitle, siteTitleHref, lang } = Astro.locals.starlightRoute;
+const words = messagesOf(lang);
+---
+
+<a href={siteTitleHref} class="site-title portal-title">
+  <img class="portal-lockup portal-lockup-light" src="/media/meltemi-lockup-light.svg" alt="" width="1040" height="200" />
+  <img class="portal-lockup portal-lockup-dark" src="/media/meltemi-lockup-dark.svg" alt="" width="1040" height="200" />
+  <span class="portal-pill" aria-hidden="true">{words.portal.pill}</span>
+  <span class="sr-only" translate="no">{siteTitle}</span>
+</a>

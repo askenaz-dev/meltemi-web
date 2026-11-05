@@ -1,0 +1,38 @@
+---
+// Every page's footer (design decision 8): the release of its section that the page comes from,
+// the page's source on GitHub, and Starlight's previous and next links within the section.
+import Pagination from "@astrojs/starlight/components/Pagination.astro";
+import sources from "../generated/sources.json";
+import { messagesOf, type Section } from "../messages/index.ts";
+
+const route = Astro.locals.starlightRoute;
+const words = messagesOf(route.lang);
+const section = route.id.replace(/^es(\/|$)/, "").split("/")[0] as Section;
+const release = (sources as Record<string, { repo: string; ref: string; version: string; date: string } | undefined>)[section];
+const product = words.sections[section]?.name;
+const releaseUrl = release
+  ? /^v\d/.test(release.version)
+    ? `https://github.com/${release.repo}/releases/tag/${encodeURIComponent(release.ref)}`
+    : `https://github.com/${release.repo}/tree/${encodeURIComponent(release.ref)}`
+  : undefined;
+const editUrl = route.editUrl?.href;
+---
+
+<footer class="portal-footer sl-flex">
+  {
+    release && product && (
+      <p class="portal-release">
+        <span class="portal-release-from">
+          {words.footer.from(product)} <a href={releaseUrl}>{release.version}</a>
+        </span>
+        <span class="portal-release-date">{words.footer.published(release.date)}</span>
+        {editUrl && (
+          <a class="portal-source" href={editUrl}>
+            {words.footer.source}
+          </a>
+        )}
+      </p>
+    )
+  }
+  <Pagination />
+</footer>

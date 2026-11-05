@@ -111,8 +111,14 @@ describe("the Terraform root", () => {
     );
   });
 
-  it("serves the four hosts of the family, two zones and nothing under another domain", () => {
-    for (const host of ["id.meltemi.dev", "meltemi.dev", "diagrams.meltemi.dev", "meltemi.page"]) {
+  it("serves the five hosts of the family, two zones and nothing under another domain", () => {
+    for (const host of [
+      "id.meltemi.dev",
+      "meltemi.dev",
+      "diagrams.meltemi.dev",
+      "meltemi.page",
+      "docs.meltemi.dev",
+    ]) {
       expect(read("workers.tf")).toContain(`hostname = "${host}"`);
     }
     expect([...read("zones.tf").matchAll(/name\s*=\s*"([a-z.]+)"/g)].map((m) => m[1])).toEqual(

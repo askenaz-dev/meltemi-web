@@ -1,0 +1,90 @@
+---
+// "Ask the docs" (design decision 7; specification `docs-ask`): a button beside the search and a
+// dialog that sends one question to `POST /api/ask` and shows the answer as text, its citations
+// linked to the pages they name, and the sources. Without a script the button stays hidden: every
+// page reads without it, and the search is there.
+import { Icon } from "@astrojs/starlight/components";
+import { messagesOf } from "../messages/index.ts";
+import { QUESTION_LIMIT } from "../ask.ts";
+
+const { lang } = Astro.locals.starlightRoute;
+const words = messagesOf(lang);
+const ask = words.ask;
+const sections = Object.fromEntries(Object.entries(words.sections).map(([key, value]) => [key, value.name]));
+const data = {
+  lang: words.lang,
+  limit: QUESTION_LIMIT,
+  counter: ask.counter,
+  thinking: ask.thinking,
+  notCovered: ask.notCovered,
+  allowance: ask.allowance,
+  rateLimit: ask.limit,
+  index: ask.index,
+  invalid: ask.invalid,
+  error: ask.error,
+  source: lang === "es" ? "Fuente" : "Source",
+  sections,
+};
+---
+
+<meltemi-ask data-words={JSON.stringify(data)}>
+  <button type="button" class="ask-open" data-open hidden aria-haspopup="dialog">
+    <Icon name="comment-alt" size="1.05rem" />
+    <span>{ask.button}</span>
+  </button>
+  <dialog class="ask-dialog" aria-labelledby="ask-title" aria-describedby="ask-intro">
+    <div class="ask-frame">
+      <header class="ask-head">
+        <h2 id="ask-title">{ask.title}</h2>
+        <button type="button" class="ask-close" data-close aria-label={ask.close} title={ask.close}>
+          <Icon name="close" size="1.25rem" />
+        </button>
+      </header>
+      <p class="ask-intro" id="ask-intro">{ask.intro}</p>
+      <form class="ask-form" novalidate>
+        <label class="sr-only" for="ask-question">{ask.label}</label>
+        <textarea
+          id="ask-question"
+          name="question"
+          rows="3"
+          maxlength={QUESTION_LIMIT}
+          placeholder={ask.placeholder}
+          autocomplete="off"
+          spellcheck="true"
+          aria-describedby="ask-counter"></textarea>
+        <div class="ask-row">
+          <span class="ask-counter" id="ask-counter">{ask.counter.replace("{used}", "0").replace("{limit}", String(QUESTION_LIMIT))}</span>
+          <button type="submit" class="ask-submit">
+            <span>{ask.submit}</span>
+            <Icon name="right-arrow" size="1rem" />
+          </button>
+        </div>
+      </form>
+      <section class="ask-result" aria-live="polite" aria-busy="false">
+        <p class="ask-status" hidden><span class="ask-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>{ask.thinking}</span></p>
+        <div class="ask-answer" hidden></div>
+        <div class="ask-sources" hidden>
+          <h3>{ask.sources}</h3>
+          <ol></ol>
+        </div>
+        <div class="ask-problem" hidden>
+          <Icon name="information" size="1.25rem" />
+          <p></p>
+          <button type="button" class="ask-search" data-search>
+            <Icon name="magnifier" size="1rem" />
+            <span>{ask.search}</span>
+          </button>
+        </div>
+      </section>
+      <footer class="ask-foot">
+        <p>{ask.privacy} <a href={ask.privacyUrl}>{ask.privacyLink}</a></p>
+        <p>{ask.daily}</p>
+      </footer>
+    </div>
+  </dialog>
+</meltemi-ask>
+
+<script>
+  import { defineAsk } from "../scripts/ask-dialog.ts";
+  defineAsk();
+</script>

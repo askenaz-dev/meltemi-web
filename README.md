@@ -1,7 +1,8 @@
 # Meltemi Web
 
-The web of the Meltemi family: the product site at [meltemi.dev](https://meltemi.dev) and the
-shared identity service at `id.meltemi.dev`. Meltemi is one brand with two products, the
+The web of the Meltemi family: the product site at [meltemi.dev](https://meltemi.dev), the
+shared identity service at `id.meltemi.dev` and the documentation portal at
+[docs.meltemi.dev](https://docs.meltemi.dev). Meltemi is one brand with two products, the
 [Meltemi IDE](https://github.com/askenaz-dev/meltemi) and Meltemi Diagrams; each lives in its
 own repository, and this one holds what they share: the site people arrive at and the account
 they sign in with. [docs/repositories.md](docs/repositories.md) maps the three repositories,
@@ -16,6 +17,7 @@ their domains and the contracts between them.
 | `docs/decisions/`      | Decision records                                                          |
 | `packages/site`        | The static site, written by the `product-site` change                     |
 | `packages/identity`    | The identity Worker, written by the `identity-service` change             |
+| `packages/docs`        | The documentation portal, written by the `docs-portal` change             |
 | `packages/infra`       | The family's infrastructure as code (Terraform): Cloudflare and GitHub    |
 | `.github/workflows/`   | CI, deploy, release, and the infrastructure's plan, apply and drift       |
 

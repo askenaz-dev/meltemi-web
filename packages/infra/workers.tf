@@ -25,6 +25,7 @@ locals {
     site     = { name = "meltemi-site", repository = "meltemi-web", hostname = "meltemi.dev", zone = "dev" }
     diagrams = { name = "meltemi-diagrams-cloud", repository = "meltemi-diagrams", hostname = "diagrams.meltemi.dev", zone = "dev" }
     publish  = { name = "meltemi-diagrams-publish", repository = "meltemi-diagrams", hostname = "meltemi.page", zone = "page" }
+    docs     = { name = "meltemi-docs", repository = "meltemi-web", hostname = "docs.meltemi.dev", zone = "dev" }
   }
 
   zone_ids = {
@@ -32,11 +33,12 @@ locals {
     page = cloudflare_zone.page.id
   }
 
-  # A Custom Domain needs a Worker with a version, so none exists before `attach_domains`; and the
-  # apex of meltemi.dev is the site's only once GitHub Pages has let it go (`site_on_apex`).
+  # A Custom Domain needs a Worker with a version, so none exists before `attach_domains`; the
+  # apex of meltemi.dev is the site's only once GitHub Pages has let it go (`site_on_apex`); and the
+  # documentation portal's waits for its first upload (`docs_deployed`, change docs-portal).
   attached = {
     for key, worker in local.workers : key => worker
-    if var.attach_domains && (key != "site" || var.site_on_apex)
+    if var.attach_domains && (key != "site" || var.site_on_apex) && (key != "docs" || var.docs_deployed)
   }
 }
 

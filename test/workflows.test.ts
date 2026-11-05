@@ -87,6 +87,13 @@ describe("ci.yml", () => {
     }
   });
 
+  it("drives the portal in the runner's Chrome too, after the clean install", () => {
+    const job = text.slice(at(text, "\n  browser:"), at(text, "\n  infrastructure:"));
+    expect(at(job, "run: pnpm install --frozen-lockfile")).toBeLessThan(
+      at(job, "run: pnpm docs:browser"),
+    );
+  });
+
   it("drives the site in the runner's Chrome, after a clean install", () => {
     const job = text.slice(at(text, "\n  browser:"), at(text, "\n  infrastructure:"));
     expect(job).toMatch(/runs-on: ubuntu-latest/);
@@ -132,6 +139,47 @@ describe("deploy.yml", () => {
     expect(release).toBeLessThan(upload);
     expect(text).toContain("GH_TOKEN: ${{ github.token }}");
     expect(text).toMatch(/workflow_dispatch:/);
+  });
+
+  it("deploys the documentation portal after the site, in production, from the same approved source", () => {
+    const job = text.slice(at(text, "\n  docs:"));
+    expect(job).toContain("needs: [source, deploy]");
+    expect(job).toContain("if: needs.source.outputs.current == 'true'");
+    expect(job).toMatch(/environment: production/);
+    expect(job).toContain("ref: ${{ needs.source.outputs.sha }}");
+    expect(secretsOf(job)).toEqual(["CLOUDFLARE_API_TOKEN"]);
+    expect(job).toContain("CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}");
+    expect(job).toContain("GH_TOKEN: ${{ github.token }}");
+    // Superseded source is refused, then the release build, which fails on an unreadable product
+    // before the upload; the site's job is another job, already done.
+    const current = at(job, "node ../.automation/scripts/ci-source.mjs current");
+    const build = at(job, "run: pnpm --filter @meltemi/docs build --from release");
+    const upload = at(job, "run: pnpm exec wrangler deploy");
+    expect(current).toBeLessThan(build);
+    expect(build).toBeLessThan(upload);
+    expect(job).toContain("working-directory: source/packages/docs");
+    expect(job.match(/if: steps\.current\.outputs\.current == 'true'/g)).toHaveLength(3);
+    expect(at(text, "\n  deploy:")).toBeLessThan(at(text, "\n  docs:"));
+  });
+
+  it("uploads the portal only once Terraform has declared its Worker", () => {
+    const job = text.slice(at(text, "\n  docs:"));
+    const declared = at(job, "/workers/workers/meltemi-docs");
+    const build = at(job, "run: pnpm --filter @meltemi/docs build --from release");
+    expect(declared).toBeLessThan(build);
+    expect(job).toContain('404)\n              echo "::notice::meltemi-docs is not declared yet');
+    expect(job).toContain("exit 1");
+    expect(
+      job.match(
+        /if: steps\.current\.outputs\.current == 'true' && steps\.declared\.outputs\.declared == 'true'/g,
+      ),
+    ).toHaveLength(2);
+  });
+
+  it("keeps the portal's pictures and embeddings between deploys, never a secret", () => {
+    const job = text.slice(at(text, "\n  docs:"));
+    expect(job).toContain("uses: actions/cache@v4");
+    expect(job).toContain("path: source/packages/docs/.cache");
   });
 
   it("writes Terraform's ids, migrates, then uploads identity and then the site", () => {
@@ -228,6 +276,7 @@ describe("the infrastructure's workflows", () => {
         "github_client_secret",
         "google_client_secret",
         "web_dispatch_token",
+        "narrow_web_dispatch_token",
       ]) {
         expect(text, `${name}: ${variable}`).toContain(`TF_VAR_${variable}:`);
       }
@@ -238,6 +287,14 @@ describe("the infrastructure's workflows", () => {
     for (const name of infra) {
       expect(read(name), name).toContain(
         "TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}",
+      );
+    }
+  });
+
+  it("hand Diagrams' repository the narrow token only, never the admin token", () => {
+    for (const name of infra) {
+      expect(read(name), name).toContain(
+        "TF_VAR_narrow_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN }}\n",
       );
     }
   });

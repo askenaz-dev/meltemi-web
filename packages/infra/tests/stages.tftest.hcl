@@ -21,6 +21,7 @@ variables {
     "Workers Scripts Write"   = "workers-scripts-write"
     "D1 Write"                = "d1-write"
     "Workers R2 Storage Read" = "r2-read"
+    "Workers AI Read"         = "workers-ai-read"
     "Secrets Store Write"     = "secrets-store-write"
     "Zone Write"              = "zone-write"
   }
@@ -66,8 +67,8 @@ run "first_apply" {
     error_message = "No Custom Domain exists before attach_domains."
   }
   assert {
-    condition     = toset([for worker in cloudflare_worker.family : worker.name]) == toset(["meltemi-identity", "meltemi-site", "meltemi-diagrams-cloud", "meltemi-diagrams-publish"])
-    error_message = "The four Workers of the family are declared."
+    condition     = toset([for worker in cloudflare_worker.family : worker.name]) == toset(["meltemi-identity", "meltemi-site", "meltemi-diagrams-cloud", "meltemi-diagrams-publish", "meltemi-docs"])
+    error_message = "The five Workers of the family are declared, the documentation portal's among them."
   }
   assert {
     condition     = alltrue([for worker in cloudflare_worker.family : worker.subdomain.enabled == false && worker.subdomain.previews_enabled == false])
@@ -91,7 +92,7 @@ run "first_apply" {
   }
   assert {
     condition     = length(github_actions_secret.release) == 0
-    error_message = "No release secret exists before the owner has the tokens."
+    error_message = "No release secret, and no notice token for Diagrams, exists before the owner has the tokens."
   }
   assert {
     condition     = length(github_repository_ruleset.family_version_tags) == 2 && alltrue([for ruleset in github_repository_ruleset.family_version_tags : ruleset.target == "tag" && ruleset.enforcement == "active" && ruleset.rules[0].update == true && ruleset.rules[0].deletion == true && ruleset.rules[0].creation != true])
@@ -132,12 +133,12 @@ run "deploy_tokens" {
   command = plan
 
   assert {
-    condition     = toset([for group in cloudflare_api_token.deploy["web"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "secrets-store-write"])
-    error_message = "The web token uploads Workers, migrates D1 and binds the Store's secrets."
+    condition     = toset([for group in cloudflare_api_token.deploy["web"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "workers-ai-read", "secrets-store-write"])
+    error_message = "The web token uploads Workers, migrates D1, reads Workers AI for the portal's embeddings and binds the Store's secrets."
   }
   assert {
     condition     = toset([for group in cloudflare_api_token.deploy["diagrams"].policies[0].permission_groups : group.id]) == toset(["workers-scripts-write", "d1-write", "r2-read", "secrets-store-write"])
-    error_message = "The diagrams token also reads its R2 binding."
+    error_message = "The diagrams token also reads its R2 binding, and nothing of Workers AI."
   }
 }
 
@@ -149,6 +150,7 @@ run "domains_attach" {
     attach_domains       = true
     apex_on_github_pages = true
     site_on_apex         = false
+    docs_deployed        = false
   }
 
   assert {
@@ -190,6 +192,7 @@ run "apex_swap" {
     attach_domains       = true
     apex_on_github_pages = false
     site_on_apex         = true
+    docs_deployed        = false
   }
 
   assert {
@@ -197,8 +200,8 @@ run "apex_swap" {
     error_message = "The family site takes the apex."
   }
   assert {
-    condition     = length(cloudflare_workers_custom_domain.family) == 4
-    error_message = "All four domains are attached."
+    condition     = length(cloudflare_workers_custom_domain.family) == 4 && !contains(keys(cloudflare_workers_custom_domain.family), "docs")
+    error_message = "The four products' domains are attached; the portal's waits for docs_deployed."
   }
   assert {
     condition     = cloudflare_workers_custom_domain.www[0].hostname == "www.meltemi.dev" && cloudflare_workers_custom_domain.www[0].service == "meltemi-www"
@@ -211,6 +214,49 @@ run "apex_swap" {
   assert {
     condition     = cloudflare_worker.www.subdomain.enabled == false && cloudflare_worker.www.subdomain.previews_enabled == false
     error_message = "The www Worker has no workers.dev or preview address."
+  }
+}
+
+# The documentation portal's Worker is declared before it has a version, and its domain waits
+# for the first deploy (change docs-portal): docs_deployed stays false until then.
+run "docs_staged" {
+  command = plan
+
+  variables {
+    attach_domains       = true
+    apex_on_github_pages = false
+    site_on_apex         = true
+    docs_deployed        = false
+  }
+
+  assert {
+    condition     = cloudflare_worker.family["docs"].name == "meltemi-docs" && cloudflare_worker.family["docs"].subdomain.enabled == false && cloudflare_worker.family["docs"].subdomain.previews_enabled == false
+    error_message = "The Worker meltemi-docs is declared, with no workers.dev or preview address."
+  }
+  assert {
+    condition     = !contains([for domain in cloudflare_workers_custom_domain.family : domain.hostname], "docs.meltemi.dev")
+    error_message = "No Custom Domain for docs.meltemi.dev before the portal's first deploy."
+  }
+}
+
+# The commit after the portal's first deploy attaches docs.meltemi.dev.
+run "docs_attached" {
+  command = plan
+
+  variables {
+    attach_domains       = true
+    apex_on_github_pages = false
+    site_on_apex         = true
+    docs_deployed        = true
+  }
+
+  assert {
+    condition     = cloudflare_workers_custom_domain.family["docs"].hostname == "docs.meltemi.dev" && cloudflare_workers_custom_domain.family["docs"].service == "meltemi-docs"
+    error_message = "docs.meltemi.dev is the portal's Worker's."
+  }
+  assert {
+    condition     = length(cloudflare_workers_custom_domain.family) == 5
+    error_message = "All five domains are attached."
   }
 }
 
@@ -242,18 +288,63 @@ run "release_tokens" {
   }
 }
 
-# The IDE's notice token reaches its release environment once the owner has it.
+# The notice token reaches the IDE's release environment and, the narrow one only, the Diagrams
+# repository: both products' release workflows start this repository's deploy with it.
 run "ide_notice_token" {
   command = plan
 
   variables {
-    web_dispatch_token = "dispatch-token"
+    web_dispatch_token        = "dispatch-token"
+    narrow_web_dispatch_token = "dispatch-token"
   }
 
   assert {
     condition     = length(github_actions_environment_secret.ide_web_dispatch) == 1 && github_actions_environment_secret.ide_web_dispatch[0].secret_name == "WEB_DISPATCH_TOKEN" && github_actions_environment_secret.ide_web_dispatch[0].environment == "release" && github_actions_environment_secret.ide_web_dispatch[0].repository == "meltemi"
     error_message = "WEB_DISPATCH_TOKEN goes to the IDE's release environment."
   }
+  assert {
+    condition     = github_actions_secret.release["meltemi-diagrams/WEB_DISPATCH_TOKEN"].secret_name == "WEB_DISPATCH_TOKEN" && github_actions_secret.release["meltemi-diagrams/WEB_DISPATCH_TOKEN"].repository == "meltemi-diagrams"
+    error_message = "WEB_DISPATCH_TOKEN goes to the Diagrams repository."
+  }
+  assert {
+    condition     = !contains(keys(github_actions_secret.release), "meltemi-web/WEB_DISPATCH_TOKEN")
+    error_message = "This repository does not receive its own notice token."
+  }
+}
+
+# The admin token the workflows pass in the narrow token's place reaches the IDE's release
+# environment only, never a repository secret of Diagrams.
+run "admin_fallback_stays_with_the_ide" {
+  command = plan
+
+  variables {
+    web_dispatch_token = "admin-token"
+  }
+
+  assert {
+    condition     = length(github_actions_environment_secret.ide_web_dispatch) == 1
+    error_message = "The IDE's release environment receives the fallback."
+  }
+  assert {
+    condition     = !contains(keys(github_actions_secret.release), "meltemi-diagrams/WEB_DISPATCH_TOKEN")
+    error_message = "Diagrams' repository never receives the admin token."
+  }
+}
+
+# An account that lists no "Workers AI Read" refuses the web's token, naming the group.
+run "missing_workers_ai_group" {
+  command = plan
+
+  variables {
+    permission_group_ids = {
+      "Workers Scripts Write"   = "workers-scripts-write"
+      "D1 Write"                = "d1-write"
+      "Workers R2 Storage Read" = "r2-read"
+      "Secrets Store Write"     = "secrets-store-write"
+    }
+  }
+
+  expect_failures = [cloudflare_api_token.deploy["web"]]
 }
 
 # A token whose permission group the account does not list is refused before anything is made.

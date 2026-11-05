@@ -51,8 +51,10 @@ its twin, `<html lang>` and alternates; Spanish pages link Spanish pages; every 
 (and anchor) leads to a file; no script, style, form, event handler or resource from another
 origin; the twins link the same external places (each language's readme of the IDE repository
 counts as one); the old addresses redirect with a 301 and the policy headers are set; the Diagrams
-page opens the app and gives the exact install command; the privacy notice states the inventory;
-the downloads pages name no version; and **no page still says `OWNER-CONTACT`**.
+page opens the app and gives the exact install command; every header links the documentation
+portal (`docs.meltemi.dev`) in its language, and the Diagrams and IDE pages lead their
+documentation buttons there; the privacy notice says what a question to its "Ask the docs"
+reaches, and states the inventory; the downloads pages name no version; and **no page still says `OWNER-CONTACT`**.
 
 ## Editing a page
 

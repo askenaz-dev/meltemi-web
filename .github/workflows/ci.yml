@@ -40,9 +40,10 @@ jobs:
       - run: pnpm test
 
   browser:
-    name: The site in Chrome (pnpm site:browser)
+    name: The site and the portal in Chrome (pnpm site:browser, pnpm docs:browser)
     # The pages in the runner's installed Chrome, served by wrangler dev on 127.0.0.1: no console
-    # error, no policy violation, no request beyond the runner, and the motion of site-motion.
+    # error, no policy violation, no request beyond the runner, the motion of site-motion, and the
+    # portal's search, Ask dialog (answered by the offline stubs), schemes and phone width.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +54,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm site:browser
+      - run: pnpm docs:browser
 
   infrastructure:
     name: Terraform (formatting, validity, tests with mocked providers)

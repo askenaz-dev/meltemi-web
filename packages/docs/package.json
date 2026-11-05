@@ -1,0 +1,26 @@
+{
+  "name": "@meltemi/docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The documentation portal of the Meltemi family at docs.meltemi.dev: the products' released documentation as one Starlight site in English and Spanish, with search and Ask the docs.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "browser": "tsx scripts/browser.ts",
+    "dev": "tsx scripts/build.ts --embedder fake && tsx scripts/dev-config.ts && wrangler dev -c wrangler.dev.json",
+    "tokens": "tsx scripts/tokens.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.42.9",
+    "astro": "7.3.8"
+  },
+  "devDependencies": {
+    "@meltemi/diagrams-cli": "1.11.7",
+    "playwright-core": "1.63.0"
+  }
+}
