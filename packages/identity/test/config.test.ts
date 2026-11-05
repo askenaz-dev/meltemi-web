@@ -440,6 +440,7 @@ describe("wrangler.jsonc", () => {
   it("binds every secret from the family's Secrets Store as <NAME>_STORE", () => {
     expect(stored.map((binding) => binding["secret_name"]).sort()).toEqual([
       "EVENTS_SECRET_DIAGRAMS",
+      "EVENTS_SECRET_DIAGRAMS_STAGING",
       "GITHUB_CLIENT_SECRET",
       "GOOGLE_CLIENT_SECRET",
       "SESSION_PRIVATE_KEY",
@@ -513,14 +514,29 @@ describe("wrangler.jsonc", () => {
     expect(read.devOrigins).toEqual([]);
     expect(read.secureCookies).toBe(true);
     expect(read.cookieDomainAttribute).toBe("meltemi.dev");
+    // Meltemi Diagrams and its staging twin (change diagrams-staging), each with its own secret.
     expect(read.products).toEqual([
       {
         name: "diagrams",
         events: "https://diagrams.meltemi.dev/_identity/events",
         secretName: "EVENTS_SECRET_DIAGRAMS",
       },
+      {
+        name: "diagrams-staging",
+        events: "https://staging.diagrams.meltemi.dev/_identity/events",
+        secretName: "EVENTS_SECRET_DIAGRAMS_STAGING",
+      },
     ]);
     expect(JSON.parse(vars["SESSION_PUBLIC_KEYS"] as string)).toBeInstanceOf(Array);
+  });
+
+  it("binds the events secret of every product it lists", () => {
+    const read = readConfig(testEnv(vars as Partial<Env>));
+    const bound = stored.map((binding) => binding["secret_name"]);
+    for (const product of read.products) {
+      expect(bound, product.name).toContain(product.secretName);
+      expect(new URL(product.events).protocol, product.name).toBe("https:");
+    }
   });
 
   it("names only variables that Env declares", () => {

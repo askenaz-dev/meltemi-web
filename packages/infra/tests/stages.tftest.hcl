@@ -155,6 +155,7 @@ run "domains_attach" {
     apex_on_github_pages = true
     site_on_apex         = false
     docs_deployed        = false
+    staging_deployed     = false
   }
 
   assert {
@@ -197,6 +198,7 @@ run "apex_swap" {
     apex_on_github_pages = false
     site_on_apex         = true
     docs_deployed        = false
+    staging_deployed     = false
   }
 
   assert {
@@ -252,6 +254,7 @@ run "docs_attached" {
     apex_on_github_pages = false
     site_on_apex         = true
     docs_deployed        = true
+    staging_deployed     = false
   }
 
   assert {

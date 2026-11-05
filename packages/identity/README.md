@@ -253,15 +253,15 @@ JSON.
 
 Variables (`wrangler.jsonc`, or `.dev.vars` in development):
 
-| Name                                   | Meaning                                                                                                                                    |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ISSUER`                               | The service's address, `https://id.meltemi.dev` (the token's `iss`)                                                                        |
-| `COOKIE_DOMAIN`                        | `meltemi.dev`                                                                                                                              |
-| `SITE_URL`                             | The family's site: the default return address and home of the privacy notice and terms                                                     |
-| `SESSION_PUBLIC_KEYS`                  | JSON array of public JWKs, current first                                                                                                   |
-| `PRODUCTS`                             | JSON array of `{ "name", "events" }`; Meltemi Diagrams is `[{"name":"diagrams","events":"https://diagrams.meltemi.dev/_identity/events"}]` |
-| `GITHUB_CLIENT_ID`, `GOOGLE_CLIENT_ID` | The OAuth apps' ids                                                                                                                        |
-| `DEV`, `DEV_ORIGINS`                   | Development mode and its origins; **only in `.dev.vars`, never in `wrangler.jsonc`**                                                       |
+| Name                                   | Meaning                                                                                                                                                                                                                                                      |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ISSUER`                               | The service's address, `https://id.meltemi.dev` (the token's `iss`)                                                                                                                                                                                          |
+| `COOKIE_DOMAIN`                        | `meltemi.dev`                                                                                                                                                                                                                                                |
+| `SITE_URL`                             | The family's site: the default return address and home of the privacy notice and terms                                                                                                                                                                       |
+| `SESSION_PUBLIC_KEYS`                  | JSON array of public JWKs, current first                                                                                                                                                                                                                     |
+| `PRODUCTS`                             | JSON array of `{ "name", "events" }`; Meltemi Diagrams is `{"name":"diagrams","events":"https://diagrams.meltemi.dev/_identity/events"}` and its staging twin `{"name":"diagrams-staging","events":"https://staging.diagrams.meltemi.dev/_identity/events"}` |
+| `GITHUB_CLIENT_ID`, `GOOGLE_CLIENT_ID` | The OAuth apps' ids                                                                                                                                                                                                                                          |
+| `DEV`, `DEV_ORIGINS`                   | Development mode and its origins; **only in `.dev.vars`, never in `wrangler.jsonc`**                                                                                                                                                                         |
 
 Secrets (never in a file that is committed). In production each one is a secret of the family's
 Secrets Store, declared and given its value by Terraform (`packages/infra`), and bound in
@@ -271,12 +271,12 @@ string. In development `.dev.vars` gives the strings, and a string always wins o
 Nobody runs `wrangler secret put`. A service with no `SESSION_PRIVATE_KEY` or no `STATE_SECRET`
 answers `500` and names the setting in the log, never on the page.
 
-| Name                                           | Meaning                                                                                                                                                                                          |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET` | The OAuth apps' secrets                                                                                                                                                                          |
-| `SESSION_PRIVATE_KEY`                          | The private JWK (with `kid`) that signs sessions                                                                                                                                                 |
-| `STATE_SECRET`                                 | Signs the `meltemi_oauth` cookie and the account forms' `csrf`                                                                                                                                   |
-| `EVENTS_SECRET_<PRODUCT>`                      | The product's secret: signs its events and checks its calls to the account API; the name upper-cased (`EVENTS_SECRET_DIAGRAMS`). The product's own `IDENTITY_EVENTS_SECRET` holds the same value |
+| Name                                           | Meaning                                                                                                                                                                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET` | The OAuth apps' secrets                                                                                                                                                                                                                                    |
+| `SESSION_PRIVATE_KEY`                          | The private JWK (with `kid`) that signs sessions                                                                                                                                                                                                           |
+| `STATE_SECRET`                                 | Signs the `meltemi_oauth` cookie and the account forms' `csrf`                                                                                                                                                                                             |
+| `EVENTS_SECRET_<PRODUCT>`                      | The product's secret: signs its events and checks its calls to the account API; the name upper-cased, hyphens as underscores (`EVENTS_SECRET_DIAGRAMS`, `EVENTS_SECRET_DIAGRAMS_STAGING`). The product's own `IDENTITY_EVENTS_SECRET` holds the same value |
 
 `pnpm identity:keys` prints a new signing pair and writes nothing to a file. To rotate, set the new
 private key as `SESSION_PRIVATE_KEY` and put its public key **first** in `SESSION_PUBLIC_KEYS`,
