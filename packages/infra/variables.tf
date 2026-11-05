@@ -44,7 +44,7 @@ variable "site_on_apex" {
 variable "docs_deployed" {
   description = "Whether the documentation portal's Worker, meltemi-docs, has its first version, uploaded by this repository's deploy: a Custom Domain needs one, so docs.meltemi.dev attaches in the commit after that deploy (change docs-portal), as the apex waited for site_on_apex."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "existing_zone_ids" {
