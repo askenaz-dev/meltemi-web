@@ -1,7 +1,7 @@
 # product-site Specification
 
 ## Purpose
-TBD - created by archiving change docs-portal. Update Purpose after archive.
+The family's site at meltemi.dev: the static bilingual pages that present Meltemi IDE and Meltemi Diagrams, link their downloads and documentation, and state the privacy and terms of the services the family runs.
 
 ## Requirements
 

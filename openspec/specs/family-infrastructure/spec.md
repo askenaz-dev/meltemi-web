@@ -1,7 +1,7 @@
 # family-infrastructure Specification
 
 ## Purpose
-TBD - created by archiving change docs-portal. Update Purpose after archive.
+The family's infrastructure declared as code in `packages/infra`: the Cloudflare Workers, their domains, databases, storage and secrets, the deploy tokens and their permissions, and the GitHub environments and secrets the product repositories receive, applied only by the pipeline.
 
 ## Requirements
 

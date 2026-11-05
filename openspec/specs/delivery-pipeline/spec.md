@@ -1,7 +1,7 @@
 # delivery-pipeline Specification
 
 ## Purpose
-TBD - created by archiving change docs-portal. Update Purpose after archive.
+How this repository puts what it builds into production: the workflows that deploy the site, the identity service and the documentation portal from CI-approved sources of main, in one production queue with the infrastructure apply, and the notices from the products' release workflows that start them.
 
 ## Requirements
 
