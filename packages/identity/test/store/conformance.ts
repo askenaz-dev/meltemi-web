@@ -99,6 +99,25 @@ export function runStoreConformance(
     const outboxRow = async (id: string) =>
       present((await under.outbox()).find((event) => event.id === id));
 
+    describe("documentation AI", () => {
+      it("starts enabled only from the initial settings seed, and explicit assignments repeat safely", async () => {
+        expect(await store.getDocsAi()).toBe(true);
+        await store.setDocsAi(false);
+        await store.setDocsAi(false);
+        expect(await store.getDocsAi()).toBe(false);
+        await store.setDocsAi(true);
+        expect(await store.getDocsAi()).toBe(true);
+      });
+
+      it("keeps a paused setting when an account is deleted or sessions are swept", async () => {
+        await store.createUser(aUser());
+        await store.setDocsAi(false);
+        await store.deleteUser("u1");
+        await store.deleteSessionsBefore(at(DAY));
+        expect(await store.getDocsAi()).toBe(false);
+      });
+    });
+
     describe("users", () => {
       it("stores a user and reads it back whole", async () => {
         const user = aUser({ createdAt: at(5 * SECOND) });

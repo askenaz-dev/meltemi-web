@@ -33,6 +33,8 @@ export function memoryStore(): IdentityStore {
   const identities = new Map<string, Identity>();
   const sessions = new Map<string, Session>();
   const outbox = new Map<string, OutboxEvent>();
+  // A fresh database's migration seeds this row once. Constructing a D1 store never seeds it.
+  let docsAi = true;
 
   const live = (s: Session, now: Iso) => s.revokedAt === null && s.expiresAt > now;
 
@@ -42,6 +44,12 @@ export function memoryStore(): IdentityStore {
   };
 
   const store: IdentityStore = {
+    async getDocsAi() {
+      return docsAi;
+    },
+    async setDocsAi(enabled) {
+      docsAi = enabled;
+    },
     async userById(id) {
       const user = users.get(id);
       return user && { ...user };

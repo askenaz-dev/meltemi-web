@@ -8,6 +8,10 @@ import { migrationFiles, openDatabase, sqliteAvailable } from "./support/sqlite.
 type Column = readonly [name: string, type: "TEXT" | "INTEGER", notNull: boolean, pk: number];
 
 const EXPECTED: Record<string, readonly Column[]> = {
+  docs_ai_settings: [
+    ["id", "INTEGER", true, 1],
+    ["enabled", "INTEGER", true, 0],
+  ],
   users: [
     ["id", "TEXT", true, 1],
     ["name", "TEXT", true, 0],
@@ -69,9 +73,9 @@ describe.skipIf(!sqliteAvailable)("the migrations", () => {
     });
   });
 
-  it("create exactly the tables users, identities, sessions and outbox", () => {
+  it("create exactly the account tables and the documentation AI setting", () => {
     const db = openDatabase();
-    expect(tablesOf(db)).toEqual(["identities", "outbox", "sessions", "users"]);
+    expect(tablesOf(db)).toEqual(["docs_ai_settings", "identities", "outbox", "sessions", "users"]);
     db.close();
   });
 
@@ -105,6 +109,7 @@ describe.skipIf(!sqliteAvailable)("the migrations", () => {
       .filter((row) => String(row.name) in EXPECTED)
       .map((row) => [String(row.name), Number(row.strict)]);
     expect(strict.sort()).toEqual([
+      ["docs_ai_settings", 1],
       ["identities", 1],
       ["outbox", 1],
       ["sessions", 1],
@@ -240,7 +245,7 @@ describe.skipIf(!sqliteAvailable)("the migrations", () => {
             .map((row) => [row.table, row.from, row.to, row.on_delete]),
         ).toEqual([["users", "user_id", "id", "CASCADE"]]);
       }
-      for (const table of ["users", "outbox"]) {
+      for (const table of ["users", "outbox", "docs_ai_settings"]) {
         expect(db.raw.prepare(`PRAGMA foreign_key_list(${table})`).all()).toEqual([]);
       }
       db.close();

@@ -8,8 +8,11 @@ interface Words {
   readonly limit: number;
   readonly counter: string;
   readonly thinking: string;
+  readonly checking: string;
   readonly notCovered: string;
   readonly allowance: string;
+  readonly disabled: string;
+  readonly control: string;
   readonly rateLimit: string;
   readonly index: string;
   readonly invalid: string;
@@ -64,12 +67,14 @@ export function answerNodes(
     });
 }
 
-type Problem = "allowance" | "limit" | "index" | "invalid" | "error";
+type Problem = "allowance" | "disabled" | "control" | "limit" | "index" | "invalid" | "error";
 
 /** What the dialog says for an answer that is not one. */
 export function problemOf(status: number, reason: string | undefined): Problem {
   if (status === 400) return "invalid";
   if (status === 429) return "limit";
+  if (status === 503 && reason === "disabled") return "disabled";
+  if (status === 503 && reason === "control") return "control";
   if (status === 503 && reason === "index") return "index";
   if (status === 503) return "allowance";
   return "error";
@@ -89,12 +94,15 @@ class MeltemiAsk extends HTMLElement {
     const submit = this.querySelector<HTMLButtonElement>(".ask-submit")!;
     const result = this.querySelector<HTMLElement>(".ask-result")!;
     const status = this.querySelector<HTMLElement>(".ask-status")!;
+    const statusText = status.querySelector<HTMLElement>("[data-status-text]")!;
     const answer = this.querySelector<HTMLElement>(".ask-answer")!;
     const sourcesBox = this.querySelector<HTMLElement>(".ask-sources")!;
     const list = sourcesBox.querySelector("ol")!;
     const problem = this.querySelector<HTMLElement>(".ask-problem")!;
     const problemText = problem.querySelector("p")!;
     const search = this.querySelector<HTMLButtonElement>("[data-search]")!;
+    let enabled = false;
+    let working = false;
 
     const count = () => {
       const used = [...field.value].length;
@@ -111,14 +119,19 @@ class MeltemiAsk extends HTMLElement {
       list.replaceChildren();
       problem.hidden = true;
     };
-    const busy = (on: boolean) => {
+    const busy = (on: boolean, message = words.thinking) => {
+      working = on;
       result.setAttribute("aria-busy", String(on));
-      submit.disabled = on;
+      submit.disabled = on || !enabled;
+      if (on) statusText.textContent = message;
       status.hidden = !on;
     };
     const fail = (kind: Problem) => {
+      if (kind === "disabled" || kind === "control") enabled = false;
       problemText.textContent = {
         allowance: words.allowance,
+        disabled: words.disabled,
+        control: words.control,
         limit: words.rateLimit,
         index: words.index,
         invalid: words.invalid,
@@ -127,17 +140,48 @@ class MeltemiAsk extends HTMLElement {
       problem.hidden = false;
       problem.dataset["kind"] = kind;
     };
+    const refreshStatus = async () => {
+      this.#controller?.abort();
+      const controller = new AbortController();
+      this.#controller = controller;
+      enabled = false;
+      reset();
+      busy(true, words.checking);
+      try {
+        const response = await fetch("/api/ask/status", {
+          cache: "no-store",
+          credentials: "omit",
+          signal: controller.signal,
+        });
+        const body = (await response.json().catch(() => ({}))) as { enabled?: unknown };
+        if (this.#controller !== controller || !dialog.open) return;
+        if (!response.ok || typeof body.enabled !== "boolean") fail("control");
+        else if (!body.enabled) fail("disabled");
+        else enabled = true;
+      } catch (error) {
+        if (this.#controller === controller && (error as Error).name !== "AbortError") {
+          fail("control");
+        }
+      } finally {
+        if (this.#controller === controller) busy(false);
+      }
+    };
 
     open.hidden = false;
     open.addEventListener("click", () => {
       dialog.showModal();
       field.focus();
+      void refreshStatus();
     });
     close.addEventListener("click", () => dialog.close());
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) dialog.close();
     });
-    dialog.addEventListener("close", () => this.#controller?.abort());
+    dialog.addEventListener("close", () => {
+      this.#controller?.abort();
+      this.#controller = undefined;
+      busy(false);
+    });
     field.addEventListener("input", count);
     field.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
@@ -157,6 +201,7 @@ class MeltemiAsk extends HTMLElement {
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (!enabled || working) return;
       const question = field.value.trim();
       reset();
       if (!question || [...question].length > words.limit) {
@@ -180,6 +225,7 @@ class MeltemiAsk extends HTMLElement {
           sources?: Source[];
           reason?: string;
         };
+        if (this.#controller !== controller || !dialog.open) return;
         if (!response.ok || typeof body.answer !== "string") {
           fail(problemOf(response.status, body.reason));
           return;
@@ -203,7 +249,8 @@ class MeltemiAsk extends HTMLElement {
         }
         sourcesBox.hidden = sources.length === 0;
       } catch (error) {
-        if ((error as Error).name !== "AbortError") fail("error");
+        if (this.#controller === controller && (error as Error).name !== "AbortError")
+          fail("error");
       } finally {
         if (this.#controller === controller) busy(false);
       }

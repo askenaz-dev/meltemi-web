@@ -1,5 +1,5 @@
 // The portal's Worker's bindings (design decision 5): every request is the static assets' but
-// `/api/ask`, which `ask.ts` answers; this module builds its dependencies from the bindings. The
+// `/api/ask` and its operational status; this module builds their dependencies from the bindings. The
 // entry, `worker.ts`, exports only the handler, as a Worker module must.
 //
 // `ASK_STUB = "fixture"` in `.dev.vars` swaps Workers AI for the offline embedder and the stub
@@ -8,12 +8,14 @@
 
 import { ask, ASK_MODEL, fakeAnswer, MAX_TOKENS, type AskDeps } from "./ask.js";
 import { decodeIndex, EMBEDDING_MODEL, FAKE_MODEL, fakeEmbed, type AskIndex } from "./ask-index.js";
+import { readAiControl, type AiControlState } from "./ai-control.js";
 
 export interface Env {
   readonly ASSETS: { fetch(request: Request): Promise<Response> };
   readonly AI?: { run(model: string, input: unknown): Promise<unknown> };
   readonly ASK_LIMIT?: { limit(options: { key: string }): Promise<{ success: boolean }> };
   readonly ASK_STUB?: string;
+  readonly IDENTITY?: { fetch(request: Request): Promise<Response> };
 }
 
 export const INDEX_PATH = "/ask/index.bin";
@@ -70,6 +72,7 @@ export function depsFor(env: Env, request: Request): AskDeps {
       answer: fakeAnswer,
       limit,
       index,
+      control: async () => "enabled",
     };
   }
   const ai = env.AI;
@@ -95,12 +98,42 @@ export function depsFor(env: Env, request: Request): AskDeps {
     },
     limit,
     index,
+    control: () => controlFor(env),
   };
+}
+
+/** Offline fixtures are explicit; production never authorizes a missing service binding. */
+export async function controlFor(env: Env): Promise<AiControlState> {
+  if (env.ASK_STUB === "fixture") return "enabled";
+  if (!env.IDENTITY) return "unavailable";
+  return readAiControl((request) => env.IDENTITY!.fetch(request));
 }
 
 /** The Worker's `fetch`. */
 export async function handle(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === "/api/ask/status" || url.pathname === "/api/ask/status/") {
+    const headers = {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+    };
+    if (request.method !== "GET")
+      return new Response(JSON.stringify({ reason: "method" }), {
+        status: 405,
+        headers: { ...headers, Allow: "GET" },
+      });
+    const control = await controlFor(env);
+    return new Response(
+      JSON.stringify(
+        control === "unavailable"
+          ? { enabled: false, reason: "control" }
+          : { enabled: control === "enabled" },
+      ),
+      { status: control === "unavailable" ? 503 : 200, headers },
+    );
+  }
   if (url.pathname === "/api/ask" || url.pathname === "/api/ask/") {
     try {
       return await ask(request, depsFor(env, request));

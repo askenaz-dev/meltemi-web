@@ -4,13 +4,14 @@
 // and `ask/index.bin` is written in the layout of `src/ask-index.ts`.
 //
 // The embeddings are cached in `.cache/embeddings/` by model and text, so a deploy embeds only the
-// passages that changed. Without Cloudflare's token and account the build writes an index with no
-// passage: the portal and its search build, the Ask dialog is left out, and the route would answer
-// `503 allowance`. The tests and the fixture build use the offline embedder.
+// passages that changed. Each live batch first reads the central AI control. When disabled or
+// unavailable, the index retains reusable cached passages and omits those without vectors. The
+// portal and its search still build. The tests and fixture build use the offline embedder.
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { readAiControl } from "../src/ai-control.js";
 import {
   DIMENSIONS,
   EMBEDDING_MODEL,
@@ -28,7 +29,8 @@ export const BATCH = 50;
 
 export interface Embedder {
   readonly model: string;
-  embed(texts: readonly string[]): Promise<Float32Array[]>;
+  /** Missing vectors leave their passages out of the index without discarding the others. */
+  embed(texts: readonly string[]): Promise<(Float32Array | undefined)[]>;
 }
 
 export const fakeEmbedder = (): Embedder => ({
@@ -59,34 +61,49 @@ export function cloudflareEmbedder({
     async embed(texts) {
       const out: Float32Array[] = [];
       for (let at = 0; at < texts.length; at += BATCH) {
+        const control = await readAiControl((request) => fetcher(request));
+        if (control !== "enabled") throw new EmbeddingError(`the central AI control is ${control}`);
         const batch = texts.slice(at, at + BATCH);
-        const response = await fetcher(
-          `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/${model}`,
-          {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({ text: batch }),
-          },
-        );
-        const json = (await response.json().catch(() => ({}))) as {
+        let response: Response;
+        try {
+          response = await fetcher(
+            `https://api.cloudflare.com/client/v4/accounts/${account}/ai/run/${model}`,
+            {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ text: batch }),
+            },
+          );
+        } catch {
+          throw new EmbeddingError("Workers AI could not be reached");
+        }
+        const body: unknown = await response.json().catch(() => undefined);
+        const json = (body && typeof body === "object" && !Array.isArray(body) ? body : {}) as {
           success?: boolean;
           result?: { data?: number[][] };
           errors?: { code?: number; message?: string }[];
         };
         const data = json.result?.data;
-        if (!response.ok || !json.success || !Array.isArray(data) || data.length !== batch.length) {
-          const reason = json.errors
-            ?.map((e) => `${e.code ?? ""} ${e.message ?? ""}`.trim())
-            .join("; ");
+        if (
+          !response.ok ||
+          json.success !== true ||
+          !Array.isArray(data) ||
+          data.length !== batch.length
+        ) {
+          const reason = Array.isArray(json.errors)
+            ? json.errors.map((e) => `${e.code ?? ""} ${e.message ?? ""}`.trim()).join("; ")
+            : "";
           throw new EmbeddingError(
             `Workers AI answered ${response.status} to a batch of ${batch.length}${reason ? `: ${reason}` : ""}`,
           );
         }
         for (const vector of data) {
-          if (vector.length !== DIMENSIONS)
-            throw new EmbeddingError(
-              `Workers AI gave ${vector.length} dimensions, not ${DIMENSIONS}`,
-            );
+          if (
+            !Array.isArray(vector) ||
+            vector.length !== DIMENSIONS ||
+            !vector.every((value) => typeof value === "number" && Number.isFinite(value))
+          )
+            throw new EmbeddingError(`Workers AI gave an invalid ${DIMENSIONS}-dimension vector`);
           out.push(normalise(vector));
         }
       }
@@ -95,10 +112,11 @@ export function cloudflareEmbedder({
   };
 }
 
-/** An embedder that keeps every vector it is given in `dir`, and asks only for the new texts. */
+/** Persists each successful batch, and retains cached vectors when later live batches are refused. */
 export function cachedEmbedder(
   embedder: Embedder,
   dir: string,
+  onError?: (error: EmbeddingError) => void,
 ): Embedder & { readonly asked: () => number } {
   let asked = 0;
   const fileOf = (text: string) =>
@@ -106,23 +124,46 @@ export function cachedEmbedder(
       dir,
       `${createHash("sha256").update(embedder.model).update("\n").update(text).digest("hex")}.f32`,
     );
+  const read = (text: string): Float32Array | undefined => {
+    const file = fileOf(text);
+    if (!existsSync(file)) return undefined;
+    const bytes = readFileSync(file);
+    if (bytes.length !== DIMENSIONS * Float32Array.BYTES_PER_ELEMENT) return undefined;
+    const vector = new Float32Array(
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    );
+    return vector.every(Number.isFinite) ? vector : undefined;
+  };
   return {
     model: embedder.model,
     asked: () => asked,
     async embed(texts) {
-      const missing = [...new Set(texts.filter((t) => !existsSync(fileOf(t))))];
-      if (missing.length) {
-        asked += missing.length;
-        const vectors = await embedder.embed(missing);
+      const vectors = new Map([...new Set(texts)].map((text) => [text, read(text)]));
+      const missing = [...vectors.keys()].filter((text) => !vectors.get(text));
+      for (let at = 0; at < missing.length; at += BATCH) {
+        const batch = missing.slice(at, at + BATCH);
+        asked += batch.length;
+        let embedded: (Float32Array | undefined)[];
+        try {
+          embedded = await embedder.embed(batch);
+        } catch (error) {
+          if (!(error instanceof EmbeddingError)) throw error;
+          onError?.(error);
+          break;
+        }
         mkdirSync(dir, { recursive: true });
-        missing.forEach((text, i) => writeFileSync(fileOf(text), Buffer.from(vectors[i]!.buffer)));
+        for (let i = 0; i < batch.length; i++) {
+          const vector = embedded[i];
+          if (!vector) continue;
+          const text = batch[i]!;
+          writeFileSync(
+            fileOf(text),
+            Buffer.from(vector.buffer, vector.byteOffset, vector.byteLength),
+          );
+          vectors.set(text, vector);
+        }
       }
-      return texts.map((text) => {
-        const bytes = readFileSync(fileOf(text));
-        return new Float32Array(
-          bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-        );
-      });
+      return texts.map((text) => vectors.get(text));
     },
   };
 }
@@ -135,6 +176,7 @@ export function embedderFor(
   choice: "fake" | "cloudflare" | "none" | undefined,
   mode: string,
   env: NodeJS.ProcessEnv,
+  fetcher?: typeof fetch,
 ): Embedder | undefined {
   const pick = choice ?? (mode === "fixture" ? "fake" : "cloudflare");
   if (pick === "none") return undefined;
@@ -142,7 +184,7 @@ export function embedderFor(
   const token = env["CLOUDFLARE_API_TOKEN"];
   const account = env["CLOUDFLARE_ACCOUNT_ID"];
   if (!token || !account) return undefined;
-  return cloudflareEmbedder({ account, token });
+  return cloudflareEmbedder({ account, token, ...(fetcher ? { fetch: fetcher } : {}) });
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -269,16 +311,25 @@ export async function buildIndex(
       : `${title}: ${passage.heading}\n${passage.text}`;
   });
   const vectors = await embedder.embed(texts);
-  const passages: IndexPassage[] = entries.map(({ page }, i) => ({
-    page,
-    text: texts[i]!,
-    vector: vectors[i]!,
-  }));
+  const availablePages: IndexPage[] = [];
+  const pagePositions = new Map<number, number>();
+  const passages: IndexPassage[] = [];
+  for (let i = 0; i < entries.length; i++) {
+    const vector = vectors[i];
+    if (!vector) continue;
+    const original = entries[i]!.page;
+    let page = pagePositions.get(original);
+    if (page === undefined) {
+      page = availablePages.push(indexPages[original]!) - 1;
+      pagePositions.set(original, page);
+    }
+    passages.push({ page, text: texts[i]!, vector });
+  }
   const bytes = encodeIndex({
     model: embedder.model,
     dimensions: DIMENSIONS,
-    pages: indexPages,
+    pages: availablePages,
     passages,
   });
-  return { model: embedder.model, pages: indexPages.length, passages: passages.length, bytes };
+  return { model: embedder.model, pages: availablePages.length, passages: passages.length, bytes };
 }

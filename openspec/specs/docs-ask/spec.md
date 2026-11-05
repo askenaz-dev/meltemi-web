@@ -39,12 +39,18 @@ own with `503`.
 
 #### Scenario: A build without Workers AI
 - **WHEN** the build runs with no Cloudflare token or account, or Workers AI refuses the embeddings
+  and no valid cached vectors are available
 - **THEN** the index holds no passage, the pages carry no Ask button, the portal and its search
-  are built, and the route answers `503` with `reason: "allowance"`
+  are built, and the route answers `503` with `reason: "allowance"` when the control is enabled
 
 #### Scenario: Another model's index
 - **WHEN** the index header names a model the Worker does not know
 - **THEN** the route answers `503` with `reason: "index"` and the dialog offers the search
+
+#### Scenario: A partial embedding cache
+- **WHEN** new embeddings are refused and current passages have valid cached vectors
+- **THEN** the build SHALL retain those cached current passages and omit uncached passages;
+  their current pages and citations remain in the index, and complete guides and search still build
 
 ### Requirement: Limits and the allowance
 The route SHALL limit each address to ten questions a minute (`429` beyond), SHALL answer `503`
@@ -62,7 +68,8 @@ SHALL then say the answers are paused for today and offer the search.
 
 ### Requirement: Nothing of a question is kept
 The route SHALL not log, store or forward the question or the answer anywhere but to Workers
-AI for the embedding and the answer; the privacy notice SHALL say so.
+AI for the embedding and the answer; the privacy notice SHALL say so. Operational state reads
+SHALL carry neither question/answer text nor session cookies or personal request headers.
 
 #### Scenario: No logging
 - **WHEN** the route runs with a spying `console`
@@ -70,4 +77,5 @@ AI for the embedding and the answer; the privacy notice SHALL say so.
 
 #### Scenario: Only the AI binding is called
 - **WHEN** the route runs with fakes that record every call
-- **THEN** the calls are one embedding and one answer, and no fetch to any other host
+- **THEN** only the AI binding receives one embedding and one answer, and operational reads
+  carry only a request for the fixed state endpoint without question or personal data

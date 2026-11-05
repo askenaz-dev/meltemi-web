@@ -10,12 +10,18 @@ export interface IdentityPatch {
 
 /**
  * Everything the service keeps (the inventory of `identity-account`): users, identities,
- * sessions and the outbox of deletion events. Never a provider token, never a raw `User-Agent`.
+ * sessions, the outbox of deletion events and the documentation AI switch. Never a provider token,
+ * never a raw `User-Agent`.
  *
  * Two implementations pass one conformance suite: `memoryStore()` for the tests of the handlers
  * and `d1Store()` for the Worker. Times are ISO strings in UTC, which sort as text.
  */
 export interface IdentityStore {
+  /** The persisted switch; an absent or unreadable state must never enable AI. */
+  getDocsAi(): Promise<boolean | undefined>;
+  /** Acknowledges only after the existing settings row has been durably changed. */
+  setDocsAi(enabled: boolean): Promise<void>;
+
   userById(id: string): Promise<User | undefined>;
   createUser(user: User): Promise<void>;
   updateUser(id: string, patch: { readonly name: string; readonly picture: string }): Promise<void>;

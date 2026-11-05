@@ -276,6 +276,7 @@ answers `500` and names the setting in the log, never on the page.
 | `GITHUB_CLIENT_SECRET`, `GOOGLE_CLIENT_SECRET` | The OAuth apps' secrets                                                                                                                                                                                                                                    |
 | `SESSION_PRIVATE_KEY`                          | The private JWK (with `kid`) that signs sessions                                                                                                                                                                                                           |
 | `STATE_SECRET`                                 | Signs the `meltemi_oauth` cookie and the account forms' `csrf`                                                                                                                                                                                             |
+| `ADMIN_SUBS`                                   | The existing family owner allowlist, by exact identity `sub`; only those owners control documentation AI. Empty or absent means nobody.                                                                                                                    |
 | `EVENTS_SECRET_<PRODUCT>`                      | The product's secret: signs its events and checks its calls to the account API; the name upper-cased, hyphens as underscores (`EVENTS_SECRET_DIAGRAMS`, `EVENTS_SECRET_DIAGRAMS_STAGING`). The product's own `IDENTITY_EVENTS_SECRET` holds the same value |
 
 `pnpm identity:keys` prints a new signing pair and writes nothing to a file. To rotate, set the new
@@ -328,16 +329,36 @@ In development mode (`DEV=true`) cookies have no `Domain` and no `Secure` on `ht
 of `DEV_ORIGINS` and the service's own origin are accepted as return addresses and `Origin`s, and
 the pages' `form-action` lists them.
 
+## Documentation AI control
+
+The service owners listed by identity `sub` in the family's existing `ADMIN_SUBS` secret can
+open `/admin/docs-ai?lang=en` or `?lang=es`, also linked from their account page. Other accounts
+have no administration link and receive `404`. Sign-in returns an anonymous visitor directly
+to this page. No API bearer token authorizes an administration action.
+
+The two forms explicitly enable or pause **Ask the docs**. Each POST checks the live session
+and user rows, the owner's `sub`, the identity service's own `Origin` and a session-bound CSRF
+token. A revoked session loses access immediately. The setting is saved before the action is
+acknowledged and survives deployments; its migration seeds enabled only when the row does not
+already exist. It is independent of an account, so deleting one does not turn AI back on.
+
+`GET /api/docs-ai` publicly returns only `{ "enabled": true }` or `{ "enabled": false }`, with
+`Cache-Control: no-store`. A missing or unreadable setting returns a non-200 response, never an enabled default.
+The documentation Worker and its embedding build check this control before new AI calls; the
+guides and page search stay available. An already running AI request may finish after a pause.
+This switch is an operating control, not a spending budget.
+
 ## What the service holds
 
-Exactly four tables (`migrations/0001_identity.sql`), all `STRICT`:
+Five tables (`migrations/0001_identity.sql` and `0002_docs_ai.sql`), all `STRICT`:
 
-| Table        | Columns                                                                                               |
-| ------------ | ----------------------------------------------------------------------------------------------------- |
-| `users`      | `id`, `name`, `picture`, `created_at`                                                                 |
-| `identities` | `provider`, `provider_id`, `user_id`, `email`, `email_verified`, `verified_at`, `handle`, `linked_at` |
-| `sessions`   | `sid`, `user_id`, `created_at`, `last_seen`, `expires_at`, `label`, `revoked_at`                      |
-| `outbox`     | `id`, `product`, `body`, `created_at`, `attempts`, `next_at`, `delivered_at`, `failed_at`             |
+| Table              | Columns                                                                                               |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| `users`            | `id`, `name`, `picture`, `created_at`                                                                 |
+| `identities`       | `provider`, `provider_id`, `user_id`, `email`, `email_verified`, `verified_at`, `handle`, `linked_at` |
+| `sessions`         | `sid`, `user_id`, `created_at`, `last_seen`, `expires_at`, `label`, `revoked_at`                      |
+| `outbox`           | `id`, `product`, `body`, `created_at`, `attempts`, `next_at`, `delivered_at`, `failed_at`             |
+| `docs_ai_settings` | `id` (the single row `1`), `enabled` (`0` or `1`)                                                     |
 
 `verified_at` is the time the provider last reported the email verified (`NULL` while it is not);
 an email only joins two identities into one account when it was verified within the last ninety
@@ -355,7 +376,7 @@ ended more than seven days ago are removed by the scheduled run.
 packages/identity/
 ├── wrangler.jsonc          main, D1 binding DB, cron */15, vars (no DEV, no secrets)
 ├── .dev.vars.example       every name of Env with development values; copy to .dev.vars (ignored)
-├── migrations/             0001_identity.sql: users, identities, sessions, outbox
+├── migrations/             account tables and the persistent documentation AI switch
 ├── scripts/keys.mjs        pnpm identity:keys: an ES256 pair as JWKs (prints, writes nothing)
 ├── tsconfig.build.json     pnpm build: dist/ (verify.js, testing.js and their .d.ts), what exports point at
 ├── src/

@@ -66,10 +66,15 @@ export const es: Messages = {
     close: "Cerrar",
     counter: "{used} de {limit} caracteres",
     thinking: "Leyendo la documentación…",
+    checking: "Comprobando disponibilidad…",
     sources: "Fuentes",
     notCovered: "La documentación no cubre esto.",
     allowance:
       "Las respuestas están en pausa por hoy: se agotó la asignación gratuita diaria de Workers AI. La búsqueda sigue encontrando todas las páginas.",
+    disabled:
+      "Las respuestas de IA están desactivadas. Puedes seguir leyendo y buscando en todas las guías.",
+    control:
+      "Las respuestas de IA no están disponibles ahora. Vuelve a abrir Preguntar para reintentar o busca en las guías.",
     limit:
       "Ya son diez preguntas en un minuto. Espera un momento y vuelve a preguntar, o busca en las páginas.",
     index:

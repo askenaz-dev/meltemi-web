@@ -4,7 +4,7 @@ The documentation portal of the Meltemi family at `https://docs.meltemi.dev/`: t
 documentation of Meltemi Diagrams, the Meltemi IDE and this repository as one
 [Starlight](https://starlight.astro.build/) site in English and Spanish, with search in the
 reader's browser and "Ask the docs". Served as the static assets of the Worker `meltemi-docs`,
-whose one route of code is `POST /api/ask`. Written by the OpenSpec change
+whose code serves `POST /api/ask` and `GET /api/ask/status`. Written by the OpenSpec change
 [`docs-portal`](../../openspec/changes/docs-portal/proposal.md);
 [decision 0007](../../docs/decisions/0007-documentation-portal.md) says why it is built this way.
 
@@ -48,8 +48,11 @@ system`; one that draws is followed by its SVG, inline, in a `<figure>`; one tha
    characters, overlapping by one paragraph) embedded with `@cf/baai/bge-m3` through Cloudflare's
    API in batches of fifty with `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, cached in
    `.cache/embeddings/`; written to `public/ask/index.bin` in the layout of `src/ask-index.ts`.
-   Without the token and the account, or when Workers AI refuses, the index holds no passage and
-   the pages leave the Ask button out: the portal and its search still build and deploy.
+   Each live batch first reads the identity service's saved AI control. A paused or unreadable
+   control prevents new AI calls; valid cached passages remain in the index and passages without
+   a vector are omitted. Without the token and account, or when no cached or new vector is
+   available, the index holds no passage and the pages leave the Ask button out. The portal and
+   its search still build and deploy.
 5. `astro build`, with Astro's telemetry off; Pagefind indexes both languages.
 6. `_headers` — the build adds the SHA-256 of each inline script Starlight writes (its theme,
    before the first paint) to `script-src`, so the policy admits those exact scripts and nothing
@@ -69,17 +72,49 @@ What the build writes is ignored by Git: `src/content/docs/`, `src/generated/`, 
 | Anything else in the body                                                                                                    | `400 { reason, message }` (`json`, `fields`, `lang`, `question`, `size`)                 |
 | Another method / another `Origin`                                                                                            | `405` / `403`                                                                            |
 | Over ten questions a minute from one address                                                                                 | `429 { reason: "limit" }`, `Retry-After: 60`                                             |
-| Workers AI refuses (the day's free allowance), or the index holds no passage                                                 | `503 { reason: "allowance" }`                                                            |
+| The owner has paused documentation AI                                                                                        | `503 { reason: "disabled" }`, with no new AI call                                        |
+| The central control cannot be read or is invalid                                                                             | `503 { reason: "control" }`, with no new AI call                                         |
+| Workers AI refuses a request, or the index holds no passage                                                                  | `503 { reason: "allowance" }`                                                            |
 | An index of another embedding model, or none                                                                                 | `503 { reason: "index" }`                                                                |
 | The closest passage scores below `MIN_SCORE`                                                                                 | `200` with "The documentation does not cover this." and no source, and no model call     |
 
-A question costs one embedding and one answer (`ASK_MODEL`, `@cf/zai-org/glm-4.7-flash`;
-`@cf/qwen/qwen3-30b-a3b-fp8` is its noted replacement). The Worker loads the index once per
+A covered question uses one embedding and one answer (`ASK_MODEL`, currently
+`@cf/zai-org/glm-4.7-flash`, with thinking disabled and at most 400 completion tokens). A failed
+call does not automatically retry with another model. The Worker loads the index once per
 isolate, ranks every passage by the Hamming distance of its sign bits, rescores the best fifty by
 the cosine of their int8 vectors and keeps eight. Nothing of a question is logged, stored or sent
 anywhere but to Workers AI; the limiter is keyed by a hash of the address. The dialog
 (`src/components/Ask.astro`, `src/scripts/ask-dialog.ts`) writes the answer as text and links each
 `[n]` to its page.
+
+## Persistent AI control
+
+Owners in the existing `ADMIN_SUBS` identity allowlist manage the saved switch at
+[`/admin/docs-ai?lang=en`](https://id.meltemi.dev/admin/docs-ai?lang=en) or
+[`?lang=es`](https://id.meltemi.dev/admin/docs-ai?lang=es), also linked from their account page.
+Invited Diagrams administrators do not receive access. An explicit pause survives deployments;
+guides and page search remain available, and requests already running may finish.
+
+`GET https://id.meltemi.dev/api/docs-ai` returns only `{ "enabled": true }` or
+`{ "enabled": false }`, without caching or a model call. Production reads it through the
+`IDENTITY` service binding before each runtime AI call; build-time embedding batches use its
+fixed HTTPS address. Missing bindings, timeouts, errors and malformed responses fail closed.
+
+The browser reads `GET /api/ask/status` when opening the dialog: `200 { "enabled": true | false }`
+or, when the control is unavailable, `503 { "enabled": false, "reason": "control" }`. This route
+is read-only, uses `Cache-Control: no-store` and makes no model call. The server enforces the
+switch independently of the browser's last status read.
+
+Enabling restores queries against deployed cached passages immediately. New or changed passages
+join the index after the next enabled build. A paused build with no cached passages deploys no
+Ask button; it needs an enabled build before that button and answers can return.
+
+This switch does not monitor the account's plan or enforce a spending cap. Workers Free's
+account-wide 10,000 Neurons/day allowance resets at 00:00 UTC and rejects excess calls; Workers
+Paid can charge for excess usage. A billing alert is a notification, not a cap. See the current
+[Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) and the
+[operator guide](../../docs/documentation-ai.md) ([Español](../../docs/es/documentation-ai.md)).
+The local Docker distribution, MCP server and external agent models are unaffected.
 
 `pnpm docs:dev` and the browser check run the Worker with `wrangler.dev.json`, which
 `scripts/dev-config.ts` writes from `wrangler.jsonc` without the Workers AI binding (`wrangler dev`

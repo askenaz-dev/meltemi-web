@@ -140,6 +140,7 @@ export interface AccountView {
    * family's), which the page links back to and keeps through its forms and link flows.
    */
   readonly returnTo?: string | undefined;
+  readonly docsAiAdmin?: boolean;
 }
 
 /** The `return_to` field of the page's forms, when the page was entered from a product. */
@@ -285,6 +286,7 @@ ${postForm({
 })}
 </div>
 <p class="muted">${esc(m.revokeOthersNote)}</p>
+${view.docsAiAdmin ? `<p><a class="btn" href="/admin/docs-ai?lang=${ctx.lang}">${esc(messages(ctx.lang).docsAi.title)}</a></p>` : ""}
 ${deleteSection(ctx, m, view)}`;
   return renderPage(ctx, { title: m.accountTitle, body, personal: true });
 }
