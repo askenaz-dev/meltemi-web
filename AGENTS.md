@@ -19,7 +19,8 @@ in-memory stores and stub providers.
 ## Rules that save iterations
 
 - No download without the owner's approval. Approved: `wrangler`, `@cloudflare/workers-types`
-  and the toolchain Meltemi Diagrams uses (typescript, vitest, eslint, prettier, tsx).
+  and the toolchain Meltemi Diagrams uses (typescript, vitest, eslint, prettier, tsx); for the
+  documentation portal (2026-11-04), `astro`, `@astrojs/starlight` and `@meltemi/diagrams-cli`.
 - Secrets never appear in code, fixtures, logs, pages or commits. `.dev.vars` is ignored by
   Git; `.dev.vars.example` lists the names.
 - Words for people exist in English and Spanish, in typed catalogs; artifacts and code are in

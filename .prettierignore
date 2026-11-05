@@ -10,3 +10,11 @@ openspec/
 
 # Copied byte for byte from the IDE repository (see packages/site/README.md).
 packages/site/public/
+
+# What the portal's build writes (packages/docs/.gitignore).
+packages/docs/.astro/
+packages/docs/.cache/
+packages/docs/public/
+packages/docs/src/content/
+packages/docs/src/generated/
+packages/docs/wrangler.dev.json

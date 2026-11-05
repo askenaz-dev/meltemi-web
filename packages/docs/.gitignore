@@ -1,0 +1,11 @@
+# What the portal's build writes (scripts/build.ts): the pages converted from the products'
+# documentation, the files the components read, the copied brand files and media, the pictures'
+# and embeddings' cache, Astro's own types and the site.
+src/content/docs/
+src/generated/
+public/*
+!public/_headers
+.cache/
+.astro/
+dist/
+wrangler.dev.json
