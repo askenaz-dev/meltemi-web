@@ -67,16 +67,16 @@ run "first_apply" {
     error_message = "No Custom Domain exists before attach_domains."
   }
   assert {
-    condition     = toset([for worker in cloudflare_worker.family : worker.name]) == toset(["meltemi-identity", "meltemi-site", "meltemi-diagrams-cloud", "meltemi-diagrams-publish", "meltemi-docs"])
-    error_message = "The five Workers of the family are declared, the documentation portal's among them."
+    condition     = toset([for worker in cloudflare_worker.family : worker.name]) == toset(["meltemi-identity", "meltemi-site", "meltemi-diagrams-cloud", "meltemi-diagrams-publish", "meltemi-docs", "meltemi-diagrams-staging", "meltemi-diagrams-publish-staging"])
+    error_message = "The seven Workers of the family are declared, the documentation portal's and Diagrams' staging twin among them."
   }
   assert {
     condition     = alltrue([for worker in cloudflare_worker.family : worker.subdomain.enabled == false && worker.subdomain.previews_enabled == false])
     error_message = "No Worker has a workers.dev address or preview addresses."
   }
   assert {
-    condition     = toset(keys(cloudflare_secrets_store_secret.family)) == toset(["SESSION_PRIVATE_KEY", "STATE_SECRET", "GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "EVENTS_SECRET_DIAGRAMS", "FORMS_SECRET", "IDENTITY_EVENTS_SECRET", "ADMIN_SUBS", "SPONSORS_WEBHOOK_SECRET"])
-    error_message = "The Store holds the nine secrets of the two products."
+    condition     = toset(keys(cloudflare_secrets_store_secret.family)) == toset(["SESSION_PRIVATE_KEY", "STATE_SECRET", "GITHUB_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "EVENTS_SECRET_DIAGRAMS", "FORMS_SECRET", "IDENTITY_EVENTS_SECRET", "ADMIN_SUBS", "SPONSORS_WEBHOOK_SECRET", "EVENTS_SECRET_DIAGRAMS_STAGING", "FORMS_SECRET_STAGING", "IDENTITY_EVENTS_SECRET_STAGING"])
+    error_message = "The Store holds the twelve secrets of the two products and Diagrams' staging twin."
   }
   assert {
     condition     = alltrue([for secret in cloudflare_secrets_store_secret.family : secret.scopes == tolist(["workers"])])
@@ -87,8 +87,12 @@ run "first_apply" {
     error_message = "One deploy token per product repository."
   }
   assert {
-    condition     = length(github_actions_environment_secret.cloudflare_api_token) == 2 && length(github_actions_environment_variable.deploy) == 6
-    error_message = "Each repository's production environment gets its token and its three ids."
+    condition     = length(github_actions_environment_secret.cloudflare_api_token) == 3 && length(github_actions_environment_variable.deploy) == 14
+    error_message = "Each deploy environment gets its token: the web's production its three ids, Diagrams' production five values and its staging six."
+  }
+  assert {
+    condition     = length(github_actions_environment_secret.mcp_test_token) == 0
+    error_message = "No test token exists before the owner has one."
   }
   assert {
     condition     = length(github_actions_secret.release) == 0
@@ -155,7 +159,7 @@ run "domains_attach" {
 
   assert {
     condition     = toset([for domain in cloudflare_workers_custom_domain.family : domain.hostname]) == toset(["id.meltemi.dev", "diagrams.meltemi.dev", "meltemi.page"])
-    error_message = "Three domains attach while GitHub Pages still holds the apex."
+    error_message = "Three domains attach while GitHub Pages still holds the apex; staging's wait for staging_deployed."
   }
   assert {
     condition     = length(cloudflare_dns_record.dev_apex_github_pages) == 4
@@ -256,8 +260,305 @@ run "docs_attached" {
   }
   assert {
     condition     = length(cloudflare_workers_custom_domain.family) == 5
-    error_message = "All five domains are attached."
+    error_message = "The five production domains are attached; staging's wait for staging_deployed."
   }
+}
+
+# Diagrams' staging Workers are declared before they have a version, and their domains wait for
+# the first upload of Diagrams' staging deploy (change diagrams-staging).
+run "staging_staged" {
+  command = plan
+
+  variables {
+    attach_domains       = true
+    apex_on_github_pages = false
+    site_on_apex         = true
+    docs_deployed        = true
+    staging_deployed     = false
+  }
+
+  assert {
+    condition     = cloudflare_worker.family["diagrams_staging"].name == "meltemi-diagrams-staging" && cloudflare_worker.family["publish_staging"].name == "meltemi-diagrams-publish-staging"
+    error_message = "Both staging Workers are declared."
+  }
+  assert {
+    condition     = alltrue([for key in ["diagrams_staging", "publish_staging"] : cloudflare_worker.family[key].subdomain.enabled == false && cloudflare_worker.family[key].subdomain.previews_enabled == false && cloudflare_worker.family[key].observability.enabled == true])
+    error_message = "The staging Workers have no workers.dev or preview address and keep production's observability."
+  }
+  assert {
+    condition     = length(setintersection(toset([for domain in cloudflare_workers_custom_domain.family : domain.hostname]), toset(["staging.diagrams.meltemi.dev", "staging.meltemi.page"]))) == 0 && length(cloudflare_workers_custom_domain.family) == 5
+    error_message = "No staging Custom Domain exists before staging_deployed; production's five stay."
+  }
+}
+
+# The commit after that deploy attaches both staging hosts, each to its zone.
+run "staging_attached" {
+  command = plan
+
+  variables {
+    attach_domains       = true
+    apex_on_github_pages = false
+    site_on_apex         = true
+    docs_deployed        = true
+    staging_deployed     = true
+  }
+
+  assert {
+    condition     = cloudflare_workers_custom_domain.family["diagrams_staging"].hostname == "staging.diagrams.meltemi.dev" && cloudflare_workers_custom_domain.family["diagrams_staging"].service == "meltemi-diagrams-staging"
+    error_message = "staging.diagrams.meltemi.dev is the staging main Worker's."
+  }
+  assert {
+    condition     = cloudflare_workers_custom_domain.family["publish_staging"].hostname == "staging.meltemi.page" && cloudflare_workers_custom_domain.family["publish_staging"].service == "meltemi-diagrams-publish-staging"
+    error_message = "staging.meltemi.page is the staging publish Worker's."
+  }
+  assert {
+    condition     = length(cloudflare_workers_custom_domain.family) == 7
+    error_message = "All seven domains are attached."
+  }
+}
+
+# The staging domains need attach_domains too, as every other one does.
+run "staging_before_domains" {
+  command = plan
+
+  variables {
+    attach_domains       = false
+    apex_on_github_pages = true
+    site_on_apex         = false
+    staging_deployed     = true
+  }
+
+  assert {
+    condition     = length(cloudflare_workers_custom_domain.family) == 0
+    error_message = "No Custom Domain exists before attach_domains, staging's included."
+  }
+}
+
+# Staging's storage is its own; production's is as it was; no two resources of a kind share a name.
+run "staging_storage" {
+  command = plan
+
+  assert {
+    condition     = cloudflare_d1_database.diagrams_staging.name == "meltemi-diagrams-staging" && cloudflare_r2_bucket.diagrams_staging_blobs.name == "meltemi-diagrams-staging-blobs"
+    error_message = "Staging has the database meltemi-diagrams-staging and the bucket meltemi-diagrams-staging-blobs."
+  }
+  assert {
+    condition     = cloudflare_workers_kv_namespace.diagrams_oauth.title == "meltemi-diagrams-oauth" && cloudflare_workers_kv_namespace.diagrams_oauth_staging.title == "meltemi-diagrams-oauth-staging"
+    error_message = "The authorization server has a KV namespace per environment."
+  }
+  assert {
+    condition     = cloudflare_d1_database.identity.name == "meltemi-identity" && cloudflare_d1_database.diagrams.name == "meltemi-diagrams" && cloudflare_r2_bucket.diagrams_blobs.name == "meltemi-diagrams-blobs"
+    error_message = "Production's databases and bucket keep their names."
+  }
+  assert {
+    condition     = length(distinct([cloudflare_d1_database.identity.name, cloudflare_d1_database.diagrams.name, cloudflare_d1_database.diagrams_staging.name])) == 3
+    error_message = "A staging database has a production name: ${cloudflare_d1_database.diagrams_staging.name}."
+  }
+  assert {
+    condition     = cloudflare_r2_bucket.diagrams_staging_blobs.name != cloudflare_r2_bucket.diagrams_blobs.name
+    error_message = "The staging bucket has production's name: ${cloudflare_r2_bucket.diagrams_staging_blobs.name}."
+  }
+  assert {
+    condition     = cloudflare_workers_kv_namespace.diagrams_oauth_staging.title != cloudflare_workers_kv_namespace.diagrams_oauth.title
+    error_message = "The staging namespace has production's title: ${cloudflare_workers_kv_namespace.diagrams_oauth_staging.title}."
+  }
+  assert {
+    condition     = length(distinct([for worker in cloudflare_worker.family : worker.name])) == length(cloudflare_worker.family) && !contains([for worker in cloudflare_worker.family : worker.name], cloudflare_worker.www.name)
+    error_message = "Two Workers share a name: ${join(", ", [for worker in cloudflare_worker.family : worker.name])}."
+  }
+}
+
+# Staging's secrets: its own forms key and events secret, the latter one value under two names,
+# distinct from production's.
+run "staging_secrets" {
+  command = plan
+
+  override_resource {
+    target          = random_password.diagrams_events_secret
+    override_during = plan
+    values          = { result = "production-events" }
+  }
+  override_resource {
+    target          = random_password.diagrams_events_secret_staging
+    override_during = plan
+    values          = { result = "staging-events" }
+  }
+  override_resource {
+    target          = random_password.forms_secret
+    override_during = plan
+    values          = { result = "production-forms" }
+  }
+  override_resource {
+    target          = random_password.forms_secret_staging
+    override_during = plan
+    values          = { result = "staging-forms" }
+  }
+
+  assert {
+    condition     = nonsensitive(cloudflare_secrets_store_secret.family["EVENTS_SECRET_DIAGRAMS_STAGING"].value == cloudflare_secrets_store_secret.family["IDENTITY_EVENTS_SECRET_STAGING"].value)
+    error_message = "The identity service signs staging's events with the value staging's Worker verifies them with."
+  }
+  assert {
+    condition     = nonsensitive(cloudflare_secrets_store_secret.family["EVENTS_SECRET_DIAGRAMS_STAGING"].value != cloudflare_secrets_store_secret.family["EVENTS_SECRET_DIAGRAMS"].value && cloudflare_secrets_store_secret.family["FORMS_SECRET_STAGING"].value != cloudflare_secrets_store_secret.family["FORMS_SECRET"].value)
+    error_message = "Staging's generated secrets are not production's."
+  }
+  assert {
+    condition     = !contains(keys(cloudflare_secrets_store_secret.family), "ADMIN_SUBS_STAGING") && !contains(keys(cloudflare_secrets_store_secret.family), "SPONSORS_WEBHOOK_SECRET_STAGING")
+    error_message = "ADMIN_SUBS and SPONSORS_WEBHOOK_SECRET are shared by both environments."
+  }
+}
+
+# Rotating staging's events secret replaces both its names together, and nothing of production's.
+run "staging_rotation" {
+  command = plan
+
+  variables {
+    rotations = { EVENTS_SECRET_DIAGRAMS_STAGING = "2027-02-01" }
+  }
+
+  assert {
+    condition     = random_password.diagrams_events_secret_staging.keepers.rotation == "2027-02-01" && random_password.diagrams_events_secret.keepers.rotation == "" && random_password.forms_secret_staging.keepers.rotation == ""
+    error_message = "Only staging's events secret changes its keeper."
+  }
+}
+
+# The Diagrams repository's staging environment: main only, the deploy token, and the names
+# production's deploy reads with staging's values, plus the suffix of its Store secrets.
+run "staging_environment" {
+  command = plan
+
+  override_resource {
+    target          = cloudflare_d1_database.diagrams
+    override_during = plan
+    values          = { id = "d1-production" }
+  }
+  override_resource {
+    target          = cloudflare_d1_database.diagrams_staging
+    override_during = plan
+    values          = { id = "d1-staging" }
+  }
+  override_resource {
+    target          = cloudflare_workers_kv_namespace.diagrams_oauth
+    override_during = plan
+    values          = { id = "kv-production" }
+  }
+  override_resource {
+    target          = cloudflare_workers_kv_namespace.diagrams_oauth_staging
+    override_during = plan
+    values          = { id = "kv-staging" }
+  }
+
+  assert {
+    condition     = github_repository_environment.diagrams_staging.repository == "meltemi-diagrams" && github_repository_environment.diagrams_staging.environment == "staging" && github_repository_environment.diagrams_staging.deployment_branch_policy[0].custom_branch_policies == true && github_repository_environment.diagrams_staging.deployment_branch_policy[0].protected_branches == false
+    error_message = "The Diagrams repository has a staging environment with a custom branch policy."
+  }
+  assert {
+    condition     = github_repository_environment_deployment_policy.diagrams_staging_main.repository == "meltemi-diagrams" && github_repository_environment_deployment_policy.diagrams_staging_main.environment == "staging" && github_repository_environment_deployment_policy.diagrams_staging_main.branch_pattern == "main"
+    error_message = "The staging environment admits the branch main only."
+  }
+  assert {
+    condition     = github_actions_environment_secret.cloudflare_api_token["meltemi-diagrams/staging"].environment == "staging" && github_actions_environment_secret.cloudflare_api_token["meltemi-diagrams/staging"].secret_name == "CLOUDFLARE_API_TOKEN" && github_actions_environment_secret.cloudflare_api_token["meltemi-diagrams/production"].environment == "production"
+    error_message = "Both Diagrams environments hold the deploy token."
+  }
+  assert {
+    condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-diagrams/staging/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "OAUTH_KV_ID", "R2_BUCKET_NAME", "SECRETS_STORE_ID", "SECRETS_SUFFIX"]) && alltrue([for key, variable in github_actions_environment_variable.deploy : variable.environment == "staging" if startswith(key, "meltemi-diagrams/staging/")])
+    error_message = "Staging holds the account, its database, namespace and bucket, the Store and the suffix."
+  }
+  assert {
+    condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-diagrams/production/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "OAUTH_KV_ID", "R2_BUCKET_NAME", "SECRETS_STORE_ID"])
+    error_message = "Production gains its namespace and bucket and no suffix, which GitHub then reads as empty."
+  }
+  assert {
+    condition     = toset([for key, variable in github_actions_environment_variable.deploy : variable.variable_name if startswith(key, "meltemi-web/production/")]) == toset(["CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "SECRETS_STORE_ID"])
+    error_message = "The web's production environment keeps its three ids."
+  }
+  assert {
+    condition     = github_actions_environment_variable.deploy["meltemi-diagrams/staging/D1_DATABASE_ID"].value == "d1-staging" && github_actions_environment_variable.deploy["meltemi-diagrams/production/D1_DATABASE_ID"].value == "d1-production"
+    error_message = "Each environment reads its own database."
+  }
+  assert {
+    condition     = github_actions_environment_variable.deploy["meltemi-diagrams/staging/OAUTH_KV_ID"].value == "kv-staging" && github_actions_environment_variable.deploy["meltemi-diagrams/production/OAUTH_KV_ID"].value == "kv-production"
+    error_message = "Each environment reads its own namespace."
+  }
+  assert {
+    condition     = github_actions_environment_variable.deploy["meltemi-diagrams/staging/R2_BUCKET_NAME"].value == "meltemi-diagrams-staging-blobs" && github_actions_environment_variable.deploy["meltemi-diagrams/production/R2_BUCKET_NAME"].value == "meltemi-diagrams-blobs"
+    error_message = "Each environment reads its own bucket."
+  }
+  assert {
+    condition     = github_actions_environment_variable.deploy["meltemi-diagrams/staging/SECRETS_SUFFIX"].value == "_STAGING"
+    error_message = "Staging binds the Store secrets suffixed _STAGING."
+  }
+}
+
+# The acceptance suite's tokens reach their environment once the owner has them, and only those.
+run "mcp_test_tokens_present" {
+  command = plan
+
+  variables {
+    mcp_test_tokens = {
+      staging    = { token = "mdg_staging-first-token" }
+      production = { token = "mdg_production-first-token", token_2 = "mdg_production-second-token" }
+    }
+  }
+
+  assert {
+    condition     = toset(keys(github_actions_environment_secret.mcp_test_token)) == toset(["meltemi-diagrams/staging/MELTEMI_TOKEN", "meltemi-diagrams/production/MELTEMI_TOKEN", "meltemi-diagrams/production/MELTEMI_TOKEN_2"])
+    error_message = "Each token given becomes its environment's secret; staging's second waits."
+  }
+  assert {
+    condition     = github_actions_environment_secret.mcp_test_token["meltemi-diagrams/staging/MELTEMI_TOKEN"].environment == "staging" && github_actions_environment_secret.mcp_test_token["meltemi-diagrams/staging/MELTEMI_TOKEN"].secret_name == "MELTEMI_TOKEN" && github_actions_environment_secret.mcp_test_token["meltemi-diagrams/staging/MELTEMI_TOKEN"].repository == "meltemi-diagrams"
+    error_message = "Staging's token is its MELTEMI_TOKEN, in the Diagrams repository."
+  }
+  assert {
+    condition     = github_actions_environment_secret.mcp_test_token["meltemi-diagrams/production/MELTEMI_TOKEN_2"].environment == "production" && github_actions_environment_secret.mcp_test_token["meltemi-diagrams/production/MELTEMI_TOKEN_2"].secret_name == "MELTEMI_TOKEN_2"
+    error_message = "Production's second token is its MELTEMI_TOKEN_2."
+  }
+}
+
+# Staging's token alone.
+run "mcp_test_tokens_staging_only" {
+  command = plan
+
+  variables {
+    mcp_test_tokens = {
+      staging = { token = "mdg_staging-first-token", token_2 = "" }
+    }
+  }
+
+  assert {
+    condition     = toset(keys(github_actions_environment_secret.mcp_test_token)) == toset(["meltemi-diagrams/staging/MELTEMI_TOKEN"])
+    error_message = "The staging environment has MELTEMI_TOKEN and nothing else is written."
+  }
+}
+
+# What the infrastructure workflows pass while the owner has no token: four empty strings.
+run "mcp_test_tokens_empty" {
+  command = plan
+
+  variables {
+    mcp_test_tokens = {
+      staging    = { token = "", token_2 = "" }
+      production = { token = "", token_2 = "" }
+    }
+  }
+
+  assert {
+    condition     = length(github_actions_environment_secret.mcp_test_token) == 0
+    error_message = "No MELTEMI_TOKEN secret exists in either environment."
+  }
+}
+
+# An environment the Diagrams repository does not have is refused.
+run "mcp_test_tokens_unknown_environment" {
+  command = plan
+
+  variables {
+    mcp_test_tokens = {
+      preview = { token = "mdg_preview-token" }
+    }
+  }
+
+  expect_failures = [var.mcp_test_tokens]
 }
 
 # The site cannot take the apex while GitHub Pages still holds it.

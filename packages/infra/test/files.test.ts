@@ -75,12 +75,14 @@ describe("the Terraform root", () => {
 
   it("writes no secret value: every sensitive variable is empty or required", () => {
     const variables = read("variables.tf");
-    for (const match of variables.matchAll(
-      /variable "(\w+)" \{[^}]*?sensitive\s*=\s*true[^}]*\}/g,
-    )) {
-      const body = match[0];
-      const fallback = /default\s*=\s*(.+)/.exec(body)?.[1]?.trim();
-      expect([undefined, '""'], match[1]).toContain(fallback);
+    const sensitive = [...variables.matchAll(/^variable "(\w+)" \{/gm)]
+      .map((match) => ({ name: match[1]!, body: block(variables, match[0]) }))
+      .filter(({ body }) => /^\s*sensitive\s*=\s*true$/m.test(body));
+    expect(sensitive.map(({ name }) => name)).toContain("mcp_test_tokens");
+    for (const { name, body } of sensitive) {
+      const fallback = /^\s*default\s*=\s*(.+)$/m.exec(body)?.[1]?.trim();
+      // An empty string, or an empty map of them (the acceptance suite's tokens).
+      expect([undefined, '""', "{}"], name).toContain(fallback);
     }
   });
 
@@ -90,10 +92,13 @@ describe("the Terraform root", () => {
     expect(entries.map((entry) => entry[1]).sort()).toEqual([
       "ADMIN_SUBS",
       "EVENTS_SECRET_DIAGRAMS",
+      "EVENTS_SECRET_DIAGRAMS_STAGING",
       "FORMS_SECRET",
+      "FORMS_SECRET_STAGING",
       "GITHUB_CLIENT_SECRET",
       "GOOGLE_CLIENT_SECRET",
       "IDENTITY_EVENTS_SECRET",
+      "IDENTITY_EVENTS_SECRET_STAGING",
       "SESSION_PRIVATE_KEY",
       "SPONSORS_WEBHOOK_SECRET",
       "STATE_SECRET",
@@ -101,6 +106,13 @@ describe("the Terraform root", () => {
     for (const [, name, value] of entries) {
       expect(value!.trim(), name).toMatch(/^(var\.[a-z_]+|random_password\.[a-z_]+\.result)$/);
     }
+    // Each events secret is one generated value under the signer's name and the verifier's, and
+    // staging's is not production's.
+    const value = (name: string) => entries.find((entry) => entry[1] === name)?.[2]?.trim();
+    expect(value("IDENTITY_EVENTS_SECRET")).toBe(value("EVENTS_SECRET_DIAGRAMS"));
+    expect(value("IDENTITY_EVENTS_SECRET_STAGING")).toBe(value("EVENTS_SECRET_DIAGRAMS_STAGING"));
+    expect(value("EVENTS_SECRET_DIAGRAMS_STAGING")).not.toBe(value("EVENTS_SECRET_DIAGRAMS"));
+    expect(value("FORMS_SECRET_STAGING")).not.toBe(value("FORMS_SECRET"));
   });
 
   it("gives no Worker a workers.dev address or preview addresses", () => {
@@ -112,13 +124,15 @@ describe("the Terraform root", () => {
     );
   });
 
-  it("serves the five hosts of the family, two zones and nothing under another domain", () => {
+  it("serves the seven hosts of the family, two zones and nothing under another domain", () => {
     for (const host of [
       "id.meltemi.dev",
       "meltemi.dev",
       "diagrams.meltemi.dev",
       "meltemi.page",
       "docs.meltemi.dev",
+      "staging.diagrams.meltemi.dev",
+      "staging.meltemi.page",
     ]) {
       expect(read("workers.tf")).toContain(`hostname = "${host}"`);
     }

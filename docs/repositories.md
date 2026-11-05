@@ -8,11 +8,11 @@ one as a layer; the web holds what both share. Decided on 13 October 2026
 
 ## Repositories
 
-| Repository                                                                                              | Working folder        | Holds                                                                                                                                                                                        | Domains                                             | Stack                                                         |
-| ------------------------------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------- |
-| **Meltemi IDE**, [`askenaz-dev/meltemi`](https://github.com/askenaz-dev/meltemi)                        | `C:\meltemi\ide`      | The agentic IDE: desktop app, terminal app and the `meltemid` daemon; the design system and the brand sources                                                                                | Downloads from GitHub Releases                      | Rust, Svelte                                                  |
-| **Meltemi Diagrams**, [`askenaz-dev/meltemi-diagrams`](https://github.com/askenaz-dev/meltemi-diagrams) | `C:\meltemi\diagrams` | The `.meltemi` language, the CLI, the VS Code extension, the playground, and the hosted service (`packages/cloud`: accounts' projects, versions, sharing, collaboration, published catalogs) | `diagrams.meltemi.dev`                              | TypeScript, pnpm, Cloudflare Workers, D1, R2, Durable Objects |
-| **Meltemi Web**, [`askenaz-dev/meltemi-web`](https://github.com/askenaz-dev/meltemi-web)                | `C:\meltemi\web`      | The product site, the shared identity service, the documentation portal (`packages/docs`), and the family's infrastructure as code (`packages/infra`)                                        | `meltemi.dev`, `id.meltemi.dev`, `docs.meltemi.dev` | TypeScript, pnpm, Cloudflare Workers, D1, Workers AI          |
+| Repository                                                                                              | Working folder        | Holds                                                                                                                                                                                        | Domains                                                                                                 | Stack                                                             |
+| ------------------------------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| **Meltemi IDE**, [`askenaz-dev/meltemi`](https://github.com/askenaz-dev/meltemi)                        | `C:\meltemi\ide`      | The agentic IDE: desktop app, terminal app and the `meltemid` daemon; the design system and the brand sources                                                                                | Downloads from GitHub Releases                                                                          | Rust, Svelte                                                      |
+| **Meltemi Diagrams**, [`askenaz-dev/meltemi-diagrams`](https://github.com/askenaz-dev/meltemi-diagrams) | `C:\meltemi\diagrams` | The `.meltemi` language, the CLI, the VS Code extension, the playground, and the hosted service (`packages/cloud`: accounts' projects, versions, sharing, collaboration, published catalogs) | `diagrams.meltemi.dev`, `meltemi.page`; staging: `staging.diagrams.meltemi.dev`, `staging.meltemi.page` | TypeScript, pnpm, Cloudflare Workers, D1, R2, KV, Durable Objects |
+| **Meltemi Web**, [`askenaz-dev/meltemi-web`](https://github.com/askenaz-dev/meltemi-web)                | `C:\meltemi\web`      | The product site, the shared identity service, the documentation portal (`packages/docs`), and the family's infrastructure as code (`packages/infra`)                                        | `meltemi.dev`, `id.meltemi.dev`, `docs.meltemi.dev`                                                     | TypeScript, pnpm, Cloudflare Workers, D1, Workers AI              |
 
 The IDE repository served the site from its `site/` folder through GitHub Pages until the
 `product-site` change moved it here. Its change `release-con-el-push` then removed `site/`, the
@@ -40,17 +40,21 @@ C:\meltemi\web                Meltemi Web, this repository (clone of askenaz-dev
 
 ## Domains
 
-| Address                | Served by                                         | From                                 |
-| ---------------------- | ------------------------------------------------- | ------------------------------------ |
-| `meltemi.dev`          | Cloudflare Workers, static assets                 | this repository, `packages/site`     |
-| `id.meltemi.dev`       | Cloudflare Worker with D1                         | this repository, `packages/identity` |
-| `docs.meltemi.dev`     | Cloudflare Worker, static assets and Workers AI   | this repository, `packages/docs`     |
-| `diagrams.meltemi.dev` | Cloudflare Worker with D1, R2 and Durable Objects | Meltemi Diagrams, `packages/cloud`   |
-| `meltemi.page`         | Cloudflare Worker reading D1 and R2               | Meltemi Diagrams, `packages/cloud`   |
+| Address                        | Served by                                                                      | From                                 |
+| ------------------------------ | ------------------------------------------------------------------------------ | ------------------------------------ |
+| `meltemi.dev`                  | Cloudflare Workers, static assets                                              | this repository, `packages/site`     |
+| `id.meltemi.dev`               | Cloudflare Worker with D1                                                      | this repository, `packages/identity` |
+| `docs.meltemi.dev`             | Cloudflare Worker, static assets and Workers AI                                | this repository, `packages/docs`     |
+| `diagrams.meltemi.dev`         | Cloudflare Worker with D1, R2 and Durable Objects                              | Meltemi Diagrams, `packages/cloud`   |
+| `meltemi.page`                 | Cloudflare Worker reading D1 and R2                                            | Meltemi Diagrams, `packages/cloud`   |
+| `staging.diagrams.meltemi.dev` | Staging twin of `diagrams.meltemi.dev`, its own D1, R2, KV and Durable Objects | Meltemi Diagrams, `packages/cloud`   |
+| `staging.meltemi.page`         | Staging twin of `meltemi.page`, reading staging's D1 and R2                    | Meltemi Diagrams, `packages/cloud`   |
 
 Both domains are registered at Dynadot; their zones are on Cloudflare, declared with every record
-in `packages/infra`, which also declares the five Workers, their Custom Domains, storage and
-secrets ([decision 0004](decisions/0004-delivery.md)). The products' repositories upload their
+in `packages/infra`, which also declares the seven Workers, their Custom Domains, storage and
+secrets ([decision 0004](decisions/0004-delivery.md)). Two of them are Meltemi Diagrams' staging
+twin ([decision 0008](decisions/0008-diagrams-staging.md)), linked from nowhere: the same code as
+production's, uploaded first by Diagrams' deploy and proven there by its acceptance suite. The products' repositories upload their
 Workers' code and create nothing. `meltemi.page` is a registrable domain of its own because it
 serves what people publish, which must never share the cookie of `meltemi.dev`. GitHub Releases
 keep serving the IDE's installers.
@@ -125,6 +129,15 @@ events are such fetches.
    `WEB_DISPATCH_TOKEN`; Meltemi Diagrams' gains the same `tell the web` job, on the repository
    secret of that name that Terraform declares for it. The portal's "Ask the docs" sends a
    question to Cloudflare Workers AI and keeps nothing of it.
+
+8. **Diagrams' staging twin** (change `diagrams-staging`, [decision 0008](decisions/0008-diagrams-staging.md)):
+   this repository's Terraform declares the Workers `meltemi-diagrams-staging` and
+   `meltemi-diagrams-publish-staging`, their database, bucket and KV namespace, staging's secrets
+   in the one Store, and the Diagrams repository's `staging` environment (branch `main`) with the
+   deploy token, the ids under the names production's deploy reads, `SECRETS_SUFFIX` and the
+   acceptance suite's tokens `MELTEMI_TOKEN` and `MELTEMI_TOKEN_2`. Diagrams' deploy uploads
+   staging, runs its suite there and only then uploads production (its change `agent-mcp`).
+   Staging signs in through `id.meltemi.dev`, as every host under the cookie's domain can.
 
 Each product owns its own data, API, storage and quotas. The identity service never holds a
 product's data and never receives a provider's token from a product.

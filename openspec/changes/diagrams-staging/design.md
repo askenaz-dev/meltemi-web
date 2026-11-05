@@ -85,3 +85,75 @@ checks the plan without credentials. See proposal.md for the motivation.
   under test names and deletes; the Diagrams suite cleans up, and the host is not linked anywhere.
 - [The owner forgets to flip `staging_deployed`] → the plan test names the stage; the Custom
   Domain is the only thing waiting.
+
+## Settled during apply (4 November 2026)
+
+1. **The deploy token needs no KV permission.** Cloudflare's Workers authorization
+   (<https://developers.cloudflare.com/workers/authorization/workers/>) says that deploying a
+   Worker needs `Editor` on the Worker (the legacy "Workers Scripts Write") and that "you do not
+   need separate permissions on the bound resources to deploy the Worker". Wrangler 4.151.3, the
+   version Diagrams deploys with, agrees in its binding provisioning
+   (`deploy-helpers/src/deploy/helpers/provision-bindings.ts` in `wrangler-dist/cli.js`): a KV
+   binding is "fully specified" when it has an `id` and is never looked up, while an R2 binding
+   is looked up by `bucket_name` (`getR2Bucket`), which is why the Diagrams token already reads R2.
+   `deploy_groups.diagrams` is unchanged. Diagrams' deploy configuration must therefore always
+   write `OAUTH_KV_ID` (its `deploy-config.mjs` refuses placeholders); a KV binding without an id
+   would make Wrangler list namespaces. If the first staging deploy is nevertheless refused for KV,
+   the fix is "Workers KV Storage Read" (a lookup) in that list, which the token's precondition
+   names if the account lacks it.
+2. **Two landings.** The Terraform half (tasks 1.1, 1.2's Store secrets, 1.3, 2.1) is the first
+   pull request. The identity service's half of task 1.2, the product `diagrams-staging` in
+   `PRODUCTS` and the binding `EVENTS_SECRET_DIAGRAMS_STAGING_STORE`, is the branch's last commit,
+   alone, for a second pull request: the identity deploy would fail on a binding to a Store secret
+   that the first apply has not created yet, and the service would sign deletion events for a host
+   that does not answer until Diagrams has deployed staging and `staging_deployed` is `true`
+   (it would retry them for seven days, then drop them). It lands after both.
+3. **What Diagrams' deploy reads.** The `staging` environment holds the names production's deploy
+   reads today (`CLOUDFLARE_ACCOUNT_ID`, `D1_DATABASE_ID`, `SECRETS_STORE_ID`, and the secret
+   `CLOUDFLARE_API_TOKEN`) with staging's values, plus `OAUTH_KV_ID` and `SECRETS_SUFFIX`
+   (`_STAGING`) from decision 4 and **`R2_BUCKET_NAME`**, which decision 4 does not list: Wrangler
+   binds a bucket by name, Diagrams' committed `wrangler.jsonc` names production's, and Terraform
+   owns the name, so both environments carry it (`meltemi-diagrams-blobs`,
+   `meltemi-diagrams-staging-blobs`). Production gains `OAUTH_KV_ID` and `R2_BUCKET_NAME`.
+   **Production's `SECRETS_SUFFIX` is not created** rather than created empty: the GitHub API's
+   documentation marks `value` required and says nothing of an empty one, and an apply refused by
+   GitHub would stop the automatic pipeline; GitHub's contexts documentation says a configuration
+   variable that has not been set reads as an empty string, which is the value decision 4 wants.
+   Names Diagrams' deploy must still write itself, as it does for production (Terraform does not
+   hand them over): the Worker names `meltemi-diagrams-staging` and
+   `meltemi-diagrams-publish-staging`, the D1 `database_name` `meltemi-diagrams-staging`,
+   `ORIGIN` `https://staging.diagrams.meltemi.dev` and `PUBLISH_HOST` `staging.meltemi.page`.
+4. **No public address of their own.** The staging Workers are entries of `local.workers`, so
+   `cloudflare_worker.family` gives them `subdomain = { enabled = false, previews_enabled = false }`
+   and production's observability; Diagrams' staging configuration keeps `workers_dev` and
+   `preview_urls` `false`, as its production one does. The plan test asserts both Workers.
+5. **`SPONSORS_WEBHOOK_SECRET` is shared, like `ADMIN_SUBS`.** It joined the Store (Web #21) after
+   this design was written. The one Sponsors webhook delivers to production; a staging value would
+   be a secret no sender holds, so staging binds production's name and the twin keeps the same set
+   of bindings. The Store therefore holds twelve secrets: production's nine and the three staging
+   names of decision 2 (decision 5's "five secrets" are those three and the two shared ones).
+6. **Per-environment keys.** `github_actions_environment_secret.cloudflare_api_token` and
+   `github_actions_environment_variable.deploy` are keyed `<repository>/<environment>` and
+   `<repository>/<environment>/<NAME>` over `local.deploy_environments`; eight `moved` blocks
+   carry production's two secrets and six variables to their new keys, so the first plan shows
+   them moved, not destroyed and created. The `production` environments themselves keep their
+   resource; `staging` is `github_repository_environment.diagrams_staging` with
+   `github_repository_environment_deployment_policy.diagrams_staging_main`, as the IDE's `release`.
+7. **How `mcp_test_tokens` reaches Terraform.** Its type is
+   `map(object({ token = optional(string, ""), token_2 = optional(string, "") }))`, keys
+   `staging` and `production` only (a validation refuses others), default `{}`. The infrastructure
+   workflows compose `TF_VAR_mcp_test_tokens` from four secrets of the `infrastructure`
+   environment, `MCP_TEST_TOKEN_STAGING`, `MCP_TEST_TOKEN_2_STAGING`, `MCP_TEST_TOKEN_PRODUCTION`
+   and `MCP_TEST_TOKEN_2_PRODUCTION`, one per token rather than one JSON secret, because GitHub
+   masks a secret's whole value and advises against structured secrets; an absent one is an empty
+   string and writes nothing. `mdg_` tokens are base64url, which needs no escaping inside the JSON
+   string. The file invariant "every sensitive variable is empty or required" accepts `{}`.
+8. **Name collisions.** A precondition on `cloudflare_worker.family` refuses two entries of
+   `local.workers` with one name or one host and names it; the plan test `staging_storage` refuses
+   a staging database, bucket or namespace with a production name and names it. Both were checked
+   by renaming a staging resource to its production name.
+9. **What a plan prints.** `terraform test -json` (the plan's message stream) and the text output
+   hold none of the test tokens or generated values; `terraform test -verbose` embeds each run's
+   JSON plan, which, as every JSON plan, holds all sensitive values in clear (the existing secrets
+   too). The pipelines never print one: the plan comment is the text plan, and the drift workflow
+   reduces its JSON plan to addresses (`plan-changes.mjs`) and deletes it.

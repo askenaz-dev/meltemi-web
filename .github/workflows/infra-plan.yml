@@ -50,6 +50,13 @@ jobs:
       # of 2026-10-23 (change ide-releases, design: "The owner's choice").
       TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}
       TF_VAR_narrow_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN }}
+      # The acceptance suite's tokens for Diagrams' staging and production environments (change
+      # diagrams-staging), one secret each so that each is masked on its own; an absent one is an
+      # empty string, and its environment secret is not written. `mdg_` tokens are base64url, which
+      # needs no escaping inside the quotes.
+      TF_VAR_mcp_test_tokens: >-
+        {"staging": {"token": "${{ secrets.MCP_TEST_TOKEN_STAGING }}", "token_2": "${{ secrets.MCP_TEST_TOKEN_2_STAGING }}"},
+        "production": {"token": "${{ secrets.MCP_TEST_TOKEN_PRODUCTION }}", "token_2": "${{ secrets.MCP_TEST_TOKEN_2_PRODUCTION }}"}}
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3

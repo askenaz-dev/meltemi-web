@@ -38,6 +38,21 @@ resource "random_password" "diagrams_events_secret" {
   keepers = { rotation = lookup(var.rotations, "EVENTS_SECRET_DIAGRAMS", "") }
 }
 
+# Diagrams' staging twin (change diagrams-staging) has values of its own, so nothing signed for one
+# environment is accepted by the other: its forms' key, and its events secret, again one value with
+# two names (the identity service's product `diagrams-staging` signs, staging's Worker verifies).
+resource "random_password" "forms_secret_staging" {
+  length  = 64
+  special = false
+  keepers = { rotation = lookup(var.rotations, "FORMS_SECRET_STAGING", "") }
+}
+
+resource "random_password" "diagrams_events_secret_staging" {
+  length  = 64
+  special = false
+  keepers = { rotation = lookup(var.rotations, "EVENTS_SECRET_DIAGRAMS_STAGING", "") }
+}
+
 locals {
   secrets = {
     # The identity service (meltemi-web, packages/identity).
@@ -51,6 +66,14 @@ locals {
     IDENTITY_EVENTS_SECRET  = random_password.diagrams_events_secret.result
     ADMIN_SUBS              = var.admin_subs
     SPONSORS_WEBHOOK_SECRET = var.sponsors_webhook_secret
+    # Diagrams' staging twin (change diagrams-staging): the identity service's product
+    # `diagrams-staging` signs with the first, staging's Worker verifies with the last. Staging
+    # binds these where production binds the names without `_STAGING` (its deploy's SECRETS_SUFFIX)
+    # and shares ADMIN_SUBS (the owner administers both) and SPONSORS_WEBHOOK_SECRET (the one
+    # Sponsors webhook delivers to production only).
+    EVENTS_SECRET_DIAGRAMS_STAGING = random_password.diagrams_events_secret_staging.result
+    FORMS_SECRET_STAGING           = random_password.forms_secret_staging.result
+    IDENTITY_EVENTS_SECRET_STAGING = random_password.diagrams_events_secret_staging.result
   }
 }
 
