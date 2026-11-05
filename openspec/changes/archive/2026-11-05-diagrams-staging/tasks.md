@@ -32,11 +32,12 @@
 ## Workflow follow-up
 
 - Apply in two infrastructure commits: declare, then `staging_deployed = true` after the Diagrams
-  deploy workflow (its change `agent-mcp`) has uploaded the staging Workers once.
+  deploy workflow (its change `agent-mcp`) has uploaded the staging Workers once. Done: #24, then
+  #28 after Diagrams' deploy of 0e536f0 (and #27 between them, dropping the KV namespaces).
 - Land the identity commit (`PRODUCTS` gains `diagrams-staging`, the Worker binds
   `EVENTS_SECRET_DIAGRAMS_STAGING_STORE`) as a second pull request after both: before the first
   apply the Store secret it binds does not exist, and before the staging deploy its deletion
-  events have no host to reach.
+  events have no host to reach. Done in #28.
 - The owner creates the two test accounts' tokens on each host and sets them as the
   `infrastructure` environment's secrets `MCP_TEST_TOKEN_STAGING`, `MCP_TEST_TOKEN_2_STAGING`,
   `MCP_TEST_TOKEN_PRODUCTION` and `MCP_TEST_TOKEN_2_PRODUCTION` (`mcp_test_tokens`), then
