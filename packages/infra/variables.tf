@@ -1,4 +1,4 @@
-# The settings of the family's infrastructure. The three switches below are code: the commit that
+# The settings of the family's infrastructure. The four switches below are code: the commit that
 # changes a default is the change, and its plan is reviewed on the pull request. The account and
 # the secret values come from the pipeline's environment as TF_VAR_<name>.
 
@@ -39,6 +39,12 @@ variable "site_on_apex" {
     condition     = !var.site_on_apex || !var.apex_on_github_pages
     error_message = "site_on_apex needs apex_on_github_pages false first: the GitHub Pages records must be gone."
   }
+}
+
+variable "docs_deployed" {
+  description = "Whether the documentation portal's Worker, meltemi-docs, has its first version, uploaded by this repository's deploy: a Custom Domain needs one, so docs.meltemi.dev attaches in the commit after that deploy (change docs-portal), as the apex waited for site_on_apex."
+  type        = bool
+  default     = false
 }
 
 variable "existing_zone_ids" {
@@ -127,7 +133,7 @@ variable "ovsx_pat" {
 }
 
 variable "web_dispatch_token" {
-  description = "A fine-grained token of `askenaz-dev` with access to `meltemi-web` only and the permission Actions (read and write), with which the IDE's release workflow starts this repository's deploy; empty until it exists."
+  description = "A fine-grained token of `askenaz-dev` with access to `meltemi-web` only and the permission Actions (read and write), with which the IDE's and Diagrams' release workflows start this repository's deploy; empty until it exists."
   type        = string
   sensitive   = true
   default     = ""

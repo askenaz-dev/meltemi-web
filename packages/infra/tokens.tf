@@ -23,9 +23,10 @@ locals {
 
   # What `wrangler deploy` and `wrangler d1 migrations apply --remote` need. Binding a Secrets Store
   # secret to a Worker needs the store's write group (read alone fails the upload with 10021); it is
-  # taken when the account lists it.
+  # taken when the account lists it. The web's token also reads Workers AI: the documentation
+  # portal's build embeds its passages through Cloudflare's API (change docs-portal).
   deploy_groups = {
-    web      = ["Workers Scripts Write", "D1 Write"]
+    web      = ["Workers Scripts Write", "D1 Write", "Workers AI Read"]
     diagrams = ["Workers Scripts Write", "D1 Write", "Workers R2 Storage Read"]
   }
   optional_groups = [for name in ["Secrets Store Write"] : name if contains(keys(local.permission_groups), name)]
@@ -49,7 +50,7 @@ resource "cloudflare_api_token" "deploy" {
   lifecycle {
     precondition {
       condition     = alltrue([for name in each.value : contains(keys(local.permission_groups), name)])
-      error_message = "The account lists no permission group named one of: ${join(", ", each.value)}."
+      error_message = "The account lists no permission group named ${join(", ", [for name in each.value : name if !contains(keys(local.permission_groups), name)])}."
     }
   }
 }

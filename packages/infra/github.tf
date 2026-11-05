@@ -106,11 +106,15 @@ locals {
     "meltemi-diagrams/NPM_TOKEN" = { repository = "meltemi-diagrams", name = "NPM_TOKEN", present = nonsensitive(var.npm_token != "") }
     "meltemi-diagrams/VSCE_PAT"  = { repository = "meltemi-diagrams", name = "VSCE_PAT", present = nonsensitive(var.vsce_pat != "") }
     "meltemi-diagrams/OVSX_PAT"  = { repository = "meltemi-diagrams", name = "OVSX_PAT", present = nonsensitive(var.ovsx_pat != "") }
+    # Diagrams' release workflow tells this repository's deploy a release is out (change docs-portal),
+    # with the notice token the IDE's release environment holds.
+    "meltemi-diagrams/WEB_DISPATCH_TOKEN" = { repository = "meltemi-diagrams", name = "WEB_DISPATCH_TOKEN", present = nonsensitive(var.web_dispatch_token != "") }
   }
   release_values = {
-    NPM_TOKEN = var.npm_token
-    VSCE_PAT  = var.vsce_pat
-    OVSX_PAT  = var.ovsx_pat
+    NPM_TOKEN          = var.npm_token
+    VSCE_PAT           = var.vsce_pat
+    OVSX_PAT           = var.ovsx_pat
+    WEB_DISPATCH_TOKEN = var.web_dispatch_token
   }
 }
 

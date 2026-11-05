@@ -33,8 +33,10 @@ Nothing is configured or deployed from a machine ([decision 0004](docs/decisions
   plan on the pull request, and merging applies that change (`infra-apply.yml`). A difference made
   in a dashboard shows up as the issue "Infrastructure drift".
 - **Code** reaches production after successful push CI for the current `main` SHA: `deploy.yml`
-  applies the identity migrations and uploads the identity Worker and site. Infrastructure apply
-  has the same CI/current-head gate; an older recovery cannot roll production back.
+  applies the identity migrations and uploads the identity Worker and site, then builds the
+  documentation portal from the products' latest releases and uploads it (`packages/docs`).
+  Infrastructure apply has the same CI/current-head gate; an older recovery cannot roll production
+  back.
   Deploy and apply share a retained production queue so Wrangler cannot change Worker metadata
   between Terraform's plan and apply. Their declared observability settings must agree.
 - **The packages** receive automatic patch releases from each approved main commit, with
