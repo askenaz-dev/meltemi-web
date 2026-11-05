@@ -147,3 +147,23 @@ first three variables and the secret from `production`; the rest are new.
   reach to the staging Workers, database, bucket and namespace (they belong to the same account
   the token already covers).
 - GitHub's answer to an empty variable value, which this change avoids rather than tests.
+
+## Landed (5 November 2026)
+
+- askenaz-dev/meltemi-web#24 declared the twin. Its apply created the staging Workers, database,
+  bucket, Store secrets and the `staging` environment, then stopped on the two KV namespaces
+  ("Unauthorized": this root's token has no KV permission), so no environment variable was
+  written. askenaz-dev/meltemi-web#27 dropped the namespaces and `OAUTH_KV_ID` (Diagrams keeps its
+  OAuth state in D1, its migration 0010); its apply wrote the variables: staging's five, with
+  `SECRETS_SUFFIX=_STAGING`, and production's four.
+- Diagrams' deploy of 0e536f0 (askenaz-dev/meltemi-diagrams#8) uploaded `meltemi-diagrams-staging`
+  and `meltemi-diagrams-publish-staging` before production; the suite was skipped with its notice,
+  the host not attached yet.
+- askenaz-dev/meltemi-web#28 set `staging_deployed = true` and added the identity service's product
+  `diagrams-staging`; its apply and deploy were green. Afterwards
+  https://staging.diagrams.meltemi.dev answered 200 and `POST /mcp` without a token 401, and
+  https://staging.meltemi.page answered 404 at its root, as https://meltemi.page does.
+- askenaz-dev/meltemi-web#26 turned off the request line of Diagrams' four Workers, matching their
+  Wrangler configuration (no log holds an access link).
+- Still the owner's: the test accounts' tokens (`MCP_TEST_TOKEN_*` in the `infrastructure`
+  environment), after which the staging suite runs its authenticated steps.
