@@ -8,4 +8,5 @@ public/*
 .cache/
 .astro/
 dist/
+.test-builds/
 wrangler.dev.json

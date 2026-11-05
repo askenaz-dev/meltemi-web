@@ -17,6 +17,7 @@ export default tseslint.config(
       "packages/site/public/**",
       "packages/docs/.astro/**",
       "packages/docs/.cache/**",
+      "packages/docs/.test-builds/**",
       "packages/docs/public/**",
       "packages/docs/src/content/**",
       "packages/docs/src/generated/**",

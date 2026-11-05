@@ -5,8 +5,16 @@
 
 import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
-import { constants, setPriority, tmpdir } from "node:os";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from "node:fs";
+import { constants, setPriority } from "node:os";
 import { join, relative, sep } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PACKAGE } from "../scripts/sources.js";
@@ -17,7 +25,12 @@ let dist: string;
 let output: string;
 
 beforeAll(async () => {
-  dist = mkdtempSync(join(tmpdir(), "meltemi-portal-"));
+  // Inside the package, not the system's temporary folder: Astro moves its files into the output
+  // with a rename, which fails across drives (a Windows runner checks out on D: and keeps its
+  // temporary folder on C:).
+  const builds = join(PACKAGE, ".test-builds");
+  mkdirSync(builds, { recursive: true });
+  dist = mkdtempSync(join(builds, "portal-"));
   // The build runs beside the other test files: at a low priority, so their timings stay theirs.
   const child = spawn(
     process.execPath,
