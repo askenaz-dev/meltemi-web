@@ -88,11 +88,14 @@ resource "cloudflare_worker" "family" {
     previews_enabled = false
   }
 
+  # Meltemi Diagrams' Workers keep their own log lines but not the platform's line per request,
+  # whose URL would record an invitation's token or a `?invite=` or `?live=` link (its change
+  # agent-mcp, criterion 29: no log holds an access link). The family's other Workers keep it.
   observability = {
     enabled = true
     logs = {
       enabled         = true
-      invocation_logs = true
+      invocation_logs = each.value.repository != "meltemi-diagrams"
     }
   }
 

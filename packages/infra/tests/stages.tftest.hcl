@@ -286,6 +286,10 @@ run "staging_staged" {
     error_message = "The staging Workers have no workers.dev or preview address and keep production's observability."
   }
   assert {
+    condition     = alltrue([for key, worker in cloudflare_worker.family : worker.observability.logs.invocation_logs == (local.workers[key].repository != "meltemi-diagrams")])
+    error_message = "Diagrams' Workers log no request line, whose URL could hold an access link; the others keep theirs."
+  }
+  assert {
     condition     = length(setintersection(toset([for domain in cloudflare_workers_custom_domain.family : domain.hostname]), toset(["staging.diagrams.meltemi.dev", "staging.meltemi.page"]))) == 0 && length(cloudflare_workers_custom_domain.family) == 5
     error_message = "No staging Custom Domain exists before staging_deployed; production's five stay."
   }
