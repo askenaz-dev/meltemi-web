@@ -76,11 +76,11 @@
       `pnpm infra:test` pass with the staged-domain and token-groups scenarios.
 - [x] 5.2 Add the `docs` job to `deploy.yml` and its rules to `test/workflows.test.ts`. Verify
       `pnpm test` passes here.
-- [ ] 5.2b In `C:\meltemi\diagrams`, add the `tell the web` job to `release.yml` as the IDE's, in a
+- [x] 5.2b In `C:\meltemi\diagrams`, add the `tell the web` job to `release.yml` as the IDE's, in a
       pull request of that repository. Verify the Diagrams workflow test (its `names`/workflow
-      checks) passes there. _Not done in this change: it belongs to the Diagrams repository, which
-      this implementation does not edit. The job it needs is written out in `validation.md`
-      ("Left for Meltemi Diagrams"); Terraform here already declares its `WEB_DISPATCH_TOKEN`._
+      checks) passes there. _Done in askenaz-dev/meltemi-diagrams#4 (merged as f708328): the job
+      runs after the GitHub release, reads only the narrow `WEB_DISPATCH_TOKEN`, and warns without
+      failing while it is unset; its workflow test and CI passed._
 - [x] 5.3 Update `docs/repositories.md` (the portal, `docs.meltemi.dev`, the Worker and the
       notice), `README.md`'s table, `packages/docs/README.md` (the three modes, the fixture, the
       Ask route's contract) and write `docs/decisions/0007-documentation-portal.md`. Verify the
@@ -96,5 +96,7 @@
 
 - First apply declares the Worker; first deploy uploads it; then `docs_deployed = true` attaches
   the domain (a second infrastructure commit). `docs_deployed` stays `false` in this change.
-- Task 5.2b in the Diagrams repository.
+- Task 5.2b in the Diagrams repository: done (askenaz-dev/meltemi-diagrams#4).
+- First deploy done on 2026-11-05: Deploy 41954787681 uploaded 685 files and 3,413 passages;
+  #22 set `docs_deployed = true`.
 - Archive the change after review.
