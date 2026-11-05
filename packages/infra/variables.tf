@@ -50,7 +50,7 @@ variable "docs_deployed" {
 variable "staging_deployed" {
   description = "Whether Meltemi Diagrams' staging Workers, meltemi-diagrams-staging and meltemi-diagrams-publish-staging, have their first versions, uploaded by Diagrams' deploy (its change agent-mcp): a Custom Domain needs one, so staging.diagrams.meltemi.dev and staging.meltemi.page attach in the commit after that deploy (change diagrams-staging), as docs.meltemi.dev waits for docs_deployed."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "existing_zone_ids" {
