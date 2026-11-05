@@ -387,7 +387,13 @@ describe("the old addresses keep answering", () => {
 
 // ---------------------------------------------------------------------------------------------
 
-/** Each language's own readme counts as one link: the Spanish pages link LEEME.md, not README.md. */
+/** The documentation portal at the root of its language: `/es/x/` is the twin of `/x/`. */
+export const PORTAL = "https://docs.meltemi.dev/";
+
+/**
+ * Each language's own readme counts as one link (the Spanish pages link LEEME.md, not README.md),
+ * and each language's page of the documentation portal as one (`/es/diagrams/` and `/diagrams/`).
+ */
 function normalise(link: string): string {
   const repo = "https://github.com/askenaz-dev/meltemi";
   if (
@@ -395,21 +401,88 @@ function normalise(link: string): string {
   ) {
     return "<the readme of the IDE repository>";
   }
+  if (link.startsWith(`${PORTAL}es/`)) return `${PORTAL}${link.slice(PORTAL.length + 3)}`;
   return link;
+}
+
+/** The external links one twin carries and the other lacks, each named with the page that lacks it. */
+export function twinLinkProblems(en: string, enUrl: string, es: string, esUrl: string): string[] {
+  const problems: string[] = [];
+  const english = new Set(externalLinks(en, enUrl).map(normalise));
+  const spanish = new Set(externalLinks(es, esUrl).map(normalise));
+  for (const link of english)
+    if (!spanish.has(link)) problems.push(`${esUrl} lacks ${link}, which ${enUrl} links`);
+  for (const link of spanish)
+    if (!english.has(link)) problems.push(`${enUrl} lacks ${link}, which ${esUrl} links`);
+  return problems;
 }
 
 describe("the twins link the same places", () => {
   it("carries the same set of external links in both languages", () => {
+    const problems = indexUrls
+      .filter((u) => !isSpanish(u))
+      .flatMap((url) =>
+        twinLinkProblems(read(fileOfUrl(url)), url, read(fileOfUrl(twinUrl(url))), twinUrl(url)),
+      );
+    expect(problems).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+
+describe("the site links the documentation portal", () => {
+  /** The links of a page's header. */
+  const headerLinks = (html: string) =>
+    tags(/<header class="top">[\s\S]*?<\/header>/.exec(html)?.[0] ?? "")
+      .filter((t) => t.name === "a")
+      .map((t) => t.attrs["href"] ?? "");
+
+  it("carries Docs in every page's header, to the portal in the page's language", () => {
     const problems: string[] = [];
-    for (const url of indexUrls.filter((u) => !isSpanish(u))) {
-      const en = new Set(externalLinks(read(fileOfUrl(url)), url).map(normalise));
-      const es = new Set(externalLinks(read(fileOfUrl(twinUrl(url))), twinUrl(url)).map(normalise));
-      for (const link of en)
-        if (!es.has(link)) problems.push(`${twinUrl(url)} lacks ${link}, which ${url} links`);
-      for (const link of es)
-        if (!en.has(link)) problems.push(`${url} lacks ${link}, which ${twinUrl(url)} links`);
+    for (const file of ALL_HTML) {
+      const url = pageUrl(file);
+      const want = isSpanish(url) ? `${PORTAL}es/` : PORTAL;
+      if (!headerLinks(read(file)).includes(want)) problems.push(`${url}: no Docs link to ${want}`);
     }
     expect(problems).toEqual([]);
+  });
+
+  it("leads the Diagrams page's documentation buttons to the portal's Diagrams section", () => {
+    for (const [file, url, section] of [
+      ["diagrams/index.html", "/diagrams/", `${PORTAL}diagrams/`],
+      ["es/diagrams/index.html", "/es/diagrams/", `${PORTAL}es/diagrams/`],
+    ] as const) {
+      const html = read(file);
+      const links = externalLinks(html, url);
+      expect(links.filter((l) => l === section).length, `${url} links ${section}`).toBe(2);
+      expect(html, `${url} still links the docs folder on GitHub`).not.toContain("tree/main/docs");
+    }
+  });
+
+  it("leads the IDE page's quickstart to the portal's IDE section", () => {
+    expect(externalLinks(read("ide/index.html"), "/ide/")).toContain(`${PORTAL}ide/`);
+    expect(externalLinks(read("es/ide/index.html"), "/es/ide/")).toContain(`${PORTAL}es/ide/`);
+  });
+
+  it("says in the privacy notice what a question to Ask the docs reaches, and that it is not kept", () => {
+    const en = read("privacy/index.html")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ");
+    const es = read("es/privacy/index.html")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ");
+    expect(en).toContain("Workers AI");
+    expect(en).toMatch(/The question is not stored/);
+    expect(es).toContain("Workers AI");
+    expect(es).toMatch(/La pregunta no se guarda/);
+  });
+
+  it("names the link a Spanish twin forgot", () => {
+    const en = read("ide/index.html");
+    const es = read("es/ide/index.html").replace(`href="${PORTAL}es/ide/"`, 'href="#install"');
+    expect(twinLinkProblems(en, "/ide/", es, "/es/ide/")).toEqual([
+      `/es/ide/ lacks ${PORTAL}ide/, which /ide/ links`,
+    ]);
   });
 });
 

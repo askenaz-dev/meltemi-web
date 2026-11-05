@@ -27,6 +27,7 @@
           <a href="/es/">Inicio</a>
           <a href="/es/ide/">IDE</a>
           <a href="/es/diagrams/">Diagrams</a>
+          <a href="https://docs.meltemi.dev/es/">Docs</a>
           <a class="lang" href="/privacy/" hreflang="en" lang="en">English</a>
         </nav>
       </div>
@@ -45,7 +46,7 @@
           Qué guardan sobre ti el sitio de Meltemi, el servicio de inicio de sesión y Meltemi
           Diagrams, dónde se guarda y cómo pedir que se elimine.
         </p>
-        <p><span class="pill">Última actualización: 24 de octubre de 2026</span></p>
+        <p><span class="pill">Última actualización: 4 de noviembre de 2026</span></p>
       </div>
     </div>
 
@@ -58,6 +59,10 @@
             <li>El IDE de Meltemi no envía nada a Meltemi y no tiene cuenta.</li>
             <li>
               Meltemi Diagrams funciona sin cuenta. En ese caso tu trabajo se queda en tu navegador.
+            </li>
+            <li>
+              Una pregunta hecha en el portal de documentación va a Cloudflare Workers AI para
+              responderla, y no se guarda.
             </li>
             <li>Iniciar sesión es opcional, con GitHub o Google. Meltemi no tiene contraseñas.</li>
             <li>
@@ -95,6 +100,26 @@
           Algunos enlaces llevan a otros sitios, como GitHub, que aloja las descargas del IDE. Allí
           rigen sus propios avisos. Los archivos de este sitio los sirve Cloudflare; consulta
           <a href="#where">Dónde se procesan los datos</a>.
+        </p>
+      </section>
+
+      <section aria-labelledby="docs">
+        <h2 id="docs">El portal de documentación</h2>
+        <p>
+          El portal de documentación en <a href="https://docs.meltemi.dev/es/">docs.meltemi.dev</a>
+          también está hecho de páginas estáticas. No establece cookies, no usa analítica y su
+          búsqueda funciona en tu navegador, con un índice que sirve el propio portal: lo que buscas
+          nunca sale de tu equipo.
+        </p>
+        <p>
+          Una pregunta que escribes en su cuadro «Pregunta a la documentación» se envía a Cloudflare
+          Workers AI para responderla: Workers AI la convierte en números que encuentran los pasajes
+          más cercanos de la documentación y escribe la respuesta con esos pasajes. La pregunta no
+          se guarda: el portal no escribe ni la pregunta ni su respuesta en ningún registro ni
+          almacén, y no las envía a ningún otro lugar. Como toda petición a los Workers de la
+          familia, la petición misma (cuándo llegó y desde qué dirección, nunca sus palabras) queda
+          en los registros de peticiones de Cloudflare. Para limitar las preguntas a diez por
+          minuto, el portal las cuenta durante un minuto con un hash de tu dirección.
         </p>
       </section>
 
