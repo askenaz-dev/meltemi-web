@@ -8,7 +8,7 @@ How the products' released documentation reaches the portal: the sources at each
 ### Requirement: The sources are the latest releases
 In `release` mode the build SHALL take each product's documentation from the archive of its
 latest published GitHub release (`main` when the repository has none), reading `docs/`,
-`README.md`, `README.es.md`, `CONTRIBUTING.md` and `CHANGELOG.md`, and this repository's from the
+`README.md`, `README.es.md`, `LEEME.md`, `CONTRIBUTING.md` and `CHANGELOG.md`, and this repository's from the
 checkout being built, writing `sources.json` with each product's repository, ref, version and
 date; an archive that cannot be read SHALL fail the build naming the product.
 
@@ -56,6 +56,32 @@ the build naming it.
 #### Scenario: A broken link
 - **WHEN** a page links `nowhere.md`
 - **THEN** the build fails naming the page and `nowhere.md`
+
+### Requirement: A picture from another host is its words
+A picture a source page loads from another host (a readme's badges) SHALL become its alternative
+text, kept as a link when it was one, so no page of the portal loads anything from elsewhere.
+
+#### Scenario: A badge from another host
+- **WHEN** a readme holds `[![CI](https://github.com/…/badge.svg)](https://github.com/…/ci.yml)`
+- **THEN** the page links `CI` to the workflow and loads no picture from another host
+
+#### Scenario: A picture with no words
+- **WHEN** a picture from another host has an empty alternative text
+- **THEN** it is left out, and the checks of the build find no address of another host
+
+### Requirement: A repository without a Spanish mirror
+In a repository with no `docs/es/`, a page's language SHALL be read from its words, and a
+section with no `docs/README.md` SHALL take the repository's readmes (`README.md`; `README.es.md`
+or `LEEME.md`) as its index in each language.
+
+#### Scenario: A guide's language read from its words
+- **WHEN** the IDE's fixture has no `docs/es/` and its `quickstart.md` is written in Spanish
+- **THEN** it is the Spanish page `/es/ide/quickstart/`, and `README.md` and `LEEME.md` are the
+  section's index in English and in Spanish
+
+#### Scenario: Two pages for one place
+- **WHEN** two sources would be the same page of one language
+- **THEN** the build fails naming both
 
 ### Requirement: The archive reader
 The build SHALL read a gzipped tar archive entry by entry with this repository's own reader,

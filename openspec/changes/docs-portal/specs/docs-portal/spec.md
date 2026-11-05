@@ -14,8 +14,9 @@ be served in both locales, the other one carrying a one-sentence notice and a li
 
 #### Scenario: A guide in both languages
 - **WHEN** the fixture's `diagrams/docs/player.md` and `diagrams/docs/es/player.md` are built
-- **THEN** `/diagrams/player/` and `/es/diagrams/player/` exist, each with the other language's
-  title in the picker and "From Meltemi Diagrams v1.11.0" in the footer
+- **THEN** `/diagrams/player/` and `/es/diagrams/player/` exist, each with a link to the other as
+  its language picker and "From Meltemi Diagrams v1.11.0" ("Desde Meltemi Diagrams v1.11.0") in
+  the footer
 
 #### Scenario: A guide in Spanish only
 - **WHEN** the fixture's `ide/docs/quickstart.md` is built
@@ -26,10 +27,23 @@ be served in both locales, the other one carrying a one-sentence notice and a li
 - **WHEN** a source page has no `# Heading`
 - **THEN** the build fails naming the page and that a title could not be read
 
+### Requirement: The language picker works without a script
+Every page's language picker SHALL be a link to the page's twin in the other language, marked
+with that language, so a reader changes language with no script.
+
+#### Scenario: The picker of a guide
+- **WHEN** `/diagrams/player/` is read with JavaScript off
+- **THEN** its picker is a link to `/es/diagrams/player/` marked `hreflang="es"`
+
+#### Scenario: A page whose picker leads nowhere
+- **WHEN** the checks find a page whose picker does not lead to its twin
+- **THEN** `pnpm test` fails naming the page and the twin it lacks
+
 ### Requirement: The sidebar follows the index
 Each section's sidebar SHALL list its pages in the order the repository's own index links them
-(the `docs/README.md` of the language, else the repository's README), the pages the index does
-not link after them in path order, with the titles of the pages; a page's own heading SHALL
+(the `docs/README.md` of the language, under its `##` headings, else the repository's README),
+the pages the index does not link after them in path order (in a folded group per folder for
+those in a folder), with the titles of the pages; a page's own heading SHALL
 not be repeated in its body.
 
 #### Scenario: The index's order
@@ -67,7 +81,7 @@ with nothing.
 
 #### Scenario: Nothing typed
 - **WHEN** the search box is opened and left empty
-- **THEN** no result and no request is made
+- **THEN** no result is shown and no part of the index is fetched
 
 ### Requirement: Headers, no tracking and no external resource
 Every response SHALL carry a Content-Security-Policy that allows scripts, styles, fonts, images

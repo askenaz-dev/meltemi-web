@@ -5,8 +5,8 @@
 ### Requirement: The site links the documentation portal
 Every page's header navigation SHALL carry "Docs" to `https://docs.meltemi.dev/` in the
 page's language; the Diagrams page's documentation buttons SHALL lead to the portal's Diagrams
-section and the IDE page's to its IDE section, in place of the repositories' `docs` folders on
-GitHub; the privacy notice SHALL say that a question typed into the portal's "Ask the docs" is
+section and the IDE page's quickstart to its IDE section, in place of GitHub's `docs` folder and
+readme; the privacy notice SHALL say that a question typed into the portal's "Ask the docs" is
 sent to Cloudflare Workers AI to be answered and is not stored.
 
 #### Scenario: The links
