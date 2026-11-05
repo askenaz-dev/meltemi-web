@@ -5,8 +5,7 @@ The index SHALL be one file in the portal's assets holding, per passage, its pag
 title, URL and language, its text, a sign-bit vector and an int8 vector of the embedding model
 named in its header; the Worker SHALL load it once per isolate, rank by the sign bits and
 rescore the best fifty by the int8 vectors, and SHALL refuse an index whose model is not its
-own with `503`. When new embeddings are refused, the build SHALL retain valid cached vectors
-for current passages and omit uncached passages.
+own with `503`.
 
 #### Scenario: Ranking under the limit
 - **WHEN** ten thousand fake passages are ranked in the test
@@ -25,8 +24,8 @@ for current passages and omit uncached passages.
 
 #### Scenario: A partial embedding cache
 - **WHEN** new embeddings are refused and current passages have valid cached vectors
-- **THEN** those passages remain in the index with their current pages and citations, and the
-  complete guides and search still build
+- **THEN** the build SHALL retain those cached current passages and omit uncached passages;
+  their current pages and citations remain in the index, and complete guides and search still build
 
 ### Requirement: Nothing of a question is kept
 The route SHALL not log, store or forward the question or the answer anywhere but to Workers

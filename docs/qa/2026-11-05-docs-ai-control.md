@@ -51,3 +51,17 @@ Sources checked:
 Use the existing CI-approved-main deployment: apply identity's schema, deploy identity with the
 existing owner allowlist binding, then deploy Docs with its service binding. Keep the saved switch
 enabled. No dashboard configuration, paid upgrade or production data change was made by this work.
+
+## Archive checks
+
+The owner authorized archival, merging PR #30 and production verification on November 5. The PR's
+six CI checks passed at `616380a`. Cloudflare's authenticated subscription page confirmed Workers
+Free active, and the owner's existing real Meltemi session successfully opened the production
+account page before integration.
+
+The repository asks for a development OAuth sign-in before archival. No identity `.dev.vars` or
+identifiable development OAuth app credentials/callbacks are available in this workspace or the
+owner-designated credential source. That local provider sign-in was not performed. No production
+OAuth credentials or app registrations were changed to simulate it. Generated local session tests
+passed; the existing authenticated owner session will verify the production admin control after
+deployment. This is a recorded validation limit, not a claim that the development OAuth check ran.
