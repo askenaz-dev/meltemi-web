@@ -16,8 +16,11 @@ const data = {
   limit: QUESTION_LIMIT,
   counter: ask.counter,
   thinking: ask.thinking,
+  checking: ask.checking,
   notCovered: ask.notCovered,
   allowance: ask.allowance,
+  disabled: ask.disabled,
+  control: ask.control,
   rateLimit: ask.limit,
   index: ask.index,
   invalid: ask.invalid,
@@ -54,14 +57,14 @@ const data = {
           aria-describedby="ask-counter"></textarea>
         <div class="ask-row">
           <span class="ask-counter" id="ask-counter">{ask.counter.replace("{used}", "0").replace("{limit}", String(QUESTION_LIMIT))}</span>
-          <button type="submit" class="ask-submit">
+          <button type="submit" class="ask-submit" disabled>
             <span>{ask.submit}</span>
             <Icon name="right-arrow" size="1rem" />
           </button>
         </div>
       </form>
       <section class="ask-result" aria-live="polite" aria-busy="false">
-        <p class="ask-status" hidden><span class="ask-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>{ask.thinking}</span></p>
+        <p class="ask-status" hidden><span class="ask-dots" aria-hidden="true"><i></i><i></i><i></i></span><span data-status-text>{ask.thinking}</span></p>
         <div class="ask-answer" hidden></div>
         <div class="ask-sources" hidden>
           <h3>{ask.sources}</h3>

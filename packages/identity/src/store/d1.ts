@@ -5,7 +5,7 @@ import type { IdentityPatch, IdentityStore } from "./types.js";
 // The store over D1: every statement is a constant prepared with `?` placeholders and given its
 // values through `bind()`, never built from a value. Times are ISO-8601 text (they sort as text),
 // booleans are stored as 0 and 1, and a missing time is NULL. The tables are made by
-// `migrations/0001_identity.sql`; the orderings below are the ones `store/types.ts` documents,
+// `migrations/`; the orderings below are the ones `store/types.ts` documents,
 // with ties broken by insertion order (`rowid`) so that `memoryStore()` and this store agree.
 
 interface UserRow {
@@ -139,6 +139,20 @@ export function d1Store(db: D1Like): IdentityStore {
       );
 
   return {
+    async getDocsAi() {
+      const row = await db
+        .prepare("SELECT enabled FROM docs_ai_settings WHERE id = 1")
+        .first<{ enabled: number }>();
+      if (!row) return undefined;
+      if (row.enabled !== 0 && row.enabled !== 1) throw new Error("the docs AI state is invalid");
+      return row.enabled === 1;
+    },
+    async setDocsAi(enabled) {
+      const changed = await runCounting(
+        db.prepare("UPDATE docs_ai_settings SET enabled = ? WHERE id = 1").bind(bit(enabled)),
+      );
+      if (changed !== 1) throw new Error("the docs AI state is missing");
+    },
     async userById(id) {
       const row = await db
         .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`)

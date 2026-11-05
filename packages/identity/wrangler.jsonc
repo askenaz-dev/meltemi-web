@@ -20,6 +20,11 @@
   ],
   "secrets_store_secrets": [
     {
+      "binding": "ADMIN_SUBS_STORE",
+      "store_id": "00000000000000000000000000000000",
+      "secret_name": "ADMIN_SUBS",
+    },
+    {
       "binding": "SESSION_PRIVATE_KEY_STORE",
       "store_id": "00000000000000000000000000000000",
       "secret_name": "SESSION_PRIVATE_KEY",

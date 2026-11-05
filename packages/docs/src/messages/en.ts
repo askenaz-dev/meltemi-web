@@ -70,10 +70,13 @@ export const en = {
     /** `{used}` and `{limit}` are replaced by the dialog. */
     counter: "{used} of {limit} characters",
     thinking: "Reading the documentation…",
+    checking: "Checking availability…",
     sources: "Sources",
     notCovered: "The documentation does not cover this.",
     allowance:
       "Answers are paused for today: the day's free allowance of Workers AI is spent. The search still finds every page.",
+    disabled: "AI answers are turned off. You can still read and search all guides.",
+    control: "AI answers are unavailable right now. Reopen Ask to try again, or search the guides.",
     limit: "That is ten questions in a minute. Wait a moment and ask again, or search the pages.",
     index:
       "Answers are not available for this build of the portal. The search still finds every page.",

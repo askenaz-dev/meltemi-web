@@ -221,6 +221,9 @@ const ask: Check = async (browser, origin) => {
     const { page } = watched;
     await page.click(".ask-open");
     await page.fill("#ask-question", question);
+    await page.waitForFunction(
+      () => !document.querySelector<HTMLButtonElement>(".ask-submit")!.disabled,
+    );
     await page.keyboard.press("Enter");
     await page
       .waitForSelector(".ask-answer:not([hidden])", { timeout: 10_000 })
@@ -277,6 +280,169 @@ const allowance: Check = async (browser, origin) => {
   if (!searching) failures.push("the search button did not open the search");
   // The browser logs the 503 itself; it is the answer this check asked for.
   failures.push(...watched.problems.filter((p) => !p.includes("status of 503")));
+  await watched.context.close();
+  return failures;
+};
+
+/** An operator's off switch is visible only when Ask opens, and reopening reads its new state. */
+const disabled: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  for (const [url, phrase] of [
+    ["/diagrams/player/", "AI answers are turned off"],
+    ["/es/diagrams/player/", "Las respuestas de IA están desactivadas"],
+  ] as const) {
+    const watched = await open(browser, origin, url);
+    const { page } = watched;
+    let enabled = false;
+    let statusReads = 0;
+    let asks = 0;
+    await page.route("**/api/ask/status", (route) => {
+      statusReads++;
+      return route.fulfill({ contentType: "application/json", body: JSON.stringify({ enabled }) });
+    });
+    await page.route("**/api/ask", (route) => {
+      asks++;
+      return route.continue();
+    });
+    if (watched.requests.some((request) => new URL(request).pathname === "/api/ask/status")) {
+      failures.push(`${url}: a guide view checked AI status before Ask opened`);
+    }
+    await page.click(".ask-open");
+    await page.waitForSelector('.ask-problem[data-kind="disabled"]:not([hidden])');
+    if (!(await page.textContent(".ask-problem p"))?.includes(phrase)) {
+      failures.push(`${url}: the disabled explanation is missing`);
+    }
+    if (!(await page.isDisabled(".ask-submit")))
+      failures.push(`${url}: Ask remains enabled while off`);
+    const question = "How do I export a story as a video?";
+    await page.fill("#ask-question", question);
+    await page.keyboard.press("Enter");
+    await page.evaluate(() => Promise.resolve());
+    if (asks) failures.push(`${url}: Enter sent a question while AI was off`);
+    await page.click("[data-search]");
+    await page.waitForSelector("site-search dialog[open]");
+    await page.keyboard.press("Escape");
+    enabled = true;
+    await page.click(".ask-open");
+    await page.waitForFunction(
+      () => !document.querySelector<HTMLButtonElement>(".ask-submit")!.disabled,
+    );
+    if (statusReads !== 2)
+      failures.push(`${url}: reopening made ${statusReads} status reads, expected 2`);
+    if ((await page.inputValue("#ask-question")) !== question)
+      failures.push(`${url}: the pending question was lost`);
+    await page.click(".ask-submit");
+    await page.waitForSelector(".ask-answer:not([hidden])");
+    if (asks !== 1) failures.push(`${url}: enabled Ask sent ${asks} questions, expected 1`);
+    failures.push(...watched.problems.map((p) => `${url}: ${p}`));
+    await watched.context.close();
+  }
+  return failures;
+};
+
+/** Status failures and a switch changed after opening both stop questions without a quota claim. */
+const control: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  for (const [url, disabledPhrase, controlPhrase] of [
+    ["/diagrams/player/", "AI answers are turned off", "AI answers are unavailable right now"],
+    [
+      "/es/diagrams/player/",
+      "Las respuestas de IA están desactivadas",
+      "Las respuestas de IA no están disponibles ahora",
+    ],
+  ] as const) {
+    for (const reason of ["status", "disabled", "control"] as const) {
+      const watched = await open(browser, origin, url);
+      const { page } = watched;
+      let asks = 0;
+      await page.route("**/api/ask/status", (route) =>
+        route.fulfill({
+          status: reason === "status" ? 503 : 200,
+          contentType: "application/json",
+          body: JSON.stringify(
+            reason === "status" ? { enabled: false, reason: "control" } : { enabled: true },
+          ),
+        }),
+      );
+      await page.route("**/api/ask", (route) => {
+        asks++;
+        return route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ reason }),
+        });
+      });
+      await page.click(".ask-open");
+      if (reason !== "status") {
+        await page.fill("#ask-question", "How do I export a story as a video?");
+        await page.click(".ask-submit");
+      }
+      await page.waitForSelector(
+        `.ask-problem[data-kind="${reason === "status" ? "control" : reason}"]:not([hidden])`,
+      );
+      const said = (await page.textContent(".ask-problem p")) ?? "";
+      if (!said.includes(reason === "disabled" ? disabledPhrase : controlPhrase)) {
+        failures.push(`${url}/${reason}: the distinct unavailable explanation is missing: ${said}`);
+      }
+      if (!(await page.isDisabled(".ask-submit")))
+        failures.push(`${url}/${reason}: Ask remains enabled`);
+      if (asks !== (reason === "status" ? 0 : 1))
+        failures.push(`${url}/${reason}: unexpected question count ${asks}`);
+      await page.click("[data-search]");
+      await page.waitForSelector("site-search dialog[open]");
+      failures.push(
+        ...watched.problems
+          .filter((p) => !p.includes("status of 503"))
+          .map((p) => `${url}/${reason}: ${p}`),
+      );
+      await watched.context.close();
+    }
+  }
+  return failures;
+};
+
+/** Closing an outstanding availability check must not override the next open's fresh answer. */
+const staleStatus: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  const watched = await open(browser, origin, "/diagrams/player/");
+  const { page } = watched;
+  let finishFirst: (() => void) | undefined;
+  const first = new Promise<void>((resolve) => {
+    finishFirst = resolve;
+  });
+  let reads = 0;
+  const firstRequested = page.waitForRequest(
+    (request) => new URL(request.url()).pathname === "/api/ask/status",
+  );
+  await page.route("**/api/ask/status", async (route) => {
+    reads++;
+    if (reads === 1) {
+      await first;
+      await route
+        .fulfill({ contentType: "application/json", body: JSON.stringify({ enabled: false }) })
+        .catch(() => undefined);
+    } else {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ enabled: true }),
+      });
+    }
+  });
+  await page.click(".ask-open");
+  await firstRequested;
+  await page.waitForFunction(
+    () => document.querySelector(".ask-result")?.getAttribute("aria-busy") === "true",
+  );
+  await page.click("[data-close]");
+  await page.click(".ask-open");
+  await page.waitForFunction(
+    () => !document.querySelector<HTMLButtonElement>(".ask-submit")!.disabled,
+  );
+  finishFirst!();
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+  if (await page.isDisabled(".ask-submit"))
+    failures.push("a stale status response disabled the fresh Ask form");
+  failures.push(...watched.problems.filter((p) => !p.includes("ERR_FAILED")));
   await watched.context.close();
   return failures;
 };
@@ -390,6 +556,15 @@ const CHECKS: readonly [string, Check][] = [
   ["search finds purchase on the Stories page, in English only; empty, it shows nothing", search],
   ["ask the docs answers the fixture question with its source, in both languages", ask],
   ["a spent allowance says so and offers the search", allowance],
+  [
+    "disabled AI preserves guides, search and the question, and reopening reads current status in both languages",
+    disabled,
+  ],
+  [
+    "control failures and a mid-dialog switch disable AI distinctly from its allowance in both languages",
+    control,
+  ],
+  ["a stale status check cannot override a reopened Ask dialog", staleStatus],
   ["the dialog moves over the motion token, and not at all under reduced motion", motion],
   ["light and dark schemes follow the system and the switch", schemes],
   ["a phone's width: no sideways scroll, touch targets, a full-screen dialog", phone],

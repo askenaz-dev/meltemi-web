@@ -179,6 +179,8 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
         },
       });
       const evil = "x'); DROP TABLE users; --";
+      await spy.getDocsAi();
+      await spy.setDocsAi(false);
       await spy.createUser({ ...user, id: evil, name: evil, picture: evil });
       await spy.updateUser(evil, { name: evil, picture: evil });
       await spy.userById(evil);

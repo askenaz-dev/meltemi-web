@@ -47,6 +47,8 @@ export interface Env {
   readonly SESSION_PRIVATE_KEY: string;
   /** The HMAC key of the `meltemi_oauth` cookie and of the account forms' `csrf`. */
   readonly STATE_SECRET: string;
+  /** The service owners' identity `sub`s, comma separated; absent means nobody. */
+  readonly ADMIN_SUBS?: string;
   /** `EVENTS_SECRET_<PRODUCT>`: the key that signs the deletion events of one product. */
   readonly [secret: `EVENTS_SECRET_${string}`]: string | undefined;
 

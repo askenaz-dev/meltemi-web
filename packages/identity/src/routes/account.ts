@@ -1,4 +1,5 @@
 import type { Ctx, Route } from "../context.js";
+import { isDocsAiOwner } from "../administration.js";
 import { buildDeletionEvents } from "../events.js";
 import { accountAction, accountPath, csrfToken, signInRedirect } from "../forms.js";
 import { redirect } from "../http.js";
@@ -80,6 +81,7 @@ export const accountPage: Route = async (ctx) => {
     currentSid: current.session.sid,
     csrf,
     returnTo,
+    docsAiAdmin: isDocsAiOwner(ctx.env, current.user.id),
   });
 };
 

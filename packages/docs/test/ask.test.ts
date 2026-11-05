@@ -61,6 +61,7 @@ function deps(overrides: Partial<AskDeps> = {}): { deps: AskDeps; calls: Calls }
       answer: async (prompt) => (calls.answer.push(prompt), fakeAnswer(prompt)),
       limit: async (key) => (calls.limit.push(key), true),
       index: async () => fixtureIndex,
+      control: async () => "enabled",
       ...overrides,
     },
   };
@@ -240,6 +241,89 @@ describe("the limits and the allowance", () => {
   });
 });
 
+describe("operational stop", () => {
+  it("honors a pause that arrives while the index is loading", async () => {
+    let enabled = true;
+    const { deps: d, calls } = deps({
+      index: async () => {
+        enabled = false;
+        return fixtureIndex;
+      },
+      control: async () => (enabled ? "enabled" : "disabled"),
+    });
+    const response = await ask(post({ question: QUESTION, lang: "en" }), d);
+    expect(await response.json()).toEqual({ reason: "disabled" });
+    expect(calls.embed).toEqual([]);
+    expect(calls.answer).toEqual([]);
+  });
+  it.each(["disabled", "unavailable"] as const)(
+    "blocks embedding and generation when %s",
+    async (state) => {
+      const { deps: d, calls } = deps({ control: async () => state });
+      const response = await ask(post({ question: QUESTION, lang: "en" }), d);
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({
+        reason: state === "disabled" ? "disabled" : "control",
+      });
+      expect(calls.embed).toEqual([]);
+      expect(calls.answer).toEqual([]);
+    },
+  );
+
+  it.each(["disabled", "unavailable"] as const)(
+    "rechecks before generation when the control becomes %s",
+    async (state) => {
+      let reads = 0;
+      const { deps: d, calls } = deps({ control: async () => (++reads === 1 ? "enabled" : state) });
+      const response = await ask(post({ question: QUESTION, lang: "en" }), d);
+      expect(response.status).toBe(503);
+      expect(await response.json()).toEqual({
+        reason: state === "disabled" ? "disabled" : "control",
+      });
+      expect(calls.embed).toEqual([QUESTION]);
+      expect(calls.answer).toEqual([]);
+    },
+  );
+
+  it("honors off and re-enable in the same Worker isolate without redeploying", async () => {
+    let enabled = false;
+    const ai = vi.fn(async (model: string, input: unknown) =>
+      model === EMBEDDING_MODEL
+        ? { data: [Array.from(fakeEmbed((input as { text: string[] }).text[0]!))] }
+        : { response: "Export the story [1]." },
+    );
+    const controls: Request[] = [];
+    const env: Env = {
+      ASSETS: { fetch: async () => new Response(productionBytes.slice()) },
+      AI: { run: ai },
+      IDENTITY: {
+        fetch: async (request) => {
+          controls.push(request);
+          return Response.json({ enabled });
+        },
+      },
+    };
+    const request = () =>
+      post(
+        { question: QUESTION, lang: "en" },
+        { Cookie: "meltemi_session=private", Authorization: "Bearer private" },
+      );
+    expect((await worker.fetch(request(), env)).status).toBe(503);
+    expect(ai).not.toHaveBeenCalled();
+    enabled = true;
+    expect((await worker.fetch(request(), env)).status).toBe(200);
+    expect(ai).toHaveBeenCalledTimes(2);
+    enabled = false;
+    expect((await worker.fetch(request(), env)).status).toBe(503);
+    expect(ai).toHaveBeenCalledTimes(2);
+    for (const control of controls) {
+      expect(control.headers.has("Cookie")).toBe(false);
+      expect(control.headers.has("Authorization")).toBe(false);
+      expect(await control.text()).toBe("");
+    }
+  });
+});
+
 describe("nothing of a question is kept", () => {
   it("logs nothing that carries the question's text, on any path", async () => {
     const spies = (["log", "info", "warn", "error", "debug"] as const).map((name) =>
@@ -253,6 +337,7 @@ describe("nothing of a question is kept", () => {
     );
     const env: Env = {
       ASSETS: { fetch: async () => Promise.reject(new Error(secret)) },
+      IDENTITY: { fetch: async () => Response.json({ enabled: true }) },
       AI: { run: async () => Promise.reject(new Error(secret)) },
     };
     const broken = await worker.fetch(post({ question: secret, lang: "en" }), env);
@@ -267,6 +352,7 @@ describe("nothing of a question is kept", () => {
     });
     const runs: { model: string; input: unknown }[] = [];
     const env: Env = {
+      IDENTITY: { fetch: async () => Response.json({ enabled: true }) },
       ASSETS: {
         fetch: async (request) =>
           new URL(request.url).pathname === "/ask/index.bin"
@@ -305,6 +391,7 @@ describe("nothing of a question is kept", () => {
   it("reads an empty answer, as a thinking model cut at its limit gives, as no answer", async () => {
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     const env: Env = {
+      IDENTITY: { fetch: async () => Response.json({ enabled: true }) },
       ASSETS: {
         fetch: async (request) =>
           new URL(request.url).pathname === "/ask/index.bin"

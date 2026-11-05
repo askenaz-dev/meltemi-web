@@ -8,6 +8,7 @@
 
 import { messages, type Lang } from "./messages/index.js";
 import { rank, type AskIndex } from "./ask-index.js";
+import type { AiControlState } from "./ai-control.js";
 
 /** The answering model: instruction following in a hundred languages, cheap per question. */
 export const ASK_MODEL = "@cf/zai-org/glm-4.7-flash";
@@ -46,6 +47,8 @@ export interface AskDeps {
   limit(key: string): Promise<boolean>;
   /** The index, loaded once per isolate. Throws when it cannot be read. */
   index(): Promise<AskIndex>;
+  /** Fresh operational permission; never an isolate-cached authorization. */
+  control(): Promise<AiControlState>;
 }
 
 const HEADERS = {
@@ -176,6 +179,10 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   } catch {
     return refuse(503, "index");
   }
+  // Load the index first: a pause during its asynchronous read must prevent embedding too.
+  const permission = await deps.control().catch(() => "unavailable" as const);
+  if (permission !== "enabled")
+    return refuse(503, permission === "disabled" ? "disabled" : "control");
   if (index.model !== deps.model) return refuse(503, "index");
   // An index with no passage is a build that had no Workers AI: the same as a spent allowance.
   if (index.count === 0) return refuse(503, "allowance");
@@ -207,6 +214,10 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   });
 
   let raw: string;
+  // An owner may have stopped AI while the question was being embedded.
+  const answerPermission = await deps.control().catch(() => "unavailable" as const);
+  if (answerPermission !== "enabled")
+    return refuse(503, answerPermission === "disabled" ? "disabled" : "control");
   try {
     raw = await deps.answer({ system: systemPrompt(lang), user: userPrompt(question, passages) });
   } catch {

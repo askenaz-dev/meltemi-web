@@ -21,6 +21,7 @@ import {
 import { cssRoute, jwksRoute } from "./routes/assets.js";
 import { callbackRoute } from "./routes/callback.js";
 import { loginRoute } from "./routes/login.js";
+import { docsAiAdmin, docsAiPost, docsAiStatus } from "./routes/docs-ai.js";
 import { logoutPage, logoutPost } from "./routes/logout.js";
 import { rootRoute } from "./routes/root.js";
 import { sessionCheck } from "./routes/sessions.js";
@@ -47,6 +48,9 @@ const ROUTES: readonly RouteEntry[] = [
   { method: "GET", path: /^\/sessions\/([^/]+)$/, params: ["sid"], route: sessionCheck },
   { method: "GET", path: /^\/\.well-known\/jwks\.json$/, route: jwksRoute },
   { method: "GET", path: /^\/account$/, route: accountPage },
+  { method: "GET", path: /^\/admin\/docs-ai$/, route: docsAiAdmin },
+  { method: "POST", path: /^\/admin\/docs-ai$/, route: docsAiPost },
+  { method: "GET", path: /^\/api\/docs-ai$/, route: docsAiStatus },
   { method: "POST", path: /^\/account\/unlink$/, route: unlinkPost },
   { method: "POST", path: /^\/account\/sessions\/revoke-others$/, route: revokeOthersPost },
   { method: "POST", path: /^\/account\/sessions\/revoke$/, route: revokeOnePost },

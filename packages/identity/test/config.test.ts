@@ -439,6 +439,7 @@ describe("wrangler.jsonc", () => {
 
   it("binds every secret from the family's Secrets Store as <NAME>_STORE", () => {
     expect(stored.map((binding) => binding["secret_name"]).sort()).toEqual([
+      "ADMIN_SUBS",
       "EVENTS_SECRET_DIAGRAMS",
       "EVENTS_SECRET_DIAGRAMS_STAGING",
       "GITHUB_CLIENT_SECRET",

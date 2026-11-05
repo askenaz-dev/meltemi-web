@@ -8,8 +8,8 @@
 // Everything is read and converted before anything is written: a product whose documentation
 // cannot be read, or a page that cannot be converted, fails the build with the portal's files as
 // they were. The embeddings use Workers AI with CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID from
-// the environment; without them, or when Workers AI refuses, the index holds no passage and the
-// pages leave the Ask dialog out (the search still works).
+// the environment. Disabled/unavailable AI leaves reusable cached vectors in the index and omits
+// uncached passages, while static guides and search still build.
 
 import { createHash } from "node:crypto";
 import {
@@ -28,13 +28,7 @@ import { stillColours } from "../../site/scripts/build.js";
 import { messages } from "../src/messages/index.js";
 import { convertSection, renderPage, type ConvertedSection, type PortalPage } from "./convert.js";
 import { homePage } from "./home.js";
-import {
-  buildIndex,
-  cachedEmbedder,
-  embedderFor,
-  EmbeddingError,
-  type IndexReport,
-} from "./index.js";
+import { buildIndex, cachedEmbedder, embedderFor, type IndexReport } from "./index.js";
 import { addPictures, cliExporter, type Exporter, type PicturesReport } from "./pictures.js";
 import {
   chooseMode,
@@ -81,6 +75,8 @@ export interface PrepareOptions {
   readonly dirs?: Partial<Dirs>;
   readonly exporter?: Exporter;
   readonly env?: NodeJS.ProcessEnv;
+  /** The control read and embeddings API transport; production uses the native fetch. */
+  readonly fetch?: typeof fetch;
   readonly log?: (line: string) => void;
 }
 
@@ -139,28 +135,25 @@ export async function prepare(options: PrepareOptions): Promise<Prepared> {
   });
   log(`  pictures: ${pictures.drawn} drawn from ${pictures.fences} text fences`);
 
-  const embedder = embedderFor(options.embedder, options.mode, env);
-  let index: IndexReport;
-  try {
-    index = await buildIndex(
-      pages,
-      embedder ? cachedEmbedder(embedder, join(dirs.cache, "embeddings")) : undefined,
-    );
-  } catch (error) {
-    if (!(error instanceof EmbeddingError)) throw error;
-    log(
-      `::warning::Workers AI refused the embeddings (${error.message}); the portal is built without Ask the docs`,
-    );
-    index = await buildIndex(pages, undefined);
-  }
+  const embedder = embedderFor(options.embedder, options.mode, env, options.fetch);
+  const index: IndexReport = await buildIndex(
+    pages,
+    embedder
+      ? cachedEmbedder(embedder, join(dirs.cache, "embeddings"), (error) =>
+          log(
+            `::warning::New embeddings stopped (${error.message}); retaining available cached passages`,
+          ),
+        )
+      : undefined,
+  );
   const askEnabled = index.passages > 0;
   log(
     askEnabled
       ? `  index: ${index.passages} passages of ${index.pages} pages, embedded with ${index.model}`
-      : "  index: no passage (no Workers AI token at build): Ask the docs is left out",
+      : "  index: no embedded passage available: Ask the docs is left out",
   );
 
-  // Nothing above wrote a file: from here the portal's sources are replaced.
+  // Only caches were written above: from here the portal's sources are replaced.
   empty(dirs.content);
   for (const page of pages) write(join(dirs.content, page.file), renderPage(page));
   const releases = sourcesJson(trees);

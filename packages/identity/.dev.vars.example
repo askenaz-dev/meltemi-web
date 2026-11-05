@@ -33,6 +33,10 @@ SESSION_PUBLIC_KEYS=[]
 # Any long random text: it signs the OAuth state cookie and the account forms' tokens.
 STATE_SECRET=
 
+# The identity `sub`s allowed to pause or enable documentation AI, comma separated.
+# Production reuses the family's ADMIN_SUBS Secrets Store value. Empty grants nobody access.
+ADMIN_SUBS=
+
 # The key that signs the deletion events sent to Meltemi Diagrams; Diagrams' IDENTITY_EVENTS_SECRET
 # holds the same value.
 EVENTS_SECRET_DIAGRAMS=

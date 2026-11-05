@@ -92,7 +92,7 @@ describe("deploy-config", () => {
     const config = deployConfig(identity, { database: DATABASE, store: STORE });
     expect(config.d1_databases[0].database_id).toBe(DATABASE);
     expect(config.secrets_store_secrets.map((s: { store_id: string }) => s.store_id)).toEqual(
-      Array(6).fill(STORE),
+      Array(7).fill(STORE),
     );
     expect(JSON.stringify(config)).not.toContain(STORE_PLACEHOLDER);
   });

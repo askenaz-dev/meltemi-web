@@ -1,8 +1,7 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  // The portal (design decision 5): the build's static pages as assets, and one route of code,
-  // `POST /api/ask`. Terraform declares the Worker and its Custom Domain docs.meltemi.dev; this file
-  // holds no route and no address of its own.
+  // The portal serves static assets, POST /api/ask and its read-only operational status.
+  // Terraform declares the Worker and docs.meltemi.dev; this file holds no public route.
   "name": "meltemi-docs",
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-15",
@@ -20,6 +19,7 @@
     "not_found_handling": "404-page",
   },
   "ai": { "binding": "AI" },
+  "services": [{ "binding": "IDENTITY", "service": "meltemi-identity" }],
   "ratelimits": [
     { "name": "ASK_LIMIT", "namespace_id": "1", "simple": { "limit": 10, "period": 60 } },
   ],

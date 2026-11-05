@@ -41,6 +41,8 @@ export function devConfig(jsonc: string, port?: number): Record<string, unknown>
   const config = parseJsonc(jsonc);
   delete config["ai"];
   delete config["$schema"];
+  // Fixture mode never calls the production identity Worker, including status checks.
+  delete config["services"];
   return {
     ...config,
     vars: { ASK_STUB: "fixture" },
