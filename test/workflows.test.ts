@@ -266,6 +266,7 @@ describe("the infrastructure's workflows", () => {
           "OAUTH_GOOGLE_CLIENT_SECRET",
           "OVSX_PAT",
           "SESSION_PRIVATE_KEY",
+          "SPONSORS_WEBHOOK_SECRET",
           "VSCE_PAT",
           "WEB_DISPATCH_TOKEN",
         ].sort(),
@@ -277,6 +278,7 @@ describe("the infrastructure's workflows", () => {
         "google_client_secret",
         "web_dispatch_token",
         "narrow_web_dispatch_token",
+        "sponsors_webhook_secret",
       ]) {
         expect(text, `${name}: ${variable}`).toContain(`TF_VAR_${variable}:`);
       }

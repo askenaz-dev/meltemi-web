@@ -111,6 +111,13 @@ variable "admin_subs" {
   default     = ""
 }
 
+variable "sponsors_webhook_secret" {
+  description = "The secret of the GitHub Sponsors webhook that tells Meltemi Diagrams of a donation (its change unbranded-by-donation); empty until the owner creates the webhook, which leaves every delivery refused."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "npm_token" {
   description = "A granular npm token that publishes the `meltemi` organisation's packages; empty until it exists, and again once trusted publishing replaces it."
   type        = string
