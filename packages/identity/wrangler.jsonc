@@ -56,6 +56,18 @@
     },
   ],
   "triggers": { "crons": ["*/15 * * * *"] },
+  "services": [
+    {
+      "binding": "DIAGRAMS_ADMIN",
+      "service": "meltemi-diagrams-cloud",
+      "entrypoint": "Administration",
+    },
+    {
+      "binding": "DIAGRAMS_ADMIN_STAGING",
+      "service": "meltemi-diagrams-staging",
+      "entrypoint": "Administration",
+    },
+  ],
   "vars": {
     "ISSUER": "https://id.meltemi.dev",
     "COOKIE_DOMAIN": "meltemi.dev",

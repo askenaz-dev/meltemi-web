@@ -91,7 +91,7 @@ describe("the documentation AI switch", () => {
       expect(response.headers.get("Cache-Control")).toBe("no-store");
       expect(response.headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'");
       const html = await response.text();
-      expect(html).toContain(`<html lang="${lang}">`);
+      expect(html).toContain(`<html lang="${lang}" data-theme="system">`);
       expect(html).toContain(lang === "es" ? "Pausar respuestas" : "Pause answers");
       expect(formsOf(html).map((form) => form.fields["enabled"])).toEqual(["true", "false"]);
       const account = await h.request(`/account?lang=${lang}`, {

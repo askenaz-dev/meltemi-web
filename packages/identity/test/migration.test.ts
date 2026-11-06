@@ -8,6 +8,12 @@ import { migrationFiles, openDatabase, sqliteAvailable } from "./support/sqlite.
 type Column = readonly [name: string, type: "TEXT" | "INTEGER", notNull: boolean, pk: number];
 
 const EXPECTED: Record<string, readonly Column[]> = {
+  user_preferences: [
+    ["user_id", "TEXT", true, 1],
+    ["display_name", "TEXT", false, 0],
+    ["theme", "TEXT", true, 0],
+    ["language", "TEXT", true, 0],
+  ],
   docs_ai_settings: [
     ["id", "INTEGER", true, 1],
     ["enabled", "INTEGER", true, 0],
@@ -75,7 +81,14 @@ describe.skipIf(!sqliteAvailable)("the migrations", () => {
 
   it("create exactly the account tables and the documentation AI setting", () => {
     const db = openDatabase();
-    expect(tablesOf(db)).toEqual(["docs_ai_settings", "identities", "outbox", "sessions", "users"]);
+    expect(tablesOf(db)).toEqual([
+      "docs_ai_settings",
+      "identities",
+      "outbox",
+      "sessions",
+      "user_preferences",
+      "users",
+    ]);
     db.close();
   });
 
@@ -113,6 +126,7 @@ describe.skipIf(!sqliteAvailable)("the migrations", () => {
       ["identities", 1],
       ["outbox", 1],
       ["sessions", 1],
+      ["user_preferences", 1],
       ["users", 1],
     ]);
     // Text that is not a number cannot go into an INTEGER column (a boolean must be 0 or 1).
@@ -237,7 +251,7 @@ describe.skipIf(!sqliteAvailable)("the migrations", () => {
 
     it("name the users table as the parent of identities and sessions, and of nothing else", () => {
       const db = openDatabase();
-      for (const table of ["identities", "sessions"]) {
+      for (const table of ["identities", "sessions", "user_preferences"]) {
         expect(
           db.raw
             .prepare(`PRAGMA foreign_key_list(${table})`)

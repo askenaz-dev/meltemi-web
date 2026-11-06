@@ -25,6 +25,7 @@ describe("memoryStore", () => {
     const store = memoryStore();
     const user = { id: "u1", name: "Ana", picture: "", createdAt: "2026-10-14T12:00:00.000Z" };
     await store.createUser(user);
+    await store.setDisplayName("u1", "Keep profile on failure");
     await store.addIdentity({
       provider: "github",
       providerId: "gh-1",
@@ -65,12 +66,14 @@ describe("memoryStore", () => {
     await expect(store.deleteUser("u1", failing)).rejects.toThrow(/cannot be read/);
 
     expect(await store.userById("u1")).toEqual(user);
+    expect((await store.getAccountPreferences("u1")).displayName).toBe("Keep profile on failure");
     expect(await store.identitiesOf("u1")).toHaveLength(1);
     expect(await store.session("sid-1")).toBeDefined();
     expect(memoryOutbox(store)).toEqual([]);
 
     await store.deleteUser("u1", [event]);
     expect(await store.userById("u1")).toBeUndefined();
+    expect((await store.getAccountPreferences("u1")).displayName).toBeNull();
     expect(memoryOutbox(store).map((e) => e.id)).toEqual(["evt_1"]);
   });
 

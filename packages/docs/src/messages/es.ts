@@ -55,6 +55,16 @@ export const es: Messages = {
   pictures: {
     label: (page: string, title: string) => (title ? `${title}, un diagrama de ${page}` : page),
   },
+  account: {
+    account: "Cuenta",
+    navigation: "Cuenta personal",
+    administration: "Administración",
+    profile: "Perfil",
+    preferences: "Preferencias",
+    security: "Seguridad de la cuenta",
+    signOut: "Cerrar sesión",
+    checking: "Comprobando cuenta…",
+  },
   ask: {
     button: "Preguntar",
     title: "Pregunta a la documentación",

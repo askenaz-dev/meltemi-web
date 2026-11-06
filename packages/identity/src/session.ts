@@ -4,6 +4,7 @@ import type { Ctx } from "./context.js";
 import { randomToken } from "./crypto.js";
 import { serializeCookie } from "./http.js";
 import { signJwt } from "./jwt.js";
+import { personalizedUser } from "./preferences.js";
 import type { Identity, Session, User } from "./types.js";
 import { parseSessionCookie, sessionVerifier } from "./verify.js";
 
@@ -30,11 +31,11 @@ export function sessionLabel(userAgent: string | null): string {
 }
 
 /** The `Set-Cookie` value that carries a session token. */
-export function sessionCookie(config: Config, token: string): string {
+export function sessionCookie(config: Config, token: string, maxAge = SESSION_SECONDS): string {
   return serializeCookie(SESSION_COOKIE, token, {
     domain: config.cookieDomainAttribute,
     path: "/",
-    maxAge: SESSION_SECONDS,
+    maxAge,
     secure: config.secureCookies,
     httpOnly: true,
     sameSite: "Lax",
@@ -70,6 +71,7 @@ export async function startSession(
   signedInWith: Pick<Identity, "email" | "emailVerified">,
 ): Promise<StartedSession> {
   const { deps, config, request } = ctx;
+  const profile = personalizedUser(user, await deps.store.getAccountPreferences(user.id));
   const iat = Math.floor(deps.now().getTime() / 1000);
   const at = new Date(iat * 1000).toISOString();
   const session: Session = {
@@ -87,7 +89,7 @@ export async function startSession(
     aud: AUDIENCE,
     sub: user.id,
     sid: session.sid,
-    name: user.name,
+    name: profile.name,
     picture: user.picture,
     email: signedInWith.email,
     email_verified: signedInWith.emailVerified,
@@ -139,5 +141,6 @@ export async function sessionFromToken(
   }
   const user = await deps.store.userById(claims.sub);
   if (!user || session.userId !== user.id) return undefined;
-  return { session, user, claims };
+  const profile = personalizedUser(user, await deps.store.getAccountPreferences(user.id));
+  return { session, user: profile, claims };
 }

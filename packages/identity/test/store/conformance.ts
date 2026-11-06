@@ -99,6 +99,71 @@ export function runStoreConformance(
     const outboxRow = async (id: string) =>
       present((await under.outbox()).find((event) => event.id === id));
 
+    describe("account preferences", () => {
+      it("defaults old accounts without a row and isolates targeted concurrent writes", async () => {
+        await seedUsers("a", "b");
+        expect(await store.getAccountPreferences("a")).toEqual({
+          displayName: null,
+          theme: "system",
+          language: "system",
+        });
+        await Promise.all([
+          store.setDisplayName("a", "Ána"),
+          store.setAccountAppearance("a", { theme: "dark", language: "es" }),
+        ]);
+        expect(await store.getAccountPreferences("a")).toEqual({
+          displayName: "Ána",
+          theme: "dark",
+          language: "es",
+        });
+        expect(await store.getAccountPreferences("b")).toEqual({
+          displayName: null,
+          theme: "system",
+          language: "system",
+        });
+        await store.updateUser("a", { name: "Provider changed", picture: "" });
+        expect((await store.getAccountPreferences("a")).displayName).toBe("Ána");
+        await store.setDisplayName("a", null);
+        expect(await store.getAccountPreferences("a")).toEqual({
+          displayName: null,
+          theme: "dark",
+          language: "es",
+        });
+      });
+
+      it("rejects unknown users and invalid stored values", async () => {
+        await expect(store.setDisplayName("missing", "Name")).rejects.toThrow();
+        await expect(
+          store.setAccountAppearance("missing", { theme: "dark", language: "es" }),
+        ).rejects.toThrow();
+        await seedUsers("a");
+        for (const name of [" ", " untrimmed ", "x".repeat(81), "Name\u202e", "Name\n"])
+          await expect(store.setDisplayName("a", name)).rejects.toThrow();
+        await expect(
+          store.setAccountAppearance("a", { theme: "fake", language: "es" } as never),
+        ).rejects.toThrow();
+        expect(await store.getAccountPreferences("a")).toEqual({
+          displayName: null,
+          theme: "system",
+          language: "system",
+        });
+      });
+
+      it("removes preferences with account deletion without touching another account", async () => {
+        await seedUsers("a", "b");
+        await store.setDisplayName("a", "Delete me");
+        await store.setDisplayName("b", "Keep me");
+        await store.deleteUser("a", [anEvent()]);
+        expect(await store.getAccountPreferences("a")).toEqual({
+          displayName: null,
+          theme: "system",
+          language: "system",
+        });
+        expect((await store.getAccountPreferences("b")).displayName).toBe("Keep me");
+        expect(await outboxRow("evt_1")).toBeDefined();
+      });
+    });
+
     describe("documentation AI", () => {
       it("starts enabled only from the initial settings seed, and explicit assignments repeat safely", async () => {
         expect(await store.getDocsAi()).toBe(true);

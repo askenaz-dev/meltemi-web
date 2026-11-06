@@ -5,11 +5,17 @@
 **Pregunta a la documentación** se puede pausar y activar sin reconstruir ni retirar las guías.
 El control abarca las nuevas solicitudes de respuestas y los nuevos embeddings de la documentación.
 
+Es un único control global. Elegir Producción o Staging en el espacio central de administración
+no selecciona un estado de IA de documentación separado.
+
 ## Pausar o activar las respuestas
 
-Abre [Administración de IA de la documentación](https://id.meltemi.dev/admin/docs-ai?lang=es) e
-inicia sesión con la cuenta Meltemi de un propietario del servicio. Su página de cuenta también
-incluye el enlace. Solo tienen acceso los `sub` de identidad exactos de la lista existente
+En la cabecera de documentación, elige **Administración** cuando se confirme tu sesión como
+propietario y abre **IA de documentación**. También puedes abrir el
+[espacio central de administración](https://id.meltemi.dev/admin/?lang=es) e iniciar sesión con la
+cuenta Meltemi actual del propietario. [Administración y tu cuenta](administration.md) explica
+el menú personal, las preferencias y las operaciones autorizadas de los productos.
+Solo tienen acceso los `sub` de identidad exactos de la lista existente
 `ADMIN_SUBS`; ser administrador o moderador invitado de Meltemi Diagrams no concede acceso a
 este control.
 

@@ -58,6 +58,16 @@ export const en = {
   pictures: {
     label: (page: string, title: string) => (title ? `${title}, a diagram of ${page}` : page),
   },
+  account: {
+    account: "Account",
+    navigation: "Personal account",
+    administration: "Administration",
+    profile: "Profile",
+    preferences: "Preferences",
+    security: "Account security",
+    signOut: "Sign out",
+    checking: "Checking account…",
+  },
   ask: {
     button: "Ask",
     title: "Ask the docs",

@@ -1,0 +1,15 @@
+---
+// Keep account navigation outside the desktop-only controls so owners can reach it on a phone.
+import SiteTitle from "virtual:starlight/components/SiteTitle";
+import Search from "virtual:starlight/components/Search";
+import ThemeSelect from "virtual:starlight/components/ThemeSelect";
+import LanguageSelect from "virtual:starlight/components/LanguageSelect";
+import AccountMenu from "./AccountMenu.astro";
+---
+
+<div class="portal-header">
+  <div class="portal-header-brand"><SiteTitle /></div>
+  <div class="portal-header-search print:hidden"><Search /></div>
+  <div class="portal-header-preferences print:hidden"><ThemeSelect /><LanguageSelect /></div>
+  <AccountMenu />
+</div>
