@@ -8,7 +8,7 @@
 
 ## 2. Operator execution
 
-- [ ] Confirm the owner stored the narrow input and review current main/CI plus operation revision.
-- [ ] Push only the operation branch and dispatch its constrained workflow; never merge it.
-- [ ] Verify the second plan is unchanged and destination metadata exists, without reading values.
-- [ ] Verify a real Diagrams notice dispatch starts Web Deploy and publishes the released docs.
+- [x] Confirm the owner stored the narrow input and review current main/CI plus operation revision.
+- [x] Push only the operation branch and dispatch its constrained workflow; never merge it.
+- [x] Verify the second plan is unchanged and destination metadata exists, without reading values.
+- [x] Verify a real Diagrams notice dispatch starts Web Deploy and publishes the released docs.
