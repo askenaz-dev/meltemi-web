@@ -62,6 +62,13 @@ describe("personal account settings", () => {
     const html = await page.text();
     expect(html).toContain("Global control");
     expect(html).toContain('action="/admin/docs-ai?lang=en&amp;environment=staging"');
+    const invalid = await formPost(h, "/account/preferences", {
+      as: person,
+      query: "?lang=es&environment=staging",
+      fields: { theme: "invalid", language: "es" },
+    });
+    expect(invalid.status).toBe(400);
+    expect(await invalid.text()).toContain('href="/account?lang=es&amp;environment=staging"');
   });
 
   it("normalizes Unicode and rejects invisible controls and excessive names", () => {

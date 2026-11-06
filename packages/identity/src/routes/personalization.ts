@@ -76,7 +76,7 @@ function failure(ctx: Ctx, status: number, code: string): Response {
     code,
     title: invalid ? m.invalidTitle : m.unavailableTitle,
     message: invalid ? m.invalidBody : m.unavailableBody,
-    actions: [{ href: "/account", label: m.back, primary: true }],
+    actions: [{ href: workspacePath(ctx, "/account"), label: m.back, primary: true }],
   });
   response.headers.set("Cache-Control", "no-store");
   return response;
