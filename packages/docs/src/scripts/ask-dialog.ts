@@ -3,6 +3,8 @@
 // each `[n]` into a link to the page it names, and lists the sources. When answers are paused,
 // limited or unavailable it says so and offers the search, which always works.
 
+import { isProduct } from "../search-scope.js";
+
 interface Words {
   readonly lang: string;
   readonly limit: number;
@@ -89,6 +91,7 @@ class MeltemiAsk extends HTMLElement {
     const dialog = this.querySelector<HTMLDialogElement>("dialog")!;
     const close = this.querySelector<HTMLButtonElement>("[data-close]")!;
     const form = this.querySelector<HTMLFormElement>("form")!;
+    const scope = this.querySelector<HTMLSelectElement>("[data-scope-select]")!;
     const field = this.querySelector<HTMLTextAreaElement>("textarea")!;
     const counter = this.querySelector<HTMLElement>(".ask-counter")!;
     const submit = this.querySelector<HTMLButtonElement>(".ask-submit")!;
@@ -183,6 +186,13 @@ class MeltemiAsk extends HTMLElement {
       busy(false);
     });
     field.addEventListener("input", count);
+    scope.addEventListener("change", () => {
+      this.#controller?.abort();
+      this.#controller = undefined;
+      reset();
+      busy(false);
+      if (!enabled) void refreshStatus();
+    });
     field.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
         event.preventDefault();
@@ -191,7 +201,14 @@ class MeltemiAsk extends HTMLElement {
     });
     search.addEventListener("click", () => {
       dialog.close();
-      // After this click has finished: Starlight's search closes itself on a click outside it.
+      const searchScope = document.querySelector<HTMLSelectElement>(
+        "site-search [data-scope-select]",
+      );
+      if (searchScope) {
+        searchScope.value = scope.value;
+        searchScope.dispatchEvent(new Event("change"));
+      }
+      // Open the other modal after this click and this dialog's close event have finished.
       setTimeout(
         () =>
           document.querySelector<HTMLButtonElement>("site-search button[data-open-modal]")?.click(),
@@ -216,7 +233,11 @@ class MeltemiAsk extends HTMLElement {
         const response = await fetch("/api/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question, lang: words.lang }),
+          body: JSON.stringify({
+            question,
+            lang: words.lang,
+            ...(isProduct(scope.value) ? { section: scope.value } : {}),
+          }),
           signal: controller.signal,
           credentials: "omit",
         });

@@ -275,7 +275,7 @@ describe("search in the reader's browser", () => {
     for (let i = 0; i < index.count; i++) {
       expect(index.text(i)).not.toMatch(/parser-architecture-only|internal-qa-only/);
     }
-    expect(html("/web/repositories/")).toContain(
+    expect(html("/web/account/")).toContain(
       'href="https://github.com/askenaz-dev/meltemi-web/blob/main/docs/decisions/0001-family-repositories.md"',
     );
   });

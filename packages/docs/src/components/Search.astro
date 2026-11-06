@@ -1,12 +1,76 @@
 ---
-// Starlight's search (Pagefind, in the reader's browser), with "Ask the docs" beside it when the
-// build made an index of passages (design decisions 1 and 6).
-import Default from "@astrojs/starlight/components/Search.astro";
+// Product-scoped Pagefind search, with the same route default as Ask.
+import { Icon } from "@astrojs/starlight/components";
 import ask from "../generated/ask.json";
 import Ask from "./Ask.astro";
+import { messagesOf } from "../messages/index.ts";
+import { PRODUCTS, scopeForId } from "../search-scope.ts";
+
+const route = Astro.locals.starlightRoute;
+const words = messagesOf(route.lang);
+const scope = scopeForId(route.id);
+const label = scope === "all"
+  ? words.search.button
+  : words.search.inProduct(words.sections[scope].name);
+const translations = Object.fromEntries(
+  Object.entries(Astro.locals.t.all())
+    .filter(([key]) => key.startsWith("pagefind."))
+    .map(([key, value]) => [key.replace("pagefind.", ""), value]),
+);
+const data = {
+  translations,
+  button: words.search.button,
+  all: words.search.all,
+  inProduct: words.search.inProduct("{product}"),
+  unavailable: words.search.unavailable,
+  products: Object.fromEntries(PRODUCTS.map(product => [product, words.sections[product].name])),
+};
 ---
 
+<link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
 <div class="portal-search">
-  <Default {...Astro.props} />
+  {scope !== "all" && <span hidden data-pagefind-filter={`product:${scope}`} />}
+  <site-search data-scope={scope} data-words={JSON.stringify(data)}>
+    <button
+      type="button"
+      data-open-modal
+      class="search-open"
+      disabled
+      aria-label={label}
+      aria-keyshortcuts="Control+K"
+      aria-haspopup="dialog">
+      <Icon name="magnifier" size="1.1rem" />
+      <span class="search-label">{label}</span>
+      <kbd hidden><span data-platform-key>Ctrl</span> K</kbd>
+    </button>
+    <dialog class="search-dialog" aria-labelledby="docs-search-title">
+      <div class="search-frame">
+        <header class="search-head">
+          <h2 id="docs-search-title">{words.search.button}</h2>
+          <button type="button" data-close-modal class="search-close" aria-label={words.search.close}>
+            <Icon name="close" size="1.2rem" />
+          </button>
+        </header>
+        <label class="discovery-scope" for="docs-search-scope">
+          <span>{words.search.scope}</span>
+          <select id="docs-search-scope" data-scope-select>
+            <option value="all" selected={scope === "all"}>{words.search.all}</option>
+            {PRODUCTS.map(product => (
+              <option value={product} selected={scope === product}>
+                {words.sections[product].name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <p class="search-problem" role="status" hidden>{words.search.unavailable}</p>
+        <div id="starlight__search" />
+      </div>
+    </dialog>
+  </site-search>
   {ask.enabled && <Ask />}
 </div>
+
+<script>
+  import { defineSearch } from "../scripts/search-dialog.ts";
+  defineSearch();
+</script>

@@ -426,6 +426,226 @@ const search: Check = async (browser, origin) => {
   return failures;
 };
 
+/** The same word exists in all three products, so this checks filtering rather than ranking. */
+const productSearch: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  const paths = (page: Page) =>
+    page.$$eval("#starlight__search .pagefind-ui__result-link", (links) =>
+      links.map((link) => (link as HTMLAnchorElement).pathname),
+    );
+  const settled = async (page: Page) => {
+    // Pagefind debounces input for 300 ms. Then wait for the index and result fragments too.
+    await page.waitForTimeout(400);
+    await page.waitForFunction(() => {
+      const message = document.querySelector("#starlight__search .pagefind-ui__message");
+      return (
+        message?.textContent?.trim() &&
+        !/^(searching|buscando)\b/i.test(message.textContent.trim()) &&
+        !document.querySelector("#starlight__search .pagefind-ui__loading")
+      );
+    });
+  };
+  for (const [prefix, term] of [
+    ["/", "session"],
+    ["/es/", "sesión"],
+  ] as const) {
+    for (const product of ["all", "diagrams", "ide", "web"] as const) {
+      const url = product === "all" ? prefix : `${prefix}${product}/`;
+      const watched = await open(browser, origin, url, {
+        width: product === "web" ? 375 : 1280,
+        scheme: product === "ide" ? "dark" : "light",
+      });
+      const { page } = watched;
+      await page.keyboard.press("Control+k");
+      await page.waitForSelector("#starlight__search input");
+      if ((await page.inputValue("#docs-search-scope")) !== product)
+        failures.push(`${url}: wrong default search scope`);
+      await page.fill("#starlight__search input", term);
+      await settled(page);
+      const found = await paths(page);
+      if (!found.length) failures.push(`${url}: ${term} has no result`);
+      if (
+        found.some(
+          (path) => !path.startsWith(prefix) || (prefix === "/" && path.startsWith("/es/")),
+        )
+      )
+        failures.push(`${url}: search mixed languages: ${found}`);
+      if (product === "all") {
+        for (const wanted of ["diagrams", "ide", "web"])
+          if (!found.some((path) => path.startsWith(`${prefix}${wanted}/`)))
+            failures.push(`${url}: the general search omitted ${wanted}: ${found}`);
+      } else if (found.some((path) => !path.startsWith(`${prefix}${product}/`))) {
+        failures.push(`${url}: product search leaked results: ${found}`);
+      }
+      await page.selectOption("#docs-search-scope", "web");
+      await settled(page);
+      if ((await page.inputValue("#starlight__search input")) !== term)
+        failures.push(`${url}: changing product lost the query`);
+      const scopeLabels = await page.evaluate(() => ({
+        button: document.querySelector("site-search [data-open-modal]")?.getAttribute("aria-label"),
+        visible: document.querySelector("site-search .search-label")?.textContent,
+        placeholder: document.querySelector<HTMLInputElement>("#starlight__search input")
+          ?.placeholder,
+        title: document.querySelector<HTMLInputElement>("#starlight__search input")?.title,
+      }));
+      if (
+        !scopeLabels.button?.includes("Meltemi Web") ||
+        scopeLabels.visible !== scopeLabels.button ||
+        scopeLabels.title !== scopeLabels.placeholder
+      )
+        failures.push(
+          `${url}: search labels retained the old product: ${JSON.stringify(scopeLabels)}`,
+        );
+      const web = await paths(page);
+      if (!web.length || web.some((path) => !path.startsWith(`${prefix}web/`)))
+        failures.push(`${url}: selecting Web found ${web}`);
+      await page.selectOption("#docs-search-scope", "all");
+      await settled(page);
+      const all = await paths(page);
+      if (!all.some((path) => path.startsWith(`${prefix}diagrams/`)))
+        failures.push(`${url}: widening the search did not restore Diagrams`);
+      await page.selectOption("#docs-search-scope", "diagrams");
+      await settled(page);
+      await page.click(".pagefind-ui__search-clear");
+      await page.waitForFunction(
+        () => !document.querySelector("#starlight__search .pagefind-ui__result"),
+      );
+      await page.selectOption("#docs-search-scope", "ide");
+      await page.fill("#starlight__search input", "purchase");
+      await settled(page);
+      if ((await paths(page)).length)
+        failures.push(`${url}: an unmatched IDE query silently widened to another product`);
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() =>
+        document.activeElement?.matches("site-search [data-open-modal]"),
+      );
+      await page.click("site-search [data-open-modal]");
+      if ((await page.inputValue("#docs-search-scope")) !== "ide")
+        failures.push(`${url}: reopening forgot the selected scope`);
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      if (wide > 1) failures.push(`${url}: search overflows horizontally by ${wide}px`);
+      const selector = await page.locator("#docs-search-scope").boundingBox();
+      if (!selector || selector.height < 44)
+        failures.push(`${url}: the scope selector is not a touch target`);
+      if (product === "web") {
+        const frame = await page.locator(".search-dialog").boundingBox();
+        if (!frame || frame.width < 370)
+          failures.push(`${url}: search is not full width on a phone`);
+      }
+      failures.push(...watched.problems.map((problem) => `${url}: ${problem}`));
+      await watched.context.close();
+    }
+  }
+  return failures;
+};
+
+/** The submitted scope, answer reset and search fallback all follow the visible selection. */
+const productAsk: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  for (const prefix of ["/", "/es/"]) {
+    for (const product of ["all", "diagrams", "ide", "web"] as const) {
+      const url = product === "all" ? prefix : `${prefix}${product}/`;
+      const watched = await open(browser, origin, url);
+      const { page } = watched;
+      const bodies: Record<string, unknown>[] = [];
+      let release: (() => void) | undefined;
+      let pending = false;
+      let received: () => void;
+      const pendingReceived = new Promise<void>((resolve) => {
+        received = resolve;
+      });
+      await page.route("**/api/ask", async (route) => {
+        const body = route.request().postDataJSON() as Record<string, unknown>;
+        bodies.push(body);
+        if (pending) {
+          received!();
+          await new Promise<void>((resolve) => {
+            release = resolve;
+          });
+        }
+        const section = body["section"] ?? "diagrams";
+        await route
+          .fulfill({
+            contentType: "application/json",
+            body: JSON.stringify({
+              answer: "An answer from the chosen guides. [1]",
+              sources: [
+                {
+                  n: 1,
+                  title: "Guide",
+                  url: `${prefix}${section}/`,
+                  lang: prefix === "/" ? "en" : "es",
+                  section,
+                },
+              ],
+            }),
+          })
+          .catch(() => undefined);
+      });
+      await page.click(".ask-open");
+      await page.waitForFunction(
+        () => !document.querySelector<HTMLButtonElement>(".ask-submit")!.disabled,
+      );
+      if ((await page.inputValue("#ask-scope")) !== product)
+        failures.push(`${url}: wrong default Ask scope`);
+      const question = "How do I use a session?";
+      await page.fill("#ask-question", question);
+      await page.click(".ask-submit");
+      await page.waitForSelector(".ask-answer:not([hidden])");
+      if (bodies[0]?.["section"] !== (product === "all" ? undefined : product))
+        failures.push(`${url}: Ask sent the wrong scope: ${JSON.stringify(bodies[0])}`);
+      await page.selectOption("#ask-scope", "web");
+      if ((await page.inputValue("#ask-question")) !== question)
+        failures.push(`${url}: changing Ask scope lost the question`);
+      if (await page.isVisible(".ask-answer"))
+        failures.push(`${url}: an old product's answer stayed visible`);
+      pending = true;
+      await page.click(".ask-submit");
+      await page.waitForFunction(
+        () => document.querySelector(".ask-result")?.getAttribute("aria-busy") === "true",
+      );
+      await pendingReceived;
+      await page.selectOption("#ask-scope", "ide");
+      release?.();
+      await page.waitForTimeout(100);
+      if (await page.isVisible(".ask-answer"))
+        failures.push(`${url}: an aborted answer restored stale content`);
+      if (await page.isDisabled(".ask-submit"))
+        failures.push(`${url}: switching scope left Ask busy`);
+      pending = false;
+      await page.selectOption("#ask-scope", "all");
+      await page.click(".ask-submit");
+      await page.waitForSelector(".ask-answer:not([hidden])");
+      if (bodies.at(-1)?.["section"] !== undefined)
+        failures.push(`${url}: all guides still sent a product filter`);
+      await page.selectOption("#ask-scope", "ide");
+      await page.unroute("**/api/ask");
+      await page.route("**/api/ask", (route) =>
+        route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ reason: "allowance" }),
+        }),
+      );
+      await page.click(".ask-submit");
+      await page.waitForSelector(".ask-problem:not([hidden])");
+      await page.click("meltemi-ask [data-search]");
+      await page.waitForSelector("site-search dialog[open]");
+      if ((await page.inputValue("#docs-search-scope")) !== "ide")
+        failures.push(`${url}: Ask's search fallback used another product`);
+      failures.push(
+        ...watched.problems
+          .filter(
+            (problem) => !problem.includes("status of 503") && !problem.includes("ERR_FAILED"),
+          )
+          .map((problem) => `${url}: ${problem}`),
+      );
+      await watched.context.close();
+    }
+  }
+  return failures;
+};
+
 /** Ask the fixture question: the answer with its [1] linked to the Stories page, and the source. */
 const ask: Check = async (browser, origin) => {
   const failures: string[] = [];
@@ -471,7 +691,7 @@ const ask: Check = async (browser, origin) => {
   return failures;
 };
 
-/** A spent allowance: the dialog says so and its button opens the search. */
+/** A provider failure offers search without guessing the account's billing state. */
 const allowance: Check = async (browser, origin) => {
   const failures: string[] = [];
   const watched = await open(browser, origin, "/diagrams/player/");
@@ -490,7 +710,7 @@ const allowance: Check = async (browser, origin) => {
     .waitForSelector(".ask-problem:not([hidden])", { timeout: 10_000 })
     .catch(() => undefined);
   const said = (await page.textContent(".ask-problem p")) ?? "";
-  if (!said.includes("Answers are paused for today"))
+  if (!said.includes("AI answers are temporarily unavailable"))
     failures.push(`the allowance sentence is missing: ${JSON.stringify(said)}`);
   await page.click("[data-search]");
   await page.waitForTimeout(300);
@@ -783,8 +1003,16 @@ const CHECKS: readonly [string, Check][] = [
   ],
   ["revocation, stale navigation and outages clear prior owner access", accountRevocation],
   ["search finds purchase on the Stories page, in English only; empty, it shows nothing", search],
+  [
+    "product search defaults, overrides, empty results, keyboard and mobile work in both languages",
+    productSearch,
+  ],
+  [
+    "product Ask defaults, overrides, stale answers and search fallback work in both languages",
+    productAsk,
+  ],
   ["ask the docs answers the fixture question with its source, in both languages", ask],
-  ["a spent allowance says so and offers the search", allowance],
+  ["a provider failure offers the search without a billing claim", allowance],
   [
     "disabled AI preserves guides, search and the question, and reopening reads current status in both languages",
     disabled,

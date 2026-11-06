@@ -6,10 +6,12 @@
 import { Icon } from "@astrojs/starlight/components";
 import { messagesOf } from "../messages/index.ts";
 import { QUESTION_LIMIT } from "../ask.ts";
+import { PRODUCTS, scopeForId } from "../search-scope.ts";
 
 const { lang } = Astro.locals.starlightRoute;
 const words = messagesOf(lang);
 const ask = words.ask;
+const scope = scopeForId(Astro.locals.starlightRoute.id);
 const sections = Object.fromEntries(Object.entries(words.sections).map(([key, value]) => [key, value.name]));
 const data = {
   lang: words.lang,
@@ -45,6 +47,17 @@ const data = {
       </header>
       <p class="ask-intro" id="ask-intro">{ask.intro}</p>
       <form class="ask-form" novalidate>
+        <label class="discovery-scope" for="ask-scope">
+          <span>{ask.scope}</span>
+          <select id="ask-scope" data-scope-select>
+            <option value="all" selected={scope === "all"}>{words.search.all}</option>
+            {PRODUCTS.map(product => (
+              <option value={product} selected={scope === product}>
+                {words.sections[product].name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label class="sr-only" for="ask-question">{ask.label}</label>
         <textarea
           id="ask-question"

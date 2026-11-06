@@ -6,9 +6,10 @@
 // embedder, a fake model and a fake limiter. The question and the answer are never logged, stored
 // or sent anywhere but to the two Workers AI calls.
 
-import { messages, type Lang } from "./messages/index.js";
+import { messages, type Lang, type Section } from "./messages/index.js";
 import { rank, type AskIndex } from "./ask-index.js";
 import type { AiControlState } from "./ai-control.js";
+import { isProduct } from "./search-scope.js";
 
 /** The answering model: instruction following in a hundred languages, cheap per question. */
 export const ASK_MODEL = "@cf/zai-org/glm-4.7-flash";
@@ -69,7 +70,7 @@ const refuse = (status: number, reason: string, message?: string, extra?: Record
 /** The question and language of a body, or the reason it is refused. */
 export function readQuestion(
   text: string,
-): { question: string; lang: Lang } | { reason: string; message: string } {
+): { question: string; lang: Lang; section?: Section } | { reason: string; message: string } {
   let body: unknown;
   try {
     body = JSON.parse(text);
@@ -80,9 +81,16 @@ export function readQuestion(
     return { reason: "json", message: "The body is not a JSON object." };
   }
   const fields = Object.keys(body);
-  const extra = fields.filter((f) => f !== "question" && f !== "lang");
+  const extra = fields.filter((f) => f !== "question" && f !== "lang" && f !== "section");
   if (extra.length) return { reason: "fields", message: `Unknown field: ${extra.join(", ")}.` };
-  const { question, lang } = body as { question?: unknown; lang?: unknown };
+  const { question, lang, section } = body as {
+    question?: unknown;
+    lang?: unknown;
+    section?: unknown;
+  };
+  if (section !== undefined && !isProduct(section)) {
+    return { reason: "section", message: 'section is "diagrams", "ide" or "web".' };
+  }
   if (lang !== "en" && lang !== "es") return { reason: "lang", message: 'lang is "en" or "es".' };
   if (typeof question !== "string") return { reason: "question", message: "question is a string." };
   const trimmed = question.trim();
@@ -94,7 +102,7 @@ export function readQuestion(
       message: `The question has ${length} characters; the limit is ${QUESTION_LIMIT}.`,
     };
   }
-  return { question: trimmed, lang };
+  return { question: trimmed, lang, ...(isProduct(section) ? { section } : {}) };
 }
 
 /** The address's key for the limiter: a hash, so the address itself is never handed on. */
@@ -112,9 +120,14 @@ export async function limitKey(request: Request): Promise<string> {
 const LANGUAGE = { en: "English", es: "Spanish" } as const;
 
 /** The system prompt: the passages only, cited as [n], in the question's language. */
-export function systemPrompt(lang: Lang): string {
+export function systemPrompt(lang: Lang, section?: Section): string {
   return [
     "You answer questions about the documentation of the Meltemi family: Meltemi Diagrams, Meltemi IDE and Meltemi Web.",
+    ...(section
+      ? [
+          `The reader selected ${messages[lang].sections[section].name}. Answer only from that product's documentation; do not substitute instructions for another product.`,
+        ]
+      : []),
     "Use only the numbered passages in the user's message. After each sentence that uses a passage, cite it as [n] with its number.",
     `Answer in the language the question is written in (the reader's page is in ${LANGUAGE[lang]}), in plain text: at most three short paragraphs, no Markdown, no HTML, no headings, no lists.`,
     `If the passages do not answer the question, reply exactly: ${messages[lang].ask.notCovered}`,
@@ -167,7 +180,7 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   if (text.length > BODY_LIMIT) return refuse(400, "size", `The body is over ${BODY_LIMIT} bytes.`);
   const read = readQuestion(text);
   if ("reason" in read) return refuse(400, read.reason, read.message);
-  const { question, lang } = read;
+  const { question, lang, section } = read;
 
   if (!(await deps.limit(await limitKey(request)))) {
     return refuse(429, "limit", "Ten questions a minute: wait a moment.", { "Retry-After": "60" });
@@ -197,7 +210,7 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   }
   if (query.length !== index.dimensions) return refuse(503, "index");
 
-  const ranked = rank(index, query, { candidates: CANDIDATES, top: TOP });
+  const ranked = rank(index, query, { candidates: CANDIDATES, top: TOP, section });
   if (!ranked.length || ranked[0]!.score < MIN_SCORE) {
     return json(200, { answer: messages[lang].ask.notCovered, sources: [] });
   }
@@ -219,7 +232,10 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   if (answerPermission !== "enabled")
     return refuse(503, answerPermission === "disabled" ? "disabled" : "control");
   try {
-    raw = await deps.answer({ system: systemPrompt(lang), user: userPrompt(question, passages) });
+    raw = await deps.answer({
+      system: systemPrompt(lang, section),
+      user: userPrompt(question, passages),
+    });
   } catch {
     console.error("ask: Workers AI gave no answer");
     return refuse(503, "allowance");

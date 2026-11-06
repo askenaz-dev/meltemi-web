@@ -28,8 +28,8 @@ export const en = {
     web: {
       name: "Meltemi Web",
       blurb:
-        "What the family shares: the map of the three repositories, their domains and contracts, and the decisions behind them.",
-      action: "Read the family's map",
+        "Your shared Meltemi account: sign in, manage your profile, preferences and sessions, and use authorized administration tools.",
+      action: "Read the account guides",
     },
   } satisfies Record<Section, { name: string; blurb: string; action: string }>,
   home: {
@@ -43,6 +43,14 @@ export const en = {
   sidebar: {
     overview: "Overview",
     other: "Other pages",
+  },
+  search: {
+    button: "Search",
+    close: "Close search",
+    scope: "Search in",
+    all: "All documentation",
+    inProduct: (product: string) => `Search ${product}`,
+    unavailable: "Search could not load. Close the dialog and try again.",
   },
   footer: {
     from: (product: string) => `From ${product}`,
@@ -71,6 +79,7 @@ export const en = {
   ask: {
     button: "Ask",
     title: "Ask the docs",
+    scope: "Use guides from",
     intro:
       "Ask a question in your own words: the answer is written from the portal's pages only, and names the pages it used.",
     placeholder: "How do I export a story as a video?",
@@ -83,8 +92,7 @@ export const en = {
     checking: "Checking availability…",
     sources: "Sources",
     notCovered: "The documentation does not cover this.",
-    allowance:
-      "Answers are paused for today: the day's free allowance of Workers AI is spent. The search still finds every page.",
+    allowance: "AI answers are temporarily unavailable. You can still read and search the guides.",
     disabled: "AI answers are turned off. You can still read and search all guides.",
     control: "AI answers are unavailable right now. Reopen Ask to try again, or search the guides.",
     limit: "That is ten questions in a minute. Wait a moment and ask again, or search the pages.",
@@ -97,7 +105,7 @@ export const en = {
       "Your question is sent to Cloudflare Workers AI to be answered and is not stored. Answers can be wrong: check the sources.",
     privacyLink: "Privacy notice",
     privacyUrl: "https://meltemi.dev/privacy/",
-    daily: "Answers run on Cloudflare's free allowance, about four hundred a day for everyone.",
+    daily: "Reading and search remain available when AI answers are paused or unavailable.",
   },
 };
 
