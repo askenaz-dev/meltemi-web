@@ -1,4 +1,5 @@
 import type { Identity, Iso, OutboxEvent, Provider, Session, User } from "../types.js";
+import type { AccountLanguage, AccountPreferences, AccountTheme } from "../preferences.js";
 
 /** What changes when the same identity signs in again. */
 export interface IdentityPatch {
@@ -17,6 +18,12 @@ export interface IdentityPatch {
  * and `d1Store()` for the Worker. Times are ISO strings in UTC, which sort as text.
  */
 export interface IdentityStore {
+  getAccountPreferences(userId: string): Promise<AccountPreferences>;
+  setDisplayName(userId: string, name: string | null): Promise<void>;
+  setAccountAppearance(
+    userId: string,
+    appearance: { readonly theme: AccountTheme; readonly language: AccountLanguage },
+  ): Promise<void>;
   /** The persisted switch; an absent or unreadable state must never enable AI. */
   getDocsAi(): Promise<boolean | undefined>;
   /** Acknowledges only after the existing settings row has been durably changed. */

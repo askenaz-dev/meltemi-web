@@ -53,4 +53,8 @@ export interface Env {
   readonly [secret: `EVENTS_SECRET_${string}`]: string | undefined;
 
   readonly DB: D1Like;
+  /** Private hosted Diagrams administration entrypoint; never called by a browser directly. */
+  readonly DIAGRAMS_ADMIN?: { fetch(request: Request): Promise<Response> };
+  /** Explicitly separate staging data and authorization from production. */
+  readonly DIAGRAMS_ADMIN_STAGING?: { fetch(request: Request): Promise<Response> };
 }

@@ -12,6 +12,7 @@
 
 import { spawn, type ChildProcess } from "node:child_process";
 import { readdirSync, statSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { createServer } from "node:net";
 import { dirname, join, relative, sep } from "node:path";
@@ -90,6 +91,8 @@ interface Visit {
   readonly reducedMotion?: boolean;
   readonly javaScript?: boolean;
   readonly width?: number;
+  readonly navigation?: () =>
+    { body: unknown; status?: number } | Promise<{ body: unknown; status?: number }>;
 }
 
 interface Watched {
@@ -122,6 +125,20 @@ async function open(
     problems.push(`a request beyond this machine: ${href}`);
     return route.abort();
   });
+  if (visit.navigation) {
+    await context.route("**/api/account-menu", async (route) => {
+      requests.push(route.request().url());
+      const reply = await visit.navigation!();
+      await route
+        .fulfill({
+          status: reply.status ?? 200,
+          contentType: "application/json",
+          headers: { "Cache-Control": "private, no-store", Vary: "Cookie" },
+          body: JSON.stringify(reply.body),
+        })
+        .catch(() => undefined);
+    });
+  }
   await context.addInitScript({ content: "globalThis.__name = (f) => f;" });
   await context.addInitScript(() => {
     document.addEventListener("securitypolicyviolation", (e) =>
@@ -174,6 +191,201 @@ const headers: Check = async (_browser, origin) => {
   if (ask.status !== 400) failures.push(`/api/ask answered ${ask.status} to an empty question`);
   if (ask.headers.get("cache-control") !== "no-store")
     failures.push("/api/ask: no Cache-Control no-store");
+  return failures;
+};
+
+/** Owner discovery is private and progressive; its navigation stays visible at narrow widths. */
+const accountOwners: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  const evidence = process.env["MELTEMI_DOCS_SCREENSHOTS"];
+  if (evidence) await mkdir(evidence, { recursive: true });
+  for (const [url, lang, label] of [
+    ["/diagrams/player/", "en", "Administration"],
+    ["/es/diagrams/player/", "es", "Administración"],
+  ] as const) {
+    for (const width of [320, 375, 800, 1280]) {
+      let release: ((value: { body: unknown }) => void) | undefined;
+      const pending = new Promise<{ body: unknown }>((resolve) => {
+        release = resolve;
+      });
+      const displayName = "Ada <img src=x onerror=alert(1)> Lovelace · a very long account name";
+      const watched = await open(browser, origin, url, {
+        width,
+        scheme: width === 375 ? "dark" : "light",
+        navigation: () => pending,
+      });
+      const { page } = watched;
+      if (await page.isVisible("[data-account-admin]"))
+        failures.push(`${url}/${width}: owner link flashed before confirmation`);
+      const response = { body: { authenticated: true, name: displayName, owner: true } };
+      release!(response);
+      await page.waitForSelector("[data-account-admin]:not([hidden])");
+      if ((await page.textContent("[data-account-admin]")) !== label)
+        failures.push(`${url}/${width}: missing administration label`);
+      if (
+        (await page.getAttribute("[data-account-admin]", "href")) !==
+        `https://id.meltemi.dev/admin/?lang=${lang}`
+      )
+        failures.push(`${url}/${width}: wrong central administration destination`);
+      const admin = await page.locator("[data-account-admin]").boundingBox();
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+      if (wide > 1) failures.push(`${url}/${width}: header overflows by ${wide}px`);
+      if (
+        !admin ||
+        admin.x < 0 ||
+        admin.x + admin.width > width ||
+        admin.y < 0 ||
+        (width === 375 && admin.height < 44)
+      )
+        failures.push(`${url}/${width}: administration is not a usable header target`);
+      if (evidence)
+        await page.screenshot({ path: join(evidence, `docs-account-${lang}-${width}-closed.png`) });
+      await page.click(".portal-account-summary");
+      await page.waitForFunction(
+        (expected) =>
+          document.querySelector("meltemi-account")?.getAttribute("aria-busy") === "false" &&
+          document.querySelector("[data-account-name]")?.textContent === expected,
+        displayName,
+      );
+      if ((await page.textContent("[data-account-name]")) !== displayName)
+        failures.push(`${url}/${width}: display name was not shown as text`);
+      if (await page.locator(".portal-account-panel img, .portal-account-panel script").count())
+        failures.push(`${url}/${width}: display name created markup`);
+      const links = await page
+        .locator(".portal-account-panel a")
+        .evaluateAll((elements) => elements.map((element) => (element as HTMLAnchorElement).href));
+      for (const path of ["/account/profile", "/account/preferences", "/account"])
+        if (!links.includes(`https://id.meltemi.dev${path}?lang=${lang}`))
+          failures.push(`${url}/${width}: missing personal destination ${path}`);
+      const logout = new URL(links[3]!);
+      if (
+        logout.origin !== "https://id.meltemi.dev" ||
+        logout.pathname !== "/logout" ||
+        logout.searchParams.get("return_to") !== `https://docs.meltemi.dev${url}`
+      )
+        failures.push(`${url}/${width}: unsafe logout destination`);
+      await page.locator(".portal-account-panel").evaluate(async (element) => {
+        await Promise.all(
+          element.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+        );
+      });
+      const panel = await page.locator(".portal-account-panel").boundingBox();
+      if (!panel || panel.x < 0 || panel.x + panel.width > width)
+        failures.push(`${url}/${width}: account menu extends beyond the viewport`);
+      if (evidence)
+        await page.screenshot({ path: join(evidence, `docs-account-${lang}-${width}.png`) });
+      await page.keyboard.press("Escape");
+      const focus = await page.evaluate(() => ({
+        open: document.querySelector<HTMLDetailsElement>("[data-account-details]")?.open,
+        summary: document.activeElement?.matches(".portal-account-summary"),
+      }));
+      if (focus.open || !focus.summary)
+        failures.push(`${url}/${width}: Escape did not close and return focus`);
+      failures.push(...watched.problems.map((problem) => `${url}/${width}: ${problem}`));
+      await watched.context.close();
+    }
+  }
+  return failures;
+};
+
+/** Every signed-in account gets personal links; anonymous/malformed/outage state gets no owner UI. */
+const accountVisitors: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  for (const [url, lang] of [
+    ["/diagrams/player/", "en"],
+    ["/es/diagrams/player/", "es"],
+  ] as const) {
+    for (const reply of [
+      { body: { authenticated: true, name: "Regular reader", owner: false } },
+      { body: { authenticated: false } },
+      { body: { authenticated: true, name: "Malformed owner", owner: "true" } },
+      { body: { reason: "unavailable" }, status: 503 },
+    ]) {
+      const watched = await open(browser, origin, url, { navigation: () => reply });
+      const { page } = watched;
+      await page.waitForFunction(
+        () => document.querySelector("meltemi-account")?.getAttribute("aria-busy") === "false",
+      );
+      if (await page.isVisible("[data-account-admin]"))
+        failures.push(`${url}: an ordinary/invalid visitor sees administration`);
+      if (reply.body.authenticated === true && reply.body.owner === false) {
+        await page.click(".portal-account-summary");
+        await page.waitForSelector(".portal-account-details[open]");
+        if ((await page.locator(".portal-account-panel a").count()) !== 4)
+          failures.push(`${url}: ordinary account navigation is incomplete`);
+      } else if (
+        !(await page.isVisible("[data-account-fallback]")) ||
+        (await page.getAttribute("[data-account-fallback]", "href")) !==
+          `https://id.meltemi.dev/account?lang=${lang}`
+      )
+        failures.push(`${url}: generic account fallback is unavailable`);
+      if (
+        !(await page.isVisible("h1")) ||
+        !(await page.isVisible("site-search button[data-open-modal]"))
+      )
+        failures.push(`${url}: account failure obscured guides or search`);
+      failures.push(
+        ...watched.problems
+          .filter((problem) => !problem.includes("status of 503"))
+          .map((problem) => `${url}: ${problem}`),
+      );
+      await watched.context.close();
+    }
+  }
+  return failures;
+};
+
+/** A current owner is hidden immediately when refreshing; late replies cannot restore revoked access. */
+const accountRevocation: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  const owner = { body: { authenticated: true, name: "Service owner", owner: true } };
+  let reply: () =>
+    { body: unknown; status?: number } | Promise<{ body: unknown; status?: number }> = () => owner;
+  const watched = await open(browser, origin, "/diagrams/player/", { navigation: () => reply() });
+  const { page } = watched;
+  await page.waitForSelector("[data-account-admin]:not([hidden])");
+  let release: ((value: { body: unknown }) => void) | undefined;
+  const late = new Promise<{ body: unknown }>((resolve) => {
+    release = resolve;
+  });
+  reply = () => late;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForFunction(
+    () => document.querySelector("meltemi-account")?.getAttribute("aria-busy") === "true",
+  );
+  if (await page.isVisible("[data-account-admin]"))
+    failures.push("a pending authorization refresh retained the owner link");
+  if ((await page.textContent("[data-account-name]")) !== "")
+    failures.push("a pending authorization refresh retained a personal name");
+  reply = () => ({ body: { authenticated: false } });
+  await page.evaluate(() =>
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })),
+  );
+  await page.waitForFunction(
+    () => document.querySelector("meltemi-account")?.getAttribute("aria-busy") === "false",
+  );
+  release!(owner);
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+  if (await page.isVisible("[data-account-admin]"))
+    failures.push("a stale response restored revoked administration");
+  if (!(await page.isVisible("[data-account-fallback]")))
+    failures.push("revocation removed generic account access");
+  reply = () => owner;
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await page.waitForSelector("[data-account-admin]:not([hidden])");
+  reply = () => ({ status: 503, body: { reason: "unavailable" } });
+  await page.click(".portal-account-summary");
+  await page.waitForSelector("[data-account-fallback]:not([hidden])");
+  if (await page.isVisible("[data-account-admin]"))
+    failures.push("an outage retained prior owner access");
+  if (!(await page.isVisible("[data-account-fallback]")))
+    failures.push("an outage removed generic account access");
+  failures.push(
+    ...watched.problems.filter(
+      (problem) => !problem.includes("status of 503") && !problem.includes("ERR_FAILED"),
+    ),
+  );
+  await watched.context.close();
   return failures;
 };
 
@@ -553,6 +765,15 @@ const withoutScript: Check = async (browser, origin) => {
 const CHECKS: readonly [string, Check][] = [
   ["every page is quiet: no error, no policy violation, nothing beyond localhost", quiet],
   ["the headers: the policy, no cookie, and the route's own", headers],
+  [
+    "owner account navigation is private, escaped, labelled and usable in EN/ES on desktop and phones",
+    accountOwners,
+  ],
+  [
+    "ordinary accounts, anonymous visitors and outages keep the correct account access without admin",
+    accountVisitors,
+  ],
+  ["revocation, stale navigation and outages clear prior owner access", accountRevocation],
   ["search finds purchase on the Stories page, in English only; empty, it shows nothing", search],
   ["ask the docs answers the fixture question with its source, in both languages", ask],
   ["a spent allowance says so and offers the search", allowance],

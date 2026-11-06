@@ -3,12 +3,14 @@ import type { Ctx, Route } from "../context.js";
 import { checkAccountForm, csrfToken, forbiddenPage, readForm } from "../forms.js";
 import { redirect } from "../http.js";
 import { messages } from "../messages/index.js";
-import { errorPage, esc, renderPage, simpleError } from "../pages/layout.js";
+import { errorPage, esc, simpleError } from "../pages/layout.js";
+import { applyAppPreferences, renderAppPage } from "../pages/app.js";
 import { currentSession } from "../session.js";
+import { workspacePath } from "../product-admin.js";
 
 /** The canonical return address keeps the chosen language, never a caller-supplied target. */
-export function docsAiAdminPath(ctx: Pick<Ctx, "lang">): string {
-  return `/admin/docs-ai?lang=${ctx.lang}`;
+export function docsAiAdminPath(ctx: Pick<Ctx, "lang" | "url">): string {
+  return workspacePath(ctx, "/admin/docs-ai");
 }
 
 /** An anonymous administrator returns directly here after the existing identity sign-in. */
@@ -39,6 +41,8 @@ export const docsAiAdmin: Route = async (ctx) => {
   const current = await currentSession(ctx);
   if (!current) return signIn(ctx);
   if (!isDocsAiOwner(ctx.env, current.user.id)) return notFound(ctx);
+  const preferences = await ctx.deps.store.getAccountPreferences(current.user.id);
+  ctx = applyAppPreferences(ctx, preferences);
   const enabled = await ctx.deps.store.getDocsAi();
   const m = messages(ctx.lang).docsAi;
   if (typeof enabled !== "boolean") {
@@ -60,13 +64,18 @@ export const docsAiAdmin: Route = async (ctx) => {
 <input type="hidden" name="enabled" value="${value}">
 <button class="btn${value ? " primary" : " danger"}" type="submit"${enabled === value ? " disabled" : ""}>${esc(label)}</button>
 </form>`;
-  const body = `<h1>${esc(m.title)}</h1>
-<p>${esc(m.intro)}</p>
-<p role="status"><strong>${esc(enabled ? m.enabled : m.disabled)}</strong></p>
+  const body = `<p class="section-intro">${esc(m.intro)}</p>
+<section class="settings-section"><p role="status"><strong>${esc(enabled ? m.enabled : m.disabled)}</strong></p>
 <p>${esc(m.effect)}</p>
-<div class="actions">${form(true, m.enable)}${form(false, m.disable)}</div>
-<p><a class="btn" href="/account?lang=${ctx.lang}">${esc(messages(ctx.lang).account.backToAccount)}</a></p>`;
-  return renderPage(ctx, { title: m.title, body, personal: true });
+<div class="actions">${form(true, m.enable)}${form(false, m.disable)}</div></section>`;
+  return renderAppPage(ctx, {
+    title: m.title,
+    body,
+    user: current.user,
+    owner: true,
+    active: "docs-ai",
+    preferences,
+  });
 };
 
 /** Explicit assignments are safe to repeat; there is no stale-page toggle. */

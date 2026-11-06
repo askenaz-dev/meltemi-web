@@ -9,6 +9,7 @@
 import { ask, ASK_MODEL, fakeAnswer, MAX_TOKENS, type AskDeps } from "./ask.js";
 import { decodeIndex, EMBEDDING_MODEL, FAKE_MODEL, fakeEmbed, type AskIndex } from "./ask-index.js";
 import { readAiControl, type AiControlState } from "./ai-control.js";
+import { accountMenu } from "./account-menu.js";
 
 export interface Env {
   readonly ASSETS: { fetch(request: Request): Promise<Response> };
@@ -112,6 +113,8 @@ export async function controlFor(env: Env): Promise<AiControlState> {
 /** The Worker's `fetch`. */
 export async function handle(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
+  if (url.pathname === "/api/account-menu" || url.pathname === "/api/account-menu/")
+    return accountMenu(request, env);
   if (url.pathname === "/api/ask/status" || url.pathname === "/api/ask/status/") {
     const headers = {
       "Content-Type": "application/json; charset=utf-8",

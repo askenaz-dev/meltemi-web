@@ -1,5 +1,12 @@
 import type { Identity, Iso, OutboxEvent, Provider, Session, User } from "../types.js";
 import type { IdentityPatch, IdentityStore } from "./types.js";
+import {
+  DEFAULT_ACCOUNT_PREFERENCES,
+  isAccountLanguage,
+  isAccountTheme,
+  readDisplayName,
+  type AccountPreferences,
+} from "../preferences.js";
 
 const identityKey = (provider: Provider, providerId: string) => `${provider}\u0000${providerId}`;
 
@@ -33,6 +40,7 @@ export function memoryStore(): IdentityStore {
   const identities = new Map<string, Identity>();
   const sessions = new Map<string, Session>();
   const outbox = new Map<string, OutboxEvent>();
+  const preferences = new Map<string, AccountPreferences>();
   // A fresh database's migration seeds this row once. Constructing a D1 store never seeds it.
   let docsAi = true;
 
@@ -44,6 +52,28 @@ export function memoryStore(): IdentityStore {
   };
 
   const store: IdentityStore = {
+    async getAccountPreferences(userId) {
+      return { ...(preferences.get(userId) ?? DEFAULT_ACCOUNT_PREFERENCES) };
+    },
+    async setDisplayName(userId, name) {
+      if (!users.has(userId)) throw new Error("the preferences account is missing");
+      if (name !== null && readDisplayName(name) !== name)
+        throw new Error("the display name is invalid");
+      preferences.set(userId, {
+        ...(preferences.get(userId) ?? DEFAULT_ACCOUNT_PREFERENCES),
+        displayName: name,
+      });
+    },
+    async setAccountAppearance(userId, appearance) {
+      if (!users.has(userId)) throw new Error("the preferences account is missing");
+      if (!isAccountTheme(appearance.theme) || !isAccountLanguage(appearance.language))
+        throw new Error("the account appearance is invalid");
+      preferences.set(userId, {
+        ...(preferences.get(userId) ?? DEFAULT_ACCOUNT_PREFERENCES),
+        theme: appearance.theme,
+        language: appearance.language,
+      });
+    },
     async getDocsAi() {
       return docsAi;
     },
@@ -67,6 +97,7 @@ export function memoryStore(): IdentityStore {
       // it, so nothing else runs in between: the events are queued and the user is gone, or neither.
       const queued = events.map((event) => ({ ...event }));
       queue(queued);
+      preferences.delete(id);
       users.delete(id);
       for (const [key, identity] of identities) if (identity.userId === id) identities.delete(key);
       for (const [sid, session] of sessions) if (session.userId === id) sessions.delete(sid);

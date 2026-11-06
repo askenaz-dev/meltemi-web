@@ -37,20 +37,25 @@ deleted accounts.
 `meltemi_session` is set with `Domain=meltemi.dev; Path=/; Max-Age=2592000; Secure; HttpOnly;
 SameSite=Lax` and holds a JWT signed with ES256 (header `{ "alg": "ES256", "typ": "JWT", "kid": … }`):
 
-| Claim             | Meaning                                                                     |
-| ----------------- | --------------------------------------------------------------------------- |
-| `iss`             | The service's address, `https://id.meltemi.dev`                             |
-| `aud`             | Always `meltemi`                                                            |
-| `sub`             | The user id: what a product keeps its data by                               |
-| `sid`             | The session id, for the session check                                       |
-| `name`, `picture` | Profile, as the provider gave it (limited in length); `picture` may be `""` |
-| `email`           | The email of the identity used to sign in (`""` when the provider has none) |
-| `email_verified`  | Whether that provider vouched for the email                                 |
-| `iat`, `exp`      | Seconds since the epoch; `exp` is `iat` plus thirty days                    |
+| Claim             | Meaning                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| `iss`             | The service's address, `https://id.meltemi.dev`                                                         |
+| `aud`             | Always `meltemi`                                                                                        |
+| `sub`             | The user id: what a product keeps its data by                                                           |
+| `sid`             | The session id, for the session check                                                                   |
+| `name`, `picture` | Effective display name (saved override, else provider name) and provider picture; `picture` may be `""` |
+| `email`           | The email of the identity used to sign in (`""` when the provider has none)                             |
+| `email_verified`  | Whether that provider vouched for the email                                                             |
+| `iat`, `exp`      | Seconds since the epoch; `exp` is `iat` plus thirty days                                                |
 
 The public keys are at `https://id.meltemi.dev/.well-known/jwks.json` (`Cache-Control: public,
 max-age=3600`), current key first. A key rotation publishes the new key first and keeps the old
 one until its tokens expire (at most thirty days).
+
+Saving a display name re-signs the current session with only `name` changed. Its `sid`, `iat`,
+`exp` and all other claims remain intact, and cookie `Max-Age` uses only the remaining lifetime.
+Other devices acquire the new name on their next sign-in; Identity's own account and navigation
+views read the saved name immediately. Consumers must keep using `sub` for identity and permissions.
 
 ### Verifying a session
 
@@ -350,15 +355,16 @@ This switch is an operating control, not a spending budget.
 
 ## What the service holds
 
-Five tables (`migrations/0001_identity.sql` and `0002_docs_ai.sql`), all `STRICT`:
+Six tables (`migrations/0001_identity.sql` through `0003_account_preferences.sql`), all `STRICT`:
 
-| Table              | Columns                                                                                               |
-| ------------------ | ----------------------------------------------------------------------------------------------------- |
-| `users`            | `id`, `name`, `picture`, `created_at`                                                                 |
-| `identities`       | `provider`, `provider_id`, `user_id`, `email`, `email_verified`, `verified_at`, `handle`, `linked_at` |
-| `sessions`         | `sid`, `user_id`, `created_at`, `last_seen`, `expires_at`, `label`, `revoked_at`                      |
-| `outbox`           | `id`, `product`, `body`, `created_at`, `attempts`, `next_at`, `delivered_at`, `failed_at`             |
-| `docs_ai_settings` | `id` (the single row `1`), `enabled` (`0` or `1`)                                                     |
+| Table              | Columns                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `users`            | `id`, `name`, `picture`, `created_at`                                                                      |
+| `identities`       | `provider`, `provider_id`, `user_id`, `email`, `email_verified`, `verified_at`, `handle`, `linked_at`      |
+| `sessions`         | `sid`, `user_id`, `created_at`, `last_seen`, `expires_at`, `label`, `revoked_at`                           |
+| `outbox`           | `id`, `product`, `body`, `created_at`, `attempts`, `next_at`, `delivered_at`, `failed_at`                  |
+| `docs_ai_settings` | `id` (the single row `1`), `enabled` (`0` or `1`)                                                          |
+| `user_preferences` | `user_id`, nullable `display_name`, `theme` (`system`, `light`, `dark`), `language` (`system`, `en`, `es`) |
 
 `verified_at` is the time the provider last reported the email verified (`NULL` while it is not);
 an email only joins two identities into one account when it was verified within the last ninety
@@ -366,7 +372,7 @@ days. A session `label` is a coarse family such as `Edge on Windows`.
 
 The service **never** stores a provider token (an access token is used once to read the profile and
 dropped), a raw `User-Agent` (only the label above), a password (there are none), or an analytics
-record. Deleting an account removes its user, identities and sessions in one step and queues the
+record. Deleting an account removes its user, preferences, identities and sessions in one step and queues the
 deletion events; the outbox keeps its events until they are delivered or given up. Sessions that
 ended more than seven days ago are removed by the scheduled run.
 

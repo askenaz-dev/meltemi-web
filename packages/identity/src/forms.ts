@@ -8,6 +8,7 @@ import { originOf, redirect } from "./http.js";
 import { messages } from "./messages/index.js";
 import { errorPage, type PageAction } from "./pages/layout.js";
 import { currentSession, type CurrentSession } from "./session.js";
+import { productEnvironment } from "./product-admin.js";
 
 /**
  * The token the account page's forms carry: the hex HMAC-SHA256 of the session id with
@@ -25,6 +26,8 @@ export function accountPath(ctx: Pick<Ctx, "url">, returnTo?: string): string {
   const query = new URLSearchParams();
   const asked = ctx.url.searchParams.get("lang");
   if (asked === "en" || asked === "es") query.set("lang", asked);
+  const environment = productEnvironment(ctx);
+  if (environment && ctx.url.searchParams.has("environment")) query.set("environment", environment);
   if (returnTo) query.set("return_to", returnTo);
   const text = query.toString();
   return text === "" ? "/account" : `/account?${text}`;

@@ -22,6 +22,16 @@ import { cssRoute, jwksRoute } from "./routes/assets.js";
 import { callbackRoute } from "./routes/callback.js";
 import { loginRoute } from "./routes/login.js";
 import { docsAiAdmin, docsAiPost, docsAiStatus } from "./routes/docs-ai.js";
+import { navigation } from "./routes/navigation.js";
+import { productEnvironment } from "./product-admin.js";
+import { administrationMessages } from "./messages/administration.js";
+import { adminPage, diagramsAdminPage, diagramsAdminPost } from "./routes/admin.js";
+import {
+  preferencesPage,
+  preferencesPost,
+  profilePage,
+  profilePost,
+} from "./routes/personalization.js";
 import { logoutPage, logoutPost } from "./routes/logout.js";
 import { rootRoute } from "./routes/root.js";
 import { sessionCheck } from "./routes/sessions.js";
@@ -48,6 +58,22 @@ const ROUTES: readonly RouteEntry[] = [
   { method: "GET", path: /^\/sessions\/([^/]+)$/, params: ["sid"], route: sessionCheck },
   { method: "GET", path: /^\/\.well-known\/jwks\.json$/, route: jwksRoute },
   { method: "GET", path: /^\/account$/, route: accountPage },
+  { method: "GET", path: /^\/admin\/?$/, route: adminPage },
+  {
+    method: "GET",
+    path: /^\/admin\/diagrams\/(access|permissions|sponsorships|publications|activity)$/,
+    route: diagramsAdminPage,
+  },
+  {
+    method: "POST",
+    path: /^\/admin\/diagrams\/(access|permissions|sponsorships|publications|activity)$/,
+    route: diagramsAdminPost,
+  },
+  { method: "GET", path: /^\/account\/profile$/, route: profilePage },
+  { method: "POST", path: /^\/account\/profile$/, route: profilePost },
+  { method: "GET", path: /^\/account\/preferences$/, route: preferencesPage },
+  { method: "POST", path: /^\/account\/preferences$/, route: preferencesPost },
+  { method: "GET", path: /^\/api\/navigation$/, route: navigation },
   { method: "GET", path: /^\/admin\/docs-ai$/, route: docsAiAdmin },
   { method: "POST", path: /^\/admin\/docs-ai$/, route: docsAiPost },
   { method: "GET", path: /^\/api\/docs-ai$/, route: docsAiStatus },
@@ -140,6 +166,16 @@ export async function identity(request: Request, env: Env, deps: Deps): Promise<
       );
     }
     const ctx: Ctx = { ...base, params: found.params };
+    if (
+      (url.pathname === "/admin" ||
+        url.pathname.startsWith("/admin/") ||
+        url.pathname === "/account" ||
+        url.pathname.startsWith("/account/")) &&
+      productEnvironment(ctx) === undefined
+    ) {
+      const m = administrationMessages(lang);
+      return hardened(simpleError(ctx, 400, "environment.invalid", m.workspace, m.invalid));
+    }
     return hardened(await found.route(ctx));
   } catch (error) {
     // The message of an error never holds a secret or a person's data: log it and say nothing more.

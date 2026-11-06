@@ -182,6 +182,9 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
       await spy.getDocsAi();
       await spy.setDocsAi(false);
       await spy.createUser({ ...user, id: evil, name: evil, picture: evil });
+      await spy.getAccountPreferences(evil);
+      await spy.setDisplayName(evil, evil);
+      await spy.setAccountAppearance(evil, { theme: "dark", language: "es" });
       await spy.updateUser(evil, { name: evil, picture: evil });
       await spy.userById(evil);
       await spy.addIdentity({
@@ -330,7 +333,7 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
   });
 
   describe("transactions", () => {
-    it("deleteUser is one batch of three explicit deletes, children first", async () => {
+    it("deleteUser is one batch of four explicit deletes, children first", async () => {
       const db = openDatabase();
       const store = d1Store(db);
       await store.createUser(user);
@@ -338,6 +341,7 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
       await store.deleteUser("u1");
       const ran = db.queries.slice(before);
       expect(ran.map((q) => q.sql)).toEqual([
+        "DELETE FROM user_preferences WHERE user_id = ?",
         "DELETE FROM sessions WHERE user_id = ?",
         "DELETE FROM identities WHERE user_id = ?",
         "DELETE FROM users WHERE id = ?",
@@ -356,14 +360,18 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
       db.raw.exec(
         "CREATE TRIGGER refuse_user_delete BEFORE DELETE ON users BEGIN SELECT RAISE(ABORT, 'refused'); END",
       );
+      await store.setDisplayName("u1", "Keep profile on rollback");
       await expect(store.deleteUser("u1")).rejects.toThrow(/refused/);
+      expect((await store.getAccountPreferences("u1")).displayName).toBe(
+        "Keep profile on rollback",
+      );
       expect(await store.userById("u1")).toBeDefined();
       expect(await store.identitiesOf("u1")).toHaveLength(1);
       expect(await store.session("sid-1")).toBeDefined();
       db.close();
     });
 
-    it("deleteUser with events is one batch: the events first, then the three deletes", async () => {
+    it("deleteUser with events is one batch: the events first, then the four deletes", async () => {
       const db = openDatabase();
       const store = d1Store(db);
       await store.createUser(user);
@@ -373,6 +381,7 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
       expect(ran.map((q) => q.sql.replace(/\(.*?\) VALUES \(.*?\)/, "(...)"))).toEqual([
         "INSERT INTO outbox (...) ON CONFLICT (id) DO NOTHING",
         "INSERT INTO outbox (...) ON CONFLICT (id) DO NOTHING",
+        "DELETE FROM user_preferences WHERE user_id = ?",
         "DELETE FROM sessions WHERE user_id = ?",
         "DELETE FROM identities WHERE user_id = ?",
         "DELETE FROM users WHERE id = ?",
@@ -457,6 +466,8 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
       const store = d1Store(db);
       await store.createUser(user);
       await store.createUser({ ...user, id: "u2" });
+      await store.setDisplayName("u1", "Remove profile");
+      await store.setDisplayName("u2", "Keep profile");
       await store.addIdentity(identity);
       await store.addIdentity({ ...identity, providerId: "gh-2", userId: "u2" });
       await store.createSession(session);
@@ -468,6 +479,9 @@ describe.skipIf(!sqliteAvailable)("d1Store over node:sqlite", () => {
       expect(db.raw.prepare("SELECT user_id FROM identities").all()).toEqual([{ user_id: "u2" }]);
       expect(db.raw.prepare("SELECT user_id FROM sessions").all()).toEqual([{ user_id: "u2" }]);
       expect(db.raw.prepare("SELECT id FROM users").all()).toEqual([{ id: "u2" }]);
+      expect(db.raw.prepare("SELECT user_id FROM user_preferences").all()).toEqual([
+        { user_id: "u2" },
+      ]);
       expect(outboxRows(db)).toHaveLength(1);
       db.close();
     });

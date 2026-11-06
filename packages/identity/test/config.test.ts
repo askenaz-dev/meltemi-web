@@ -485,6 +485,21 @@ describe("wrangler.jsonc", () => {
     expect(databases[0]?.binding).toBe("DB");
   });
 
+  it("binds the private hosted administration entrypoint without a new secret", () => {
+    expect(wrangler["services"]).toEqual([
+      {
+        binding: "DIAGRAMS_ADMIN",
+        service: "meltemi-diagrams-cloud",
+        entrypoint: "Administration",
+      },
+      {
+        binding: "DIAGRAMS_ADMIN_STAGING",
+        service: "meltemi-diagrams-staging",
+        entrypoint: "Administration",
+      },
+    ]);
+  });
+
   it("runs the scheduled handler every fifteen minutes", () => {
     expect((wrangler["triggers"] as { crons: string[] }).crons).toEqual(["*/15 * * * *"]);
   });
@@ -554,8 +569,8 @@ function envNames() {
   const names = [...source.matchAll(/^\s*readonly ([A-Z][A-Z0-9_]*)\??:/gm)].map((m) => m[1]!);
   return {
     all: names,
-    binding: names.filter((name) => name === "DB"),
-    variables: names.filter((name) => name !== "DB"),
+    binding: names.filter((name) => name === "DB" || name.startsWith("DIAGRAMS_ADMIN")),
+    variables: names.filter((name) => name !== "DB" && !name.startsWith("DIAGRAMS_ADMIN")),
     perProductSecrets: /\[\w+: `EVENTS_SECRET_\$\{string\}`\]/.test(source),
   };
 }
@@ -597,7 +612,7 @@ describe(".dev.vars.example", () => {
         "STATE_SECRET",
       ]),
     );
-    expect(env.binding).toEqual(["DB"]);
+    expect(env.binding).toEqual(["DB", "DIAGRAMS_ADMIN", "DIAGRAMS_ADMIN_STAGING"]);
     expect(env.perProductSecrets).toBe(true);
   });
 

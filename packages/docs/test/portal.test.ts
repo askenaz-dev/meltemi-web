@@ -389,4 +389,21 @@ describe("the family's looks and motion", () => {
     expect(markup).toMatch(/<button type="button" class="ask-open" data-open hidden/);
     expect(existsSync(join(dist, "ask", "index.bin"))).toBe(true);
   });
+
+  it("keeps public account markup generic and owner navigation hidden until private discovery", () => {
+    for (const [url, lang] of [
+      ["/diagrams/player/", "en"],
+      ["/es/diagrams/player/", "es"],
+    ]) {
+      const markup = html(url!);
+      expect(markup).toContain("<meltemi-account");
+      expect(markup).toMatch(/<a[^>]*data-account-admin[^>]*hidden/);
+      expect(markup).toMatch(/<details[^>]*data-account-details[^>]*hidden/);
+      for (const path of ["/admin/", "/account/profile", "/account/preferences", "/account"]) {
+        expect(markup).toContain(`https://id.meltemi.dev${path}?lang=${lang}`);
+      }
+      expect(markup).toContain(`return_to=${encodeURIComponent(`https://docs.meltemi.dev${url}`)}`);
+      expect(markup).not.toMatch(/(?:authenticated|owner)(?:&quot;|")\s*:\s*true/);
+    }
+  });
 });

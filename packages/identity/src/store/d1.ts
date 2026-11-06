@@ -1,6 +1,12 @@
 import type { D1Like, D1PreparedLike } from "../env.js";
 import type { Identity, Iso, OutboxEvent, Provider, Session, User } from "../types.js";
 import type { IdentityPatch, IdentityStore } from "./types.js";
+import {
+  DEFAULT_ACCOUNT_PREFERENCES,
+  isAccountLanguage,
+  isAccountTheme,
+  readDisplayName,
+} from "../preferences.js";
 
 // The store over D1: every statement is a constant prepared with `?` placeholders and given its
 // values through `bind()`, never built from a value. Times are ISO-8601 text (they sort as text),
@@ -139,6 +145,48 @@ export function d1Store(db: D1Like): IdentityStore {
       );
 
   return {
+    async getAccountPreferences(userId) {
+      const row = await db
+        .prepare("SELECT display_name, theme, language FROM user_preferences WHERE user_id = ?")
+        .bind(userId)
+        .first<{ display_name: string | null; theme: unknown; language: unknown }>();
+      if (!row) return { ...DEFAULT_ACCOUNT_PREFERENCES };
+      if (
+        !isAccountTheme(row.theme) ||
+        !isAccountLanguage(row.language) ||
+        (row.display_name !== null && readDisplayName(row.display_name) !== row.display_name)
+      )
+        throw new Error("the account preferences are invalid");
+      return { displayName: row.display_name, theme: row.theme, language: row.language };
+    },
+    async setDisplayName(userId, name) {
+      if (name !== null && readDisplayName(name) !== name)
+        throw new Error("the display name is invalid");
+      const changed = await runCounting(
+        db
+          .prepare(
+            `INSERT INTO user_preferences (user_id, display_name)
+        SELECT id, ? FROM users WHERE id = ?
+        ON CONFLICT (user_id) DO UPDATE SET display_name = excluded.display_name`,
+          )
+          .bind(name, userId),
+      );
+      if (changed !== 1) throw new Error("the preferences account is missing");
+    },
+    async setAccountAppearance(userId, appearance) {
+      if (!isAccountTheme(appearance.theme) || !isAccountLanguage(appearance.language))
+        throw new Error("the account appearance is invalid");
+      const changed = await runCounting(
+        db
+          .prepare(
+            `INSERT INTO user_preferences (user_id, theme, language)
+        SELECT id, ?, ? FROM users WHERE id = ?
+        ON CONFLICT (user_id) DO UPDATE SET theme = excluded.theme, language = excluded.language`,
+          )
+          .bind(appearance.theme, appearance.language, userId),
+      );
+      if (changed !== 1) throw new Error("the preferences account is missing");
+    },
     async getDocsAi() {
       const row = await db
         .prepare("SELECT enabled FROM docs_ai_settings WHERE id = 1")
@@ -180,6 +228,7 @@ export function d1Store(db: D1Like): IdentityStore {
       // foreign keys would cascade, but the deletion does not depend on them being enforced.
       await db.batch([
         ...events.map(insertEvent),
+        db.prepare("DELETE FROM user_preferences WHERE user_id = ?").bind(id),
         db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(id),
         db.prepare("DELETE FROM identities WHERE user_id = ?").bind(id),
         db.prepare("DELETE FROM users WHERE id = ?").bind(id),

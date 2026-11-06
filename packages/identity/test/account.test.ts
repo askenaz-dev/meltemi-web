@@ -221,7 +221,7 @@ describe("GET /account when signed in", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     const html = await textOf(response);
-    expect(html).toContain('<html lang="en">');
+    expect(html).toContain('<html lang="en" data-theme="system">');
 
     const identities = rowsOf(sectionOf(html, "Linked sign-ins"));
     expect(identities).toHaveLength(2);
@@ -602,7 +602,7 @@ describe("the account page in Spanish", () => {
     const h = await harness();
     const { person } = await seed(h);
     const html = await page(h, person.cookie, "?lang=es");
-    expect(html).toContain('<html lang="es">');
+    expect(html).toContain('<html lang="es" data-theme="system">');
     expect(html).toContain("<h1>Tu cuenta</h1>");
     expect(html).toContain("Inicios de sesión vinculados");
     expect(html).toContain("Dónde tienes la sesión iniciada");
@@ -639,11 +639,11 @@ describe("the account page in Spanish", () => {
     const byHeader = await page(h, person.cookie, "", {
       headers: { "Accept-Language": "es-CL,es;q=0.9,en;q=0.8" },
     });
-    expect(byHeader).toContain('<html lang="es">');
+    expect(byHeader).toContain('<html lang="es" data-theme="system">');
     const byQuery = await page(h, person.cookie, "?lang=en", {
       headers: { "Accept-Language": "es" },
     });
-    expect(byQuery).toContain('<html lang="en">');
+    expect(byQuery).toContain('<html lang="en" data-theme="system">');
   });
 
   it("offers linking and explains a last identity in Spanish", async () => {

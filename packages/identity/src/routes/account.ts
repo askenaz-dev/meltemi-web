@@ -6,6 +6,8 @@ import { redirect } from "../http.js";
 import { messages } from "../messages/index.js";
 import { accountPage as accountView, deletedPage } from "../pages/account.js";
 import { errorPage } from "../pages/layout.js";
+import { applyAppPreferences } from "../pages/app.js";
+import { productContext } from "../product-admin.js";
 import { resolveReturnTo } from "../return-to.js";
 import { clearSessionCookie, currentSession } from "../session.js";
 import { isProvider } from "../types.js";
@@ -67,14 +69,22 @@ export const accountPage: Route = async (ctx) => {
     return refuse(ctx, 400, "return_to.invalid", m.returnToInvalidTitle, m.returnToInvalidBody);
   }
   const current = await currentSession(ctx);
-  if (!current) return signInRedirect(ctx.config, returnTo);
+  if (!current) {
+    if (ctx.url.searchParams.has("environment"))
+      return redirect(
+        `/login?return_to=${encodeURIComponent(`${ctx.config.issuer}${accountPath(ctx, returnTo)}`)}`,
+      );
+    return signInRedirect(ctx.config, returnTo);
+  }
   const { store } = ctx.deps;
-  const [identities, sessions, csrf] = await Promise.all([
+  const [identities, sessions, csrf, preferences, product] = await Promise.all([
     store.identitiesOf(current.user.id),
     store.sessionsOf(current.user.id, ctx.deps.now().toISOString()),
     csrfToken(ctx, current.session.sid),
+    store.getAccountPreferences(current.user.id),
+    productContext(ctx, current),
   ]);
-  return accountView(ctx, {
+  return accountView(applyAppPreferences(ctx, preferences), {
     user: current.user,
     identities,
     sessions,
@@ -82,6 +92,8 @@ export const accountPage: Route = async (ctx) => {
     csrf,
     returnTo,
     docsAiAdmin: isDocsAiOwner(ctx.env, current.user.id),
+    preferences,
+    productRole: product.ok ? product.value.role : "none",
   });
 };
 

@@ -13,6 +13,9 @@ import {
   type User,
 } from "../types.js";
 import { esc, renderPage } from "./layout.js";
+import { renderAppPage, type ProductRole } from "./app.js";
+import type { AccountPreferences } from "../preferences.js";
+import { workspacePath } from "../product-admin.js";
 
 type AccountMessages = Messages["account"];
 
@@ -141,6 +144,8 @@ export interface AccountView {
    */
   readonly returnTo?: string | undefined;
   readonly docsAiAdmin?: boolean;
+  readonly preferences?: AccountPreferences;
+  readonly productRole?: ProductRole;
 }
 
 /** The `return_to` field of the page's forms, when the page was entered from a product. */
@@ -164,7 +169,7 @@ function identitiesSection(ctx: Ctx, m: AccountMessages, view: AccountView, time
       const name = providerName(m, identity.provider);
       const action = canUnlink
         ? postForm({
-            action: `/account/unlink?lang=${ctx.lang}`,
+            action: workspacePath(ctx, "/account/unlink"),
             fields: { csrf: view.csrf, provider: identity.provider, ...returnField(view) },
             label: `${m.unlinkButton} ${name}`,
             buttonClass: "btn danger",
@@ -180,12 +185,12 @@ function identitiesSection(ctx: Ctx, m: AccountMessages, view: AccountView, time
     .join("\n");
   const note = canUnlink ? "" : `<p class="muted">${esc(m.onlyIdentityNote)}</p>`;
   return `<h2>${esc(m.identitiesHeading)}</h2>
-<table class="list">
+<div class="app-table-scroll" role="region" aria-label="${esc(m.identitiesHeading)}" tabindex="0"><table class="list">
 <thead><tr><th>${esc(m.colProvider)}</th><th>${esc(m.colAccount)}</th><th>${esc(m.colLinked)}</th><th></th></tr></thead>
 <tbody>
 ${rows}
 </tbody>
-</table>
+</table></div>
 ${note}`;
 }
 
@@ -193,7 +198,10 @@ ${note}`;
 function linkSection(ctx: Ctx, m: AccountMessages, view: AccountView): string {
   const linked = new Set<Provider>(view.identities.map((identity) => identity.provider));
   // From a product, the flow ends back in the product; otherwise back on this page.
-  const returnTo = encodeURIComponent(view.returnTo ?? `${ctx.config.issuer}/account`);
+  const returnTo = encodeURIComponent(
+    view.returnTo ??
+      `${ctx.config.issuer}${ctx.url.searchParams.has("environment") ? workspacePath(ctx, "/account") : "/account"}`,
+  );
   const links = PROVIDERS.filter((provider) => !linked.has(provider))
     .map((provider) => {
       const label = provider === "github" ? m.linkGithub : m.linkGoogle;
@@ -225,7 +233,7 @@ function sessionsSection(ctx: Ctx, m: AccountMessages, view: AccountView, time: 
             label: m.signOutButton,
           })
         : postForm({
-            action: `/account/sessions/revoke?lang=${ctx.lang}`,
+            action: workspacePath(ctx, "/account/sessions/revoke"),
             fields: { csrf: view.csrf, sid: session.sid, ...returnField(view) },
             label: m.signOutDevice,
           });
@@ -238,19 +246,19 @@ function sessionsSection(ctx: Ctx, m: AccountMessages, view: AccountView, time: 
     })
     .join("\n");
   return `<h2>${esc(m.sessionsHeading)}</h2>
-<table class="list">
+<div class="app-table-scroll" role="region" aria-label="${esc(m.sessionsHeading)}" tabindex="0"><table class="list">
 <thead><tr><th>${esc(m.colDevice)}</th><th>${esc(m.colSignedIn)}</th><th>${esc(m.colLastSeen)}</th><th></th></tr></thead>
 <tbody>
 ${rows}
 </tbody>
-</table>`;
+</table></div>`;
 }
 
 function deleteSection(ctx: Ctx, m: AccountMessages, view: AccountView): string {
   return `<div class="danger-zone">
 <h2>${esc(m.deleteHeading)}</h2>
 <p>${esc(m.deleteBody)}</p>
-<form class="stack" method="post" action="${esc(`/account/delete?lang=${ctx.lang}`)}">
+<form class="stack" method="post" action="${esc(workspacePath(ctx, "/account/delete"))}">
 ${hiddenFields({ csrf: view.csrf, ...returnField(view) })}
 <label for="confirm">${esc(m.deleteConfirmBefore)} <code>${esc(m.deleteWord)}</code> ${esc(m.deleteConfirmAfter)}</label>
 <input id="confirm" type="text" name="confirm" autocomplete="off" autocapitalize="off" spellcheck="false" required>
@@ -270,7 +278,7 @@ export function accountPage(ctx: Ctx, view: AccountView): Response {
   const back = view.returnTo
     ? `<p class="back"><a class="btn" href="${esc(view.returnTo)}">${esc(m.backTo)} ${esc(hostOf(view.returnTo))}</a></p>\n`
     : "";
-  const body = `${back}<h1>${esc(m.accountTitle)}</h1>
+  const body = `${back}
 <div class="who">
 ${avatar}
 <div><strong>${esc(view.user.name)}</strong><br><span class="muted">${esc(m.accountIntro)}</span></div>
@@ -280,15 +288,23 @@ ${linkSection(ctx, m, view)}
 ${sessionsSection(ctx, m, view, time)}
 <div class="actions">
 ${postForm({
-  action: `/account/sessions/revoke-others?lang=${ctx.lang}`,
+  action: workspacePath(ctx, "/account/sessions/revoke-others"),
   fields: { csrf: view.csrf, ...returnField(view) },
   label: m.revokeOthersButton,
 })}
 </div>
 <p class="muted">${esc(m.revokeOthersNote)}</p>
-${view.docsAiAdmin ? `<p><a class="btn" href="/admin/docs-ai?lang=${ctx.lang}">${esc(messages(ctx.lang).docsAi.title)}</a></p>` : ""}
+${view.docsAiAdmin ? `<p><a class="btn" href="${esc(workspacePath(ctx, "/admin/docs-ai"))}">${esc(messages(ctx.lang).docsAi.title)}</a></p>` : ""}
 ${deleteSection(ctx, m, view)}`;
-  return renderPage(ctx, { title: m.accountTitle, body, personal: true });
+  return renderAppPage(ctx, {
+    title: m.accountTitle,
+    body,
+    user: view.user,
+    owner: view.docsAiAdmin ?? false,
+    active: "account",
+    ...(view.preferences ? { preferences: view.preferences } : {}),
+    ...(view.productRole ? { productRole: view.productRole } : {}),
+  });
 }
 
 // ---------------------------------------------------------------------------------------------

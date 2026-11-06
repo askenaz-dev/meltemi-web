@@ -1,6 +1,7 @@
 export const docsAiEn = {
   title: "Documentation AI",
-  intro: "Control Ask the docs for every visitor. The guides and page search stay available.",
+  intro:
+    "Global control for Ask the docs, shared across all product environments. The guides and page search stay available.",
   enabled: "Answers are enabled.",
   disabled: "Answers are paused.",
   effect:
@@ -17,7 +18,7 @@ export const docsAiEn = {
 export const docsAiEs: typeof docsAiEn = {
   title: "IA de la documentación",
   intro:
-    "Controla Pregunta a la documentación para todas las personas. Las guías y la búsqueda de páginas siguen disponibles.",
+    "Control global de Pregunta a la documentación, compartido entre todos los entornos de los productos. Las guías y la búsqueda de páginas siguen disponibles.",
   enabled: "Las respuestas están activadas.",
   disabled: "Las respuestas están en pausa.",
   effect:

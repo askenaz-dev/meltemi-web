@@ -1,0 +1,45 @@
+---
+// Public HTML contains only fixed destinations. A live, private response reveals the owner link.
+import { messagesOf } from "../messages/index.ts";
+
+const { lang } = Astro.locals.starlightRoute;
+const words = messagesOf(lang);
+const account = words.account;
+const identity = "https://id.meltemi.dev";
+const path = (pathname: string) => `${identity}${pathname}?lang=${words.lang}`;
+const returnTo = new URL(Astro.url.pathname, "https://docs.meltemi.dev").href;
+const logout = `${path("/logout")}&return_to=${encodeURIComponent(returnTo)}`;
+---
+
+<meltemi-account class="print:hidden" data-words={JSON.stringify(account)}>
+  <a class="portal-admin" data-account-admin href={path("/admin/")} hidden>{account.administration}</a>
+  <a class="portal-account-fallback" data-account-fallback href={path("/account")} aria-label={account.account} title={account.account}>
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></svg>
+    <span>{account.account}</span>
+  </a>
+  <details class="portal-account-details" data-account-details hidden>
+    <summary class="portal-account-summary" aria-label={account.account} title={account.account}>
+      <span class="portal-account-avatar" aria-hidden="true">
+        <span data-account-initials hidden></span>
+        <svg data-account-icon width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.5" /><path d="M5 21v-2a7 7 0 0 1 14 0v2" /></svg>
+      </span>
+      <span class="portal-account-label" data-account-label>{account.account}</span>
+      <svg class="portal-account-chevron" aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m4 6 4 4 4-4" /></svg>
+    </summary>
+    <div class="portal-account-panel">
+      <p class="portal-account-name" data-account-name></p>
+      <p class="portal-account-status" data-account-status role="status" hidden>{account.checking}</p>
+      <nav aria-label={account.navigation}>
+        <a href={path("/account/profile")}>{account.profile}</a>
+        <a href={path("/account/preferences")}>{account.preferences}</a>
+        <a href={path("/account")}>{account.security}</a>
+      </nav>
+      <a class="portal-account-logout" href={logout}>{account.signOut}</a>
+    </div>
+  </details>
+</meltemi-account>
+
+<script>
+  import { defineAccountMenu } from "../scripts/account-menu.ts";
+  defineAccountMenu();
+</script>

@@ -5,10 +5,16 @@
 The documentation portal's **Ask the docs** can be paused and enabled without rebuilding or
 removing the guides. The control covers new answer requests and new documentation embeddings.
 
+This is one global control. Choosing Production or Staging in the central administration
+workspace does not select a separate documentation AI state.
+
 ## Pause or enable answers
 
-Open [Documentation AI administration](https://id.meltemi.dev/admin/docs-ai?lang=en) and sign in
-with a service owner's Meltemi account. The same page is linked from that owner's account page.
+From the documentation header, choose **Administration** after your service-owner session is
+confirmed, then open **Documentation AI**. You can also open the
+[central administration workspace](https://id.meltemi.dev/admin/?lang=en) and sign in with the
+owner's existing Meltemi account. [Administration and your account](administration.md) explains
+the personal menu, preferences and authorized product operations.
 Access is limited to the exact identity `sub`s in the existing `ADMIN_SUBS` allowlist; being an
 invited Meltemi Diagrams administrator or moderator grants no access to this control.
 
