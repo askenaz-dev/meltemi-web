@@ -691,6 +691,62 @@ const ask: Check = async (browser, origin) => {
   return failures;
 };
 
+/** Filtered sources keep their numbers aligned with answer links, even across gaps. */
+const citationNumbers: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  for (const lang of ["en", "es"] as const) {
+    const prefix = lang === "es" ? "/es" : "";
+    const paths = [
+      "/diagrams/language/stories/",
+      "/diagrams/player/",
+      "/diagrams/getting-started/",
+      "/diagrams/features/",
+      "/diagrams/",
+      "/web/",
+    ];
+    const sources = [1, 2, 3, 4, 6, 7].map((n, i) => ({
+      n,
+      title: `Guide ${n}`,
+      url: prefix + paths[i],
+      lang,
+    }));
+    const watched = await open(browser, origin, `${prefix}/diagrams/player/`);
+    const { page } = watched;
+    await page.route("**/api/ask", (route) =>
+      route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({ answer: "[1] [2] [3] [4] [6] [7]", sources }),
+      }),
+    );
+    await page.click(".ask-open");
+    await page.waitForFunction(
+      () => !document.querySelector<HTMLButtonElement>(".ask-submit")!.disabled,
+    );
+    await page.selectOption("#ask-scope", "all");
+    await page.fill("#ask-question", "Where can I read these guides?");
+    await page.click(".ask-submit");
+    await page.waitForSelector(".ask-answer:not([hidden])");
+    const seen = await page.evaluate(() => ({
+      rows: [...document.querySelectorAll<HTMLLIElement>(".ask-sources li")].map((item) => ({
+        n: item.value,
+        href: item.querySelector("a")?.getAttribute("href"),
+      })),
+      citations: [...document.querySelectorAll<HTMLAnchorElement>(".ask-cite")].map((link) => ({
+        n: Number(link.textContent?.slice(1, -1)),
+        href: link.getAttribute("href"),
+      })),
+    }));
+    const expected = sources.map((source) => ({ n: source.n, href: source.url }));
+    if (JSON.stringify(seen.rows) !== JSON.stringify(expected))
+      failures.push(`${lang}: source list renumbered the citations: ${JSON.stringify(seen.rows)}`);
+    if (JSON.stringify(seen.citations) !== JSON.stringify(expected))
+      failures.push(`${lang}: answer citations do not match their source destinations`);
+    failures.push(...watched.problems.map((problem) => `${lang}: ${problem}`));
+    await watched.context.close();
+  }
+  return failures;
+};
+
 /** A provider failure offers search without guessing the account's billing state. */
 const allowance: Check = async (browser, origin) => {
   const failures: string[] = [];
@@ -1012,6 +1068,7 @@ const CHECKS: readonly [string, Check][] = [
     productAsk,
   ],
   ["ask the docs answers the fixture question with its source, in both languages", ask],
+  ["citation numbers preserve gaps and source destinations in both languages", citationNumbers],
   ["a provider failure offers the search without a billing claim", allowance],
   [
     "disabled AI preserves guides, search and the question, and reopening reads current status in both languages",
