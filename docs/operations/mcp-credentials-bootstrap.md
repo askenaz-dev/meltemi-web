@@ -156,6 +156,12 @@ those fixes/fixtures. The delivery target is a real report with 34 passed, zero 
 skipped on each host after those cases are implemented. Never infer that result from a green
 workflow which permits omissions.
 
+The separate Diagrams implementation subsequently completed a direct operator-run proof against
+both deployed `1.11.25` hosts: **34 passed, zero failed, zero skipped** on staging and production.
+Both cleanups verified zero residuals. The pre-change GitHub deploy run `42255433477` honestly
+reported 32 passed and two skipped on both hosts. The new strict delivery gate must still be
+published and verified through its own Diagrams CI; these results do not claim it already ran.
+
 ## Preparation evidence and execution status
 
 Local preparation used no credentials, backend access or remote writes. Evidence is outside Git
