@@ -382,6 +382,7 @@ describe("strict product data and targets", () => {
     ).toThrow();
   });
   it("rejects traversal and off-host publication URLs", () => {
+    expect(validAccount("first/last+tag%id@example.com")).toBe(true);
     for (const target of ["..", "../../api", "a/b", "person?role=owner", "x\nheader"])
       expect(validAccount(target)).toBe(false);
     expect(publicationAt("https://meltemi.page/person/page/", "meltemi.page")).toEqual({

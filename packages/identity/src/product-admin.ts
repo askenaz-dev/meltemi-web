@@ -361,6 +361,8 @@ export function parseAccountPermission(value: unknown): AccountPermission {
 
 /** Accepted exact identifiers cannot become URL syntax, path traversal or arbitrary operations. */
 export function validAccount(value: string): boolean {
+  // Lookup emails travel in a constant POST body. Legal email punctuation is not a URL target.
+  if (validEmail(value)) return true;
   return (
     value !== "" &&
     value.length <= 254 &&

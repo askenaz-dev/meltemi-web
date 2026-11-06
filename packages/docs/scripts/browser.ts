@@ -240,7 +240,15 @@ const accountOwners: Check = async (browser, origin) => {
         failures.push(`${url}/${width}: administration is not a usable header target`);
       if (evidence)
         await page.screenshot({ path: join(evidence, `docs-account-${lang}-${width}-closed.png`) });
+      // Native details dispatches toggle after the click: the prior idle/name state can still
+      // match before its refresh starts. Observe that new response before checking the result.
+      const refreshed = page.waitForResponse(
+        (answer) =>
+          new URL(answer.url()).pathname === "/api/account-menu" &&
+          answer.request().method() === "GET",
+      );
       await page.click(".portal-account-summary");
+      await refreshed;
       await page.waitForFunction(
         (expected) =>
           document.querySelector("meltemi-account")?.getAttribute("aria-busy") === "false" &&

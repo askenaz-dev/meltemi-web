@@ -17,8 +17,8 @@
 
 ## 3. Verify and deliver
 
-- [ ] 3.1 Coordinate Diagrams private-service and hosted-navigation changes with explicit deployment order.
+- [x] 3.1 Coordinate Diagrams private-service and hosted-navigation changes with explicit deployment order.
 - [x] 3.2 Run meaningful auth/privacy/persistence/product-boundary tests and required repository checks.
 - [x] 3.3 Verify EN/ES, theme, mobile, keyboard, long content and service failures in browsers; inspect screenshots.
-- [ ] 3.4 Update EN/ES operator guidance and prepare reviewable PRs with exact CI evidence.
+- [x] 3.4 Update EN/ES operator guidance and prepare reviewable PRs with exact CI evidence.
 
