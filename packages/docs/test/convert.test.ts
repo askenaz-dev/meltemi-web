@@ -186,14 +186,61 @@ describe("the sidebar", () => {
     expect(other).toMatchObject({ label: "Other pages", translations: { es: "Otras páginas" } });
   });
 
-  it("takes the repository's readme as the index when docs/ has none, and folds folders", () => {
+  it("takes the repository's readme as the index when docs/ has none", () => {
     expect(sidebarOrder(ide.sidebar)).toEqual(["ide", "ide/quickstart", "ide/local-models"]);
-    expect(sidebarOrder(web.sidebar)).toEqual([
-      "web",
-      "web/repositories",
-      "web/decisions/0001-family-repositories",
-    ]);
-    expect(web.sidebar.at(-1)).toMatchObject({ label: "Decisions", collapsed: true });
+    expect(sidebarOrder(web.sidebar)).toEqual(["web", "web/repositories"]);
+  });
+
+  it("still folds unlinked folders of user guides", () => {
+    const section = convertSection(withFiles({ "docs/tutorials/first.md": "# First tutorial\n" }));
+    expect(section.sidebar.at(-1)).toMatchObject({ label: "Tutorials", collapsed: true });
+  });
+});
+
+describe("documentation for product users", () => {
+  it("publishes no internal route or locale notice in any product", () => {
+    for (const section of [diagrams, ide, web]) {
+      expect(section.pages.some((p) => /(?:decisions|qa)\//.test(p.id))).toBe(false);
+      expect(sidebarOrder(section.sidebar).some((s) => /(?:decisions|qa)\//.test(s))).toBe(false);
+    }
+  });
+
+  it("keeps internal reports out but retains advanced references and new user guides", () => {
+    const section = convertSection(
+      withFiles({
+        "docs/quality/results.md": "Internal evidence without a page title.",
+        "docs/es/quality/results.md": "Evidencia interna sin título.",
+        "docs/roadmap-1.0.md": "Internal plan without a page title.",
+        "docs/es/roadmap-1.0.md": "Plan interno sin título.",
+        "docs/central-administration-service.md": "Implementation design without a title.",
+        "docs/language/conformance.md": "# Language conformance\n\nPublic language contract.",
+        "docs/performance.md": "# Performance\n\nProduct performance limits.",
+        "docs/tutorials/next.md": "# Next tutorial\n\nNew user guide.",
+      }),
+    );
+    expect(section.pages.some((p) => /quality|roadmap|central-administration/.test(p.id))).toBe(
+      false,
+    );
+    expect(section.pages.filter((p) => !p.notice).map((p) => p.id)).toEqual(
+      expect.arrayContaining(["language/conformance", "performance", "tutorials/next"]),
+    );
+  });
+
+  it("links an excluded source in either language to its exact GitHub ref and anchor", () => {
+    const ctx = linkContext(tree("diagrams"), sourcePages(tree("diagrams")));
+    for (const [from, path] of [
+      ["docs/agents.md", "decisions/0001-parser-approach.md"],
+      ["docs/es/agents.md", "decisions/0001-parser-approach.md"],
+    ]) {
+      const target = from!.startsWith("docs/es/") ? `docs/es/${path}` : `docs/${path}`;
+      expect(resolveLink(`${path}#context`, from!, ctx)).toEqual({
+        kind: "github",
+        url: `https://github.com/askenaz-dev/meltemi-diagrams/blob/v1.11.0/${target}#context`,
+      });
+    }
+    expect(() => resolveLink("decisions/missing.md", "docs/agents.md", ctx)).toThrow(
+      /docs\/agents.md: the link decisions\/missing.md leads to no page or file/,
+    );
   });
 });
 

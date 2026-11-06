@@ -34,7 +34,14 @@ The steps, each a module of `scripts/` with its test:
 1. `sources.ts` — the trees: `docs/**` and the readmes (`README.md`, `README.es.md`, `LEEME.md`,
    `CONTRIBUTING.md`, `CHANGELOG.md`) of each repository, and `sources.json` (repository, ref,
    version, date), which the footers and the home name.
-2. `convert.ts` — one function per rule: the first `# Heading` is the title, the first paragraph
+2. `audience.ts` selects product guides before `convert.ts` creates pages. Decisions, QA and
+   verification evidence, research, interface design, pilot/launch operations and explicit
+   implementation plans stay in GitHub; the policy applies to both languages and all source
+   modes. These sources create no route, locale notice, sidebar item, Pagefind result or Ask
+   passage. Links to existing excluded files still reach GitHub at the source ref; missing
+   references still fail the build. Advanced product references, performance and installation
+   verification remain public. `convert.ts` then applies one function per rule: the first
+   `# Heading` is the title, the first paragraph
    the description, the first-line `[Español](…)` link is dropped, links to pages become portal
    routes (anchors kept), files outside `docs/` GitHub at the ref, `docs/media/` the copied files,
    pictures from other hosts their words; the sidebar follows the section's index (`docs/README.md`

@@ -13,6 +13,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from "node:fs";
 import { constants, setPriority } from "node:os";
 import { join, relative, sep } from "node:path";
@@ -20,6 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PACKAGE } from "../scripts/sources.js";
 import { PORTAL_TOKENS, SITE_TOKENS, portalTokens } from "../scripts/tokens.js";
 import { collectTokens } from "../../site/scripts/tokens.mjs";
+import { decodeIndex } from "../src/ask-index.js";
 
 let dist: string;
 let output: string;
@@ -31,6 +33,10 @@ beforeAll(async () => {
   const builds = join(PACKAGE, ".test-builds");
   mkdirSync(builds, { recursive: true });
   dist = mkdtempSync(join(builds, "portal-"));
+  // A previously public internal route must disappear when the portal is rebuilt.
+  const retired = join(dist, "diagrams", "decisions", "stale");
+  mkdirSync(retired, { recursive: true });
+  writeFileSync(join(retired, "index.html"), "Old internal decision");
   // The build runs beside the other test files: at a low priority, so their timings stay theirs.
   const child = spawn(
     process.execPath,
@@ -262,6 +268,18 @@ describe("pictures from the code", () => {
 });
 
 describe("search in the reader's browser", () => {
+  it("publishes no internal source page or passage in either language", () => {
+    expect(pages().some((p) => /\/(?:decisions|qa)\//.test(`/${p}`))).toBe(false);
+    const index = decodeIndex(readFileSync(join(dist, "ask", "index.bin")));
+    expect(index.pages.some((p) => /\/(?:decisions|qa)\//.test(p.url))).toBe(false);
+    for (let i = 0; i < index.count; i++) {
+      expect(index.text(i)).not.toMatch(/parser-architecture-only|internal-qa-only/);
+    }
+    expect(html("/web/repositories/")).toContain(
+      'href="https://github.com/askenaz-dev/meltemi-web/blob/main/docs/decisions/0001-family-repositories.md"',
+    );
+  });
+
   it("ships Pagefind's index in both languages, made at build", () => {
     for (const file of [
       "pagefind/pagefind.js",
