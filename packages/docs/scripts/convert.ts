@@ -20,6 +20,7 @@
 import { posix } from "node:path";
 import { messages, type Lang, type Section } from "../src/messages/index.js";
 import type { SourceTree } from "./sources.js";
+import { isUserGuide } from "./audience.js";
 
 export class ConvertError extends Error {
   override name = "ConvertError";
@@ -284,7 +285,10 @@ interface SourcePage {
  */
 export function sourcePages(tree: SourceTree): SourcePage[] {
   const paths = [...tree.files.keys()]
-    .filter((p) => p.startsWith("docs/") && p.toLowerCase().endsWith(".md"))
+    .filter(
+      (p) =>
+        p.startsWith("docs/") && p.toLowerCase().endsWith(".md") && isUserGuide(tree.section, p),
+    )
     .sort();
   const mirrored = paths.some((p) => p.startsWith("docs/es/"));
   const pages: SourcePage[] = [];

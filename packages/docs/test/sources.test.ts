@@ -121,6 +121,7 @@ describe("the sources are the latest releases", () => {
       "LEEME.md",
       "README.md",
       "docs/local-models.md",
+      "docs/qa/internal-report.md",
       "docs/quickstart.md",
     ]);
     expect(trees.find((t) => t.section === "web")!.files.has("docs/repositories.md")).toBe(true);

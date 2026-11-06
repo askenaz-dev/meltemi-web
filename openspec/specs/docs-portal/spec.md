@@ -40,10 +40,11 @@ with that language, so a reader changes language with no script.
 - **THEN** `pnpm test` fails naming the page and the twin it lacks
 
 ### Requirement: The sidebar follows the index
-Each section's sidebar SHALL list its pages in the order the repository's own index links them
+Each section's sidebar SHALL list its selected user guides in the order the repository's own
+index links them
 (the `docs/README.md` of the language, under its `##` headings, else the repository's README),
-the pages the index does not link after them in path order (in a folded group per folder for
-those in a folder), with the titles of the pages; a page's own heading SHALL
+the selected guides the index does not link after them in path order (in a folded group per
+folder for those in a folder), with the titles of the pages; a page's own heading SHALL
 not be repeated in its body.
 
 #### Scenario: The index's order
