@@ -1,57 +1,25 @@
 name: Infrastructure apply
 
-# Current main with successful push CI: the saved plan is applied, one run at a time.
-
+# Temporary operation branch only. Never merge this replacement of the normal apply workflow.
+# The owner first supplies WEB_DISPATCH_TOKEN in the infrastructure environment.
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
-    inputs:
-      ci_run_id:
-        description: Successful push/main CI run to recover
-        required: true
-        type: string
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  # Shared with deploy: hold the same queue from Terraform refresh through the saved plan's apply.
+  # Preserve the production queue shared by main's Terraform apply and Wrangler deploy.
   group: production-reconciliation
   cancel-in-progress: false
   queue: max
 
 jobs:
-  source:
-    if: >-
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.head_repository.full_name == github.repository) ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
-    outputs:
-      sha: ${{ steps.ci.outputs.sha }}
-      current: ${{ steps.ci.outputs.current }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.workflow_sha }}
-          path: .automation
-          persist-credentials: false
-      - name: Validate the CI run through GitHub
-        id: ci
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CI_RUN_ID: ${{ github.event.workflow_run.id || inputs.ci_run_id }}
-        run: node .automation/scripts/ci-source.mjs resolve
-
   apply:
-    needs: source
-    if: needs.source.outputs.current == 'true'
+    if: github.repository == 'askenaz-dev/meltemi-web' && github.ref == 'refs/heads/codex/docs-dispatch-bootstrap-only'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment: infrastructure
     defaults:
       run:
@@ -63,86 +31,114 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GH_ADMIN_TOKEN }}
       TF_VAR_cloudflare_account_id: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      TF_VAR_existing_secrets_store_id: ${{ vars.EXISTING_SECRETS_STORE_ID }}
-      TF_VAR_existing_zone_ids: ${{ vars.EXISTING_ZONE_IDS || '{}' }}
-      TF_VAR_existing_apex_record_ids: ${{ vars.EXISTING_APEX_RECORD_IDS || '{}' }}
       TF_VAR_session_private_key: ${{ secrets.SESSION_PRIVATE_KEY }}
-      TF_VAR_github_client_secret: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
-      TF_VAR_google_client_secret: ${{ secrets.OAUTH_GOOGLE_CLIENT_SECRET }}
-      TF_VAR_admin_subs: ${{ secrets.ADMIN_SUBS }}
-      TF_VAR_sponsors_webhook_secret: ${{ secrets.SPONSORS_WEBHOOK_SECRET }}
-      TF_VAR_npm_token: ${{ secrets.NPM_TOKEN }}
-      TF_VAR_vsce_pat: ${{ secrets.VSCE_PAT }}
-      TF_VAR_ovsx_pat: ${{ secrets.OVSX_PAT }}
-      # The narrow notice token when it exists; until then the admin token, by the owner's choice
-      # of 2026-10-23 (change ide-releases, design: "The owner's choice").
-      TF_VAR_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN || secrets.GH_ADMIN_TOKEN }}
+      # The admin credential authenticates Terraform; it is never a distributed value/fallback.
       TF_VAR_narrow_web_dispatch_token: ${{ secrets.WEB_DISPATCH_TOKEN }}
-      # The acceptance suite's tokens for Diagrams' staging and production environments (change
-      # diagrams-staging), one secret each so that each is masked on its own; an absent one is an
-      # empty string, and its environment secret is not written. `mdg_` tokens are base64url, which
-      # needs no escaping inside the quotes.
-      TF_VAR_mcp_test_tokens: >-
-        {"staging": {"token": "${{ secrets.MCP_TEST_TOKEN_STAGING }}", "token_2": "${{ secrets.MCP_TEST_TOKEN_2_STAGING }}"},
-        "production": {"token": "${{ secrets.MCP_TEST_TOKEN_PRODUCTION }}", "token_2": "${{ secrets.MCP_TEST_TOKEN_2_PRODUCTION }}"}}
     steps:
-      - uses: actions/checkout@v4
+      - name: Operation controls at this workflow revision
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.workflow_sha }}
-          path: .automation
+          path: operation
           persist-credentials: false
-      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          ref: ${{ needs.source.outputs.sha }}
+          node-version: "24"
+      - name: Verify the pinned main source has approved push CI and is still current
+        working-directory: operation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { resolveSource } from "./scripts/ci-source.mjs";
+          import { githubApi } from "./scripts/github-api.mjs";
+          const source = await resolveSource(
+            githubApi(process.env.GITHUB_REPOSITORY, process.env.GH_TOKEN),
+            process.env.GITHUB_REPOSITORY,
+            "42128386923",
+          );
+          if (source.sha !== "8169b0c60e8ff503e721266fcfc2b6ecde8f752b" || source.current !== "true") {
+            throw new Error("The pinned source is no longer current approved main; review the operation again.");
+          }
+          console.log("Pinned main source and its successful push CI verified.");
+          NODE
+      - name: Existing Terraform declarations from approved main
+        uses: actions/checkout@v4
+        with:
+          ref: 8169b0c60e8ff503e721266fcfc2b6ecde8f752b
           path: source
           persist-credentials: false
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~1.15"
           terraform_wrapper: false
-      - name: The Cloudflare token and the state bucket, as this runner sees them
+      - name: Check bootstrap value and authenticate the state backend
         run: |
-          answer="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)"
-          status="$(echo "$answer" | jq -r '.result.status // empty')"
-          if [ "$status" != "active" ]; then
-            echo "::error::Cloudflare refuses the token from this runner: $(echo "$answer" | jq -c '.errors')."
-            echo "A token restricted to some client IP addresses cannot be used from GitHub's runners."
+          if [ -z "$TF_VAR_narrow_web_dispatch_token" ]; then
+            echo '::error::WEB_DISPATCH_TOKEN is missing from the infrastructure environment.'
             exit 1
           fi
-          account="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/${{ vars.CLOUDFLARE_ACCOUNT_ID }}/workers/scripts" | jq -c '.success, .errors')"
-          echo "An account call from this runner answers: $account"
-          # R2's S3 credentials are the token's id and the SHA-256 of its value (Cloudflare's R2 docs),
-          # derived here so that they always belong to the token the environment holds.
-          key_id="$(echo "$answer" | jq -r '.result.id')"
+          if [ "$TF_VAR_narrow_web_dispatch_token" = "$GITHUB_TOKEN" ]; then
+            echo '::error::The notice token must be separate from GH_ADMIN_TOKEN.'
+            exit 1
+          fi
+          answer="$(curl --fail --silent --show-error -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)"
+          if [ "$(jq -r '.result.status // empty' <<< "$answer")" != active ]; then
+            echo '::error::The infrastructure token is not active.'
+            exit 1
+          fi
+          key_id="$(jq -r '.result.id // empty' <<< "$answer")"
+          if [ -z "$key_id" ]; then exit 1; fi
           secret="$(printf %s "$CLOUDFLARE_API_TOKEN" | sha256sum | cut -d' ' -f1)"
           echo "::add-mask::$secret"
           echo "AWS_ACCESS_KEY_ID=$key_id" >> "$GITHUB_ENV"
           echo "AWS_SECRET_ACCESS_KEY=$secret" >> "$GITHUB_ENV"
-          if AWS_ACCESS_KEY_ID="$key_id" AWS_SECRET_ACCESS_KEY="$secret" aws s3api list-objects-v2 \
-            --bucket meltemi-terraform-state --endpoint-url "$AWS_ENDPOINT_URL_S3" --region auto --max-items 1 > /dev/null; then
-            echo "The token is active and R2 accepts the state bucket's credentials."
-          else
-            echo "::error::R2 refuses the state bucket's credentials derived from the token (it needs Workers R2 Storage)."
-            exit 1
-          fi
-      - run: terraform init
-      - name: Plan
-        run: terraform plan -no-color -lock-timeout=5m -out=apply.tfplan
-      - name: Refuse to apply superseded source
-        id: current
+      - name: Remove the incidental repository and D1 dependency for this operation
+        run: cp "$GITHUB_WORKSPACE/operation/scripts/docs-dispatch-bootstrap-override.tf" docs_dispatch_bootstrap_override.tf
+      - name: Initialize pinned providers and record runner-platform checksums
+        run: |
+          terraform init -no-color
+          terraform version -json | jq -e '.provider_selections == {
+            "registry.terraform.io/cloudflare/cloudflare": "5.28.0",
+            "registry.terraform.io/hashicorp/random": "3.9.1",
+            "registry.terraform.io/integrations/github": "6.13.0"
+          }' > /dev/null
+      - name: Plan only the documentation notice secret and validate its entire scope
+        run: |
+          umask 077
+          terraform plan -no-color -lock-timeout=5m \
+            -target='github_actions_secret.release["meltemi-diagrams/WEB_DISPATCH_TOKEN"]' -out=docs-dispatch.tfplan
+          terraform show -json docs-dispatch.tfplan | node "$GITHUB_WORKSPACE/operation/scripts/docs-dispatch-bootstrap-plan.mjs"
+      - name: Refuse to apply after main changes
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_SHA: ${{ needs.source.outputs.sha }}
-        run: node ../../../.automation/scripts/ci-source.mjs current
-      - name: Apply that plan
-        if: steps.current.outputs.current == 'true'
-        run: terraform apply -no-color -lock-timeout=5m apply.tfplan
-      - name: Outputs
         run: |
-          {
-            echo "### Outputs"
-            echo
-            echo '```json'
-            terraform output -json
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          current="$(gh api repos/askenaz-dev/meltemi-web/git/ref/heads/main --jq .object.sha)"
+          if [ "$current" != 8169b0c60e8ff503e721266fcfc2b6ecde8f752b ]; then
+            echo '::error::Main changed after the operation was prepared; review its source pin again.'
+            exit 1
+          fi
+      - name: Apply exactly the validated plan
+        run: terraform apply -no-color -lock-timeout=5m docs-dispatch.tfplan
+      - name: Verify the targeted plan has no differences
+        run: |
+          umask 077
+          set +e
+          terraform plan -no-color -lock-timeout=5m -detailed-exitcode \
+            -target='github_actions_secret.release["meltemi-diagrams/WEB_DISPATCH_TOKEN"]' -out=docs-dispatch-verify.tfplan
+          code=$?
+          set -e
+          if [ "$code" != 0 ]; then
+            echo '::error::The documentation notice secret did not converge to an unchanged plan.'
+            exit 1
+          fi
+          terraform show -json docs-dispatch-verify.tfplan | node "$GITHUB_WORKSPACE/operation/scripts/docs-dispatch-bootstrap-plan.mjs" --verify
+      - name: Verify destination metadata without reading the token
+        run: |
+          metadata="$(gh api repos/askenaz-dev/meltemi-diagrams/actions/secrets/WEB_DISPATCH_TOKEN --jq '{name, updated_at}')"
+          if [ "$(jq -r '.name' <<< "$metadata")" != WEB_DISPATCH_TOKEN ]; then exit 1; fi
+          printf '%s\n' "$metadata" >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove sensitive runner-local plans
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: rm -f source/packages/infra/docs-dispatch.tfplan source/packages/infra/docs-dispatch-verify.tfplan source/packages/infra/docs_dispatch_bootstrap_override.tf
