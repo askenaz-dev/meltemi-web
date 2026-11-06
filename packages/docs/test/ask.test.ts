@@ -125,6 +125,7 @@ describe("a question answered from the pages", () => {
     );
     const { deps: d, calls } = deps({ index: async () => index });
     const response = await ask(post({ question: "session", lang: "es", section: "diagrams" }), d);
+    expect(response.headers.get("X-Meltemi-Ask-Outcome")).toBe("no-match");
     expect(await response.json()).toEqual({
       answer: "La documentación no cubre esto.",
       sources: [],
@@ -149,6 +150,7 @@ describe("a question answered from the pages", () => {
     const response = await ask(post({ question: QUESTION, lang: "en" }), d);
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("X-Meltemi-Ask-Outcome")).toBe("answered");
     const body = (await response.json()) as {
       answer: string;
       sources: { n: number; title: string; url: string; lang: string }[];
@@ -191,14 +193,17 @@ describe("a question answered from the pages", () => {
       sources: [],
     });
     expect(calls.answer).toHaveLength(0);
+    expect(response.headers.get("X-Meltemi-Ask-Outcome")).toBe("no-match");
   });
 
   it("drops a model's answer that is the not-covered sentence to no source, and citations that do not exist", async () => {
     const { deps: d } = deps({ answer: async () => "La documentación no cubre esto." });
-    expect(await (await ask(post({ question: QUESTION, lang: "es" }), d)).json()).toEqual({
+    const response = await ask(post({ question: QUESTION, lang: "es" }), d);
+    expect(await response.json()).toEqual({
       answer: "La documentación no cubre esto.",
       sources: [],
     });
+    expect(response.headers.get("X-Meltemi-Ask-Outcome")).toBe("not-covered");
     expect(cleanAnswer("<think>x</think>See [2] and [9].", 2)).toEqual({
       answer: "See [2] and .",
       cited: new Set([2]),
