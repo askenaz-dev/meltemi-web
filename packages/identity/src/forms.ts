@@ -1,7 +1,6 @@
 // What every state-changing request of the account page goes through: the session, the `Origin`
 // of the request and the `csrf` token the page's forms carry (`identity-account`, "Form protection").
 
-import type { Config } from "./config.js";
 import type { Ctx } from "./context.js";
 import { hmacHex, verifyHmacHex } from "./crypto.js";
 import { originOf, redirect } from "./http.js";
@@ -37,11 +36,11 @@ export function accountPath(ctx: Pick<Ctx, "url">, returnTo?: string): string {
  * Where a person without a session goes: the chooser, returning to the account page, and through
  * it to the product they came from when there is one.
  */
-export function signInRedirect(config: Config, returnTo?: string): Response {
-  const account = returnTo
-    ? `${config.issuer}/account?return_to=${encodeURIComponent(returnTo)}`
-    : `${config.issuer}/account`;
-  return redirect(`/login?return_to=${encodeURIComponent(account)}`);
+export function signInRedirect(ctx: Pick<Ctx, "config" | "url">, returnTo?: string): Response {
+  const account = `${ctx.config.issuer}${accountPath(ctx, returnTo)}`;
+  const asked = ctx.url.searchParams.get("lang");
+  const language = asked === "en" || asked === "es" ? `&lang=${asked}` : "";
+  return redirect(`/login?return_to=${encodeURIComponent(account)}${language}`);
 }
 
 /** The fields of a form post, or undefined when the body is not a form (never an exception). */
@@ -97,7 +96,7 @@ export type AccountAction =
  */
 export async function accountAction(ctx: Ctx): Promise<AccountAction> {
   const current = await currentSession(ctx);
-  if (!current) return { response: signInRedirect(ctx.config) };
+  if (!current) return { response: signInRedirect(ctx) };
   const form = await readForm(ctx.request);
   if (!form) return { response: forbiddenPage(ctx, backToAccount(ctx)) };
   const refused = await checkAccountForm(ctx, current, form);

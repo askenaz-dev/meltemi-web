@@ -69,13 +69,7 @@ export const accountPage: Route = async (ctx) => {
     return refuse(ctx, 400, "return_to.invalid", m.returnToInvalidTitle, m.returnToInvalidBody);
   }
   const current = await currentSession(ctx);
-  if (!current) {
-    if (ctx.url.searchParams.has("environment"))
-      return redirect(
-        `/login?return_to=${encodeURIComponent(`${ctx.config.issuer}${accountPath(ctx, returnTo)}`)}`,
-      );
-    return signInRedirect(ctx.config, returnTo);
-  }
+  if (!current) return signInRedirect(ctx, returnTo);
   const { store } = ctx.deps;
   const [identities, sessions, csrf, preferences, product] = await Promise.all([
     store.identitiesOf(current.user.id),

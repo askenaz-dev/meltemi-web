@@ -11,14 +11,14 @@ returning visitors do not retain an older layout from the one-hour CSS cache.
 
 ## Local evidence
 
-- Repository typecheck and lint passed. Full workspace tests passed after the product environment
-  changes: 2,457 passing tests and one existing skip. The email transport correction passed the
-  focused client suite and the real cross-repository composition below.
+- Repository typecheck, lint and build passed after the OAuth-context correction. Full workspace
+  tests passed: 2,471 passing tests and one existing skip across 65 files. The email transport
+  correction passed the focused client suite and the real cross-repository composition below.
 - `pnpm build` passed using the default offline fixture. The local-source portal build with
   `--from local --siblings C:/meltemi --embedder fake` also passed: 404 pages, including both new
   administration guides and their AI control links, without provider/AI calls.
 - Identity's Wrangler production dry run bundled both named service bindings successfully.
-  No upload, new secret, infrastructure mutation or billing change was performed.
+  No upload, production secret, infrastructure mutation or billing change was performed.
 - Docs browser suite passed all 15 groups: owner/ordinary/anonymous/unavailable/malformed states,
   EN/ES, 320/375/800/1280 widths, long escaped names, refresh/revocation/race handling, keyboard,
   search, Ask, motion, theme, policy and JavaScript-disabled guide access.
@@ -35,6 +35,26 @@ returning visitors do not retain an older layout from the one-hour CSS cache.
   tests verify a name change preserves SID, issuance/expiry and remaining cookie age.
 - Private navigation tests compose real Identity and Docs handlers, verifying saved name, account
   changes, revocation/deletion, storage failure and cookie/header minimization.
+- Real development OAuth was exercised on 2026-11-06 at `http://localhost:8787` against local Wrangler and D1,
+  using separate owner-approved GitHub and Google development applications. GitHub sign-in,
+  linking Google, signing out, a fresh Google sign-in, unlinking GitHub while retaining Google,
+  and relinking GitHub completed through the actual providers. No production OAuth secret was
+  copied into this development configuration.
+- A second actual browser signed in through GitHub. The account listed both Chrome and the
+  in-app browser sessions. **Sign out of other devices** from Chrome left only that session;
+  reloading the other browser returned it to the Spanish sign-in page with the Spanish account
+  return address preserved. This was a real two-browser revocation, not a generated-session probe.
+- The real linking flow exposed a lost-language return from `/account?lang=es`. The account link
+  and reauthentication builders now carry the chosen language and explicit valid product
+  environment through the signed return address. Focused regressions follow rendered links,
+  signed OAuth state and callbacks for both providers on hosted/local origins, plus unlink,
+  device revocation, reauthentication and invalid/duplicate environment refusal. Native rechecks
+  confirmed Google unlink/relink returns to `/account?lang=es` in Spanish, and GitHub
+  unlink/relink returns to `/account?lang=es&environment=staging` with both selections intact and
+  the existing session retained.
+- The final native logout check opened the Spanish confirmation, submitted **Sign out** and
+  returned to the Spanish login page. The real provider and account checks did not inspect or
+  export cookies or provider credentials in the browser.
 - A separate offline composition joins the actual Web and Diagrams handlers, real signed Web
   JWTs, fresh JWKS/session checks and separate product stores. It passed 52 product calls and
   204 Identity calls, with zero network traffic: owner/admin/invitee/ordinary roles, lookup,
@@ -55,6 +75,9 @@ Visual evidence stays outside Git in `C:/meltemi/artifacts/central-administratio
 console image is `account/central-workspace-es.jpg`, with `final-account-menu-320-es.jpg` and
 separate Docs desktop/mobile captures. The preview listens only on `127.0.0.1:8891`; Docker on
 8879 was not changed.
+The final real OAuth captures are `delivery/oauth-link-return-es.png`,
+`delivery/oauth-link-return-es-staging.png` and `delivery/oauth-logout-local.png` beneath the
+same evidence directory.
 
 ## Delivery and limits
 
@@ -62,7 +85,9 @@ Deploy the Diagrams private backend first, this Web console second, and the sepa
 Diagrams navigation consolidation last. Both hosted backends must exist before Identity's new
 bindings are deployed. No merge or production deployment is part of this verification.
 
-The preview and automated provider tests are not a real development OAuth sign-in. No development
-provider credentials were available, so the repository's real development-app sign-in requirement
-remains a pre-archive check. The change stays active in OpenSpec. Production authorization and
-the private bindings must be verified through the normal authenticated deployment sequence.
+The preview and automated provider tests are separate from the real development OAuth and
+two-browser checks recorded above. The completed native checks satisfy the repository's
+development sign-in requirement before archive. The `central-administration` change is archived
+with its capability deltas synchronized into the main specifications. Production authorization
+and the private bindings still need verification through the normal authenticated deployment
+sequence.

@@ -3,6 +3,7 @@
 // page's language, looked up when the page is made.
 
 import type { Ctx } from "../context.js";
+import { accountPath } from "../forms.js";
 import { messages, type Messages } from "../messages/index.js";
 import {
   PROVIDERS,
@@ -198,14 +199,13 @@ ${note}`;
 function linkSection(ctx: Ctx, m: AccountMessages, view: AccountView): string {
   const linked = new Set<Provider>(view.identities.map((identity) => identity.provider));
   // From a product, the flow ends back in the product; otherwise back on this page.
-  const returnTo = encodeURIComponent(
-    view.returnTo ??
-      `${ctx.config.issuer}${ctx.url.searchParams.has("environment") ? workspacePath(ctx, "/account") : "/account"}`,
-  );
+  const returnTo = encodeURIComponent(view.returnTo ?? `${ctx.config.issuer}${accountPath(ctx)}`);
+  const asked = ctx.url.searchParams.get("lang");
+  const language = asked === "en" || asked === "es" ? `&lang=${asked}` : "";
   const links = PROVIDERS.filter((provider) => !linked.has(provider))
     .map((provider) => {
       const label = provider === "github" ? m.linkGithub : m.linkGoogle;
-      const href = `/login?provider=${provider}&link=1&return_to=${returnTo}`;
+      const href = `/login?provider=${provider}&link=1&return_to=${returnTo}${language}`;
       return `<a class="btn" href="${esc(href)}">${esc(label)}</a>`;
     })
     .join("\n");

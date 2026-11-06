@@ -9,7 +9,6 @@ import {
   readForm,
   signInRedirect,
 } from "../src/forms.js";
-import { readConfig } from "../src/config.js";
 import { currentSession } from "../src/session.js";
 import { DEV_ENV, anotherSession, ctxOf } from "./support/account.js";
 import { harness, signedInPerson, textOf } from "./support/index.js";
@@ -238,7 +237,7 @@ describe("readForm", () => {
 describe("signInRedirect and accountPath", () => {
   it("sends a person to the chooser with the account page as the return address, encoded", async () => {
     const h = await harness();
-    const response = signInRedirect(readConfig(h.env));
+    const response = signInRedirect(ctxOf(h, new Request(`${h.env.ISSUER}/account`)));
     expect(response.status).toBe(302);
     const location = response.headers.get("Location")!;
     expect(location).toBe("/login?return_to=https%3A%2F%2Fid.meltemi.dev%2Faccount");
@@ -250,7 +249,9 @@ describe("signInRedirect and accountPath", () => {
 
   it("returns to the development issuer's account page in development", async () => {
     const dev = await harness({ env: { ...DEV_ENV } });
-    const location = signInRedirect(readConfig(dev.env)).headers.get("Location")!;
+    const location = signInRedirect(
+      ctxOf(dev, new Request(`${dev.env.ISSUER}/account`)),
+    ).headers.get("Location")!;
     expect(new URL(location, "http://localhost:8787").searchParams.get("return_to")).toBe(
       "http://localhost:8787/account",
     );
