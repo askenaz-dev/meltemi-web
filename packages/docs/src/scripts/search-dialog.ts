@@ -64,8 +64,8 @@ class SiteSearch extends HTMLElement {
       const label = isProduct(select.value) ? placeholder() : words.button;
       open.setAttribute("aria-label", label);
       this.querySelector(".search-label")!.textContent = label;
-      // A filter without a query makes Pagefind enumerate every matching page. Keep an empty
-      // search empty, and apply the selected product in the same input event as the query.
+      // Keep an empty search empty, and apply the selected product in the same input event
+      // as each non-empty query, including the first query after changing scope.
       this.#ui?.triggerFilters(
         input?.value.trim() && isProduct(select.value) ? { product: [select.value] } : {},
       );
