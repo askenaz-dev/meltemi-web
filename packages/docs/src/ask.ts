@@ -24,6 +24,12 @@ export const MIN_SCORE = 0.42;
 export const CANDIDATES = 50;
 export const TOP = 8;
 export const MAX_TOKENS = 400;
+/** Complete only small selected pages, with this much additional prompt context at most. */
+export const CONTEXT_PAGE_LIMIT = 6000;
+export const CONTEXT_EXTRA_LIMIT = 6000;
+
+/** [n], its newline and the separator: at most TOP pages means one-digit source numbers. */
+const PASSAGE_PROMPT_OVERHEAD = 6;
 
 export interface Source {
   readonly n: number;
@@ -147,6 +153,34 @@ export function userPrompt(
   return `Passages:\n\n${blocks.join("\n\n")}\n\nQuestion: ${question}`;
 }
 
+/** Keep every ranked hit first; complete its existing page only when the whole addition fits. */
+export function contextPassages(index: AskIndex, hits: readonly number[]): number[] {
+  const passages = [...new Set(hits)];
+  const original = new Set(passages);
+  const pages = new Map<number, { missing: number[]; characters: number; additional: number }>();
+  for (const passage of passages) {
+    const page = index.passagePages[passage]!;
+    if (!pages.has(page)) pages.set(page, { missing: [], characters: 0, additional: 0 });
+  }
+  for (let passage = 0; passage < index.count; passage++) {
+    const page = pages.get(index.passagePages[passage]!);
+    if (!page || page.characters > CONTEXT_PAGE_LIMIT) continue;
+    const characters = index.text(passage).length + PASSAGE_PROMPT_OVERHEAD;
+    page.characters += characters;
+    if (!original.has(passage)) {
+      page.missing.push(passage);
+      page.additional += characters;
+    }
+  }
+  let remaining = CONTEXT_EXTRA_LIMIT;
+  for (const page of pages.values()) {
+    if (page.characters > CONTEXT_PAGE_LIMIT || page.additional > remaining) continue;
+    passages.push(...page.missing);
+    remaining -= page.additional;
+  }
+  return passages;
+}
+
 /** The answer as the dialog shows it: trimmed, its citations only those that exist. */
 export function cleanAnswer(text: string, count: number): { answer: string; cited: Set<number> } {
   const cited = new Set<number>();
@@ -215,11 +249,18 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
 
   const ranked = rank(index, query, { candidates: CANDIDATES, top: TOP, section });
   if (!ranked.length || ranked[0]!.score < MIN_SCORE) {
-    return json(200, { answer: messages[lang].ask.notCovered, sources: [] });
+    return json(
+      200,
+      { answer: messages[lang].ask.notCovered, sources: [] },
+      { "X-Meltemi-Ask-Outcome": "no-match" },
+    );
   }
   const numbers = new Map<number, number>();
   const sources: Source[] = [];
-  const passages = ranked.map(({ passage }) => {
+  const passages = contextPassages(
+    index,
+    ranked.map(({ passage }) => passage),
+  ).map((passage) => {
     const page = index.passagePages[passage]!;
     if (!numbers.has(page)) {
       numbers.set(page, numbers.size + 1);
@@ -245,12 +286,17 @@ export async function ask(request: Request, deps: AskDeps): Promise<Response> {
   }
   const { answer, cited } = cleanAnswer(raw, sources.length);
   if (!answer || notCoveredSentences.has(answer.toLowerCase().replace(/\s+/g, " "))) {
-    return json(200, { answer: messages[lang].ask.notCovered, sources: [] });
+    return json(
+      200,
+      { answer: messages[lang].ask.notCovered, sources: [] },
+      { "X-Meltemi-Ask-Outcome": "not-covered" },
+    );
   }
-  return json(200, {
-    answer,
-    sources: cited.size ? sources.filter((s) => cited.has(s.n)) : sources,
-  });
+  return json(
+    200,
+    { answer, sources: cited.size ? sources.filter((s) => cited.has(s.n)) : sources },
+    { "X-Meltemi-Ask-Outcome": "answered" },
+  );
 }
 
 /**
