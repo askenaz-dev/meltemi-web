@@ -258,6 +258,7 @@ class MeltemiAsk extends HTMLElement {
           const href = safeUrl(source.url);
           if (!href) continue;
           const item = document.createElement("li");
+          item.value = source.n;
           const link = document.createElement("a");
           link.href = href;
           link.textContent = source.title;
