@@ -15,6 +15,8 @@
 // Little-endian throughout. The header names the embedding model; a Worker refuses an index of a
 // model that is not its own.
 
+import type { Section } from "./messages/index.js";
+
 /** Workers AI's multilingual embedding model, the one production indexes are made with. */
 export const EMBEDDING_MODEL = "@cf/baai/bge-m3";
 /** The dimensions of its vectors. */
@@ -209,7 +211,11 @@ export interface Ranked {
 export function rank(
   index: AskIndex,
   query: ArrayLike<number>,
-  { candidates = 50, top = 8 } = {},
+  {
+    candidates = 50,
+    top = 8,
+    section,
+  }: { candidates?: number; top?: number; section?: Section } = {},
 ): Ranked[] {
   const { count, dimensions, signs, vectors } = index;
   if (count === 0) return [];
@@ -217,20 +223,25 @@ export function rank(
   const q = signBits(query, dimensions);
   const distances = new Uint16Array(count);
   const histogram = new Uint32Array(dimensions + 1);
+  let eligibleCount = 0;
   for (let i = 0; i < count; i++) {
+    if (section && index.pages[index.passagePages[i]!]!.section !== section) continue;
+    eligibleCount++;
     let d = 0;
     const base = i * words;
     for (let w = 0; w < words; w++) d += popcount(signs[base + w]! ^ q[w]!);
     distances[i] = d;
     histogram[d]!++;
   }
-  const want = Math.min(candidates, count);
+  if (!eligibleCount) return [];
+  const want = Math.min(candidates, eligibleCount);
   let cutoff = 0;
   let below = 0;
   while (below + histogram[cutoff]! < want) below += histogram[cutoff++]!;
   let atCutoff = want - below;
   const chosen: number[] = [];
   for (let i = 0; i < count; i++) {
+    if (section && index.pages[index.passagePages[i]!]!.section !== section) continue;
     const d = distances[i]!;
     if (d < cutoff) chosen.push(i);
     else if (d === cutoff && atCutoff > 0) {

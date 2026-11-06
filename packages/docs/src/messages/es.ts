@@ -26,8 +26,8 @@ export const es: Messages = {
     web: {
       name: "Meltemi Web",
       blurb:
-        "Lo que comparte la familia: el mapa de los tres repositorios, sus dominios y contratos, y las decisiones que los explican.",
-      action: "Leer el mapa de la familia",
+        "Tu cuenta compartida de Meltemi: inicia sesión, gestiona tu perfil, preferencias y sesiones, y usa las herramientas de administración autorizadas.",
+      action: "Leer las guías de la cuenta",
     },
   },
   home: {
@@ -41,6 +41,14 @@ export const es: Messages = {
   sidebar: {
     overview: "Resumen",
     other: "Otras páginas",
+  },
+  search: {
+    button: "Buscar",
+    close: "Cerrar búsqueda",
+    scope: "Buscar en",
+    all: "Toda la documentación",
+    inProduct: (product: string) => `Buscar en ${product}`,
+    unavailable: "No se pudo cargar la búsqueda. Cierra el diálogo e inténtalo de nuevo.",
   },
   footer: {
     from: (product: string) => `Desde ${product}`,
@@ -68,6 +76,7 @@ export const es: Messages = {
   ask: {
     button: "Preguntar",
     title: "Pregunta a la documentación",
+    scope: "Usar guías de",
     intro:
       "Haz una pregunta con tus palabras: la respuesta se escribe sólo con las páginas del portal y nombra las páginas que usó.",
     placeholder: "¿Cómo exporto una historia como video?",
@@ -80,7 +89,7 @@ export const es: Messages = {
     sources: "Fuentes",
     notCovered: "La documentación no cubre esto.",
     allowance:
-      "Las respuestas están en pausa por hoy: se agotó la asignación gratuita diaria de Workers AI. La búsqueda sigue encontrando todas las páginas.",
+      "Las respuestas de IA no están disponibles temporalmente. Puedes seguir leyendo y buscando en las guías.",
     disabled:
       "Las respuestas de IA están desactivadas. Puedes seguir leyendo y buscando en todas las guías.",
     control:
@@ -97,6 +106,6 @@ export const es: Messages = {
     privacyLink: "Aviso de privacidad",
     privacyUrl: "https://meltemi.dev/es/privacy/",
     daily:
-      "Las respuestas usan la asignación gratuita de Cloudflare, unas cuatrocientas al día para todos.",
+      "La lectura y la búsqueda siguen disponibles cuando las respuestas de IA están en pausa o no están disponibles.",
   },
 };

@@ -98,8 +98,8 @@ describe("the links", () => {
     expect(page(ide.pages, "en", "index").body).toContain(
       "[LICENSE](https://github.com/askenaz-dev/meltemi/blob/v0.2.29/LICENSE)",
     );
-    expect(page(web.pages, "en", "repositories").body).toContain(
-      "[decisions](https://github.com/askenaz-dev/meltemi-web/tree/",
+    expect(page(web.pages, "en", "account").body).toContain(
+      "[repository map](https://github.com/askenaz-dev/meltemi-web/blob/main/docs/repositories.md)",
     );
   });
 
@@ -188,7 +188,7 @@ describe("the sidebar", () => {
 
   it("takes the repository's readme as the index when docs/ has none", () => {
     expect(sidebarOrder(ide.sidebar)).toEqual(["ide", "ide/quickstart", "ide/local-models"]);
-    expect(sidebarOrder(web.sidebar)).toEqual(["web", "web/repositories"]);
+    expect(sidebarOrder(web.sidebar)).toEqual(["web", "web/account"]);
   });
 
   it("still folds unlinked folders of user guides", () => {
@@ -198,6 +198,14 @@ describe("the sidebar", () => {
 });
 
 describe("documentation for product users", () => {
+  it("resolves a wrapped Markdown label without rewriting literal links inside code", () => {
+    const ctx = linkContext(tree("diagrams"), sourcePages(tree("diagrams")));
+    const body =
+      "Read the [full export\nguide](language/stories.md#exports).\n\n`[literal](missing.md)`\n\n```md\n[also literal\nlink](missing.md)\n```";
+    expect(rewriteLinks(body, "docs/player.md", ctx)).toBe(
+      body.replace("(language/stories.md#exports)", "(/diagrams/language/stories/#exports)"),
+    );
+  });
   it("publishes no internal route or locale notice in any product", () => {
     for (const section of [diagrams, ide, web]) {
       expect(section.pages.some((p) => /(?:decisions|qa)\//.test(p.id))).toBe(false);
@@ -214,16 +222,41 @@ describe("documentation for product users", () => {
         "docs/es/roadmap-1.0.md": "Plan interno sin título.",
         "docs/central-administration-service.md": "Implementation design without a title.",
         "docs/language/conformance.md": "# Language conformance\n\nPublic language contract.",
-        "docs/performance.md": "# Performance\n\nProduct performance limits.",
+        "docs/performance.md": "# Performance\n\nInternal benchmark report.",
+        "docs/es/performance.md": "Informe interno sin título público.",
+        "docs/internal/parser-notes.md": "Implementation notes without a page title.",
+        "docs/es/internal/parser-notes.md": "Notas internas sin título público.",
+        "docs/compatibility.md": "# Compatibility\n\nPublic product limits.",
         "docs/tutorials/next.md": "# Next tutorial\n\nNew user guide.",
       }),
     );
-    expect(section.pages.some((p) => /quality|roadmap|central-administration/.test(p.id))).toBe(
-      false,
-    );
+    expect(
+      section.pages.some((p) =>
+        /quality|roadmap|central-administration|performance|internal/.test(p.id),
+      ),
+    ).toBe(false);
     expect(section.pages.filter((p) => !p.notice).map((p) => p.id)).toEqual(
-      expect.arrayContaining(["language/conformance", "performance", "tutorials/next"]),
+      expect.arrayContaining(["language/conformance", "compatibility", "tutorials/next"]),
     );
+  });
+
+  it("publishes real bilingual Web account guides instead of the contributor and operator maps", () => {
+    const base = tree("web");
+    const files = new Map(base.files);
+    for (const path of [
+      "docs/documentation-ai.md",
+      "docs/es/documentation-ai.md",
+      "docs/en/repositories.md",
+    ])
+      files.set(path, Buffer.from("Internal operational record without a public heading."));
+    const section = convertSection({ ...base, files });
+    expect(section.pages.every((guide) => !guide.notice)).toBe(true);
+    expect(section.pages.map((guide) => guide.id)).toEqual([
+      "index",
+      "account",
+      "index",
+      "account",
+    ]);
   });
 
   it("links an excluded source in either language to its exact GitHub ref and anchor", () => {
@@ -245,6 +278,39 @@ describe("documentation for product users", () => {
 });
 
 describe("one language only", () => {
+  it("keeps mixed canonical IDE languages with explicit English and Spanish translations", () => {
+    const base = tree("ide");
+    const files = new Map(base.files);
+    files.set(
+      "docs/es/local-models.md",
+      Buffer.from("# Modelos locales\n\nLos modelos se configuran en el agente."),
+    );
+    files.set(
+      "docs/en/quickstart.md",
+      Buffer.from("# Quickstart\n\nInstall the app and start a session."),
+    );
+    const section = convertSection({ ...base, files });
+    expect(
+      section.pages.filter((page) => page.id === "local-models").every((page) => !page.notice),
+    ).toBe(true);
+    expect(
+      section.pages.filter((page) => page.id === "quickstart").every((page) => !page.notice),
+    ).toBe(true);
+    expect(page(section.pages, "es", "quickstart").source).toBe("docs/quickstart.md");
+    expect(page(section.pages, "en", "quickstart").source).toBe("docs/en/quickstart.md");
+    expect(page(section.pages, "es", "quickstart").body).toContain("(/es/ide/local-models/)");
+    const ctx = linkContext({ ...base, files }, sourcePages({ ...base, files }));
+    expect(resolveLink("quickstart.md#install", "docs/local-models.md", ctx)).toMatchObject({
+      url: "/ide/quickstart/#install",
+    });
+    expect(resolveLink("../es/local-models.md", "docs/en/quickstart.md", ctx)).toMatchObject({
+      url: "/es/ide/local-models/",
+    });
+    expect(() => resolveLink("es/local-models.md", "docs/en/quickstart.md", ctx)).toThrow(
+      /leads to no page/,
+    );
+  });
+
   it("reads a page's language from its words when the repository has no docs/es/", () => {
     expect(
       detectLanguage("De los instaladores de la release a una sesión con el agente que ya tienes."),

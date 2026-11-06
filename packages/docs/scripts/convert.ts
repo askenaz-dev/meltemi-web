@@ -290,14 +290,17 @@ export function sourcePages(tree: SourceTree): SourcePage[] {
         p.startsWith("docs/") && p.toLowerCase().endsWith(".md") && isUserGuide(tree.section, p),
     )
     .sort();
-  const mirrored = paths.some((p) => p.startsWith("docs/es/"));
+  const mirrored = paths.some((p) => /^docs\/(en|es)\//.test(p));
   const pages: SourcePage[] = [];
   for (const source of paths) {
     let rel = source.slice("docs/".length);
     let lang: Lang;
-    if (mirrored) {
-      lang = rel.startsWith("es/") ? "es" : "en";
-      if (lang === "es") rel = rel.slice(3);
+    const explicit = /^(en|es)\//.exec(rel);
+    if (explicit) {
+      lang = explicit[1] as Lang;
+      rel = rel.slice(3);
+    } else if (mirrored && tree.section !== "ide") {
+      lang = "en";
     } else {
       lang = detectLanguage(textOf(tree.files.get(source)!));
     }
@@ -347,6 +350,12 @@ export interface LinkContext {
   readonly tree: SourceTree;
   /** The pages by the repository paths that reach them (`docs/x.md`, a folder with a readme). */
   readonly pages: Map<string, { lang: Lang; id: string; url: string }>;
+  /** Locale-independent paths of real guides; a missing twin must name an actual filename. */
+  readonly references: Map<string, string>;
+  readonly translations: Map<
+    string,
+    Partial<Record<Lang, { lang: Lang; id: string; url: string }>>
+  >;
   /** Fills in the media a page links, by portal path. */
   readonly media: Map<string, Uint8Array>;
 }
@@ -357,14 +366,22 @@ export function linkContext(
   media = new Map<string, Uint8Array>(),
 ): LinkContext {
   const byPath = new Map<string, { lang: Lang; id: string; url: string }>();
+  const translations: LinkContext["translations"] = new Map();
+  const references: LinkContext["references"] = new Map();
   for (const page of pages) {
     const value = { lang: page.lang, id: page.id, url: urlOf(tree.section, page.lang, page.id) };
     byPath.set(page.source, value);
+    const locales = translations.get(page.id) ?? {};
+    locales[page.lang] = value;
+    translations.set(page.id, locales);
+    if (page.source.startsWith("docs/")) {
+      references.set(page.source.replace(/^docs\/(?:(?:en|es)\/)?/, ""), page.id);
+    }
     if (page.source.startsWith("docs/") && /(^|\/)readme\.md$/i.test(page.source)) {
       byPath.set(posix.dirname(page.source), value);
     }
   }
-  return { tree, pages: byPath, media };
+  return { tree, pages: byPath, translations, references, media };
 }
 
 /**
@@ -392,7 +409,13 @@ export function resolveLink(href: string, from: string, ctx: LinkContext): Targe
   }
   const { tree } = ctx;
   const trimmed = target.replace(/\/+$/, "") || ".";
-  const page = ctx.pages.get(trimmed);
+  let page = ctx.pages.get(trimmed);
+  const sourceLang = ctx.pages.get(from)?.lang;
+  const explicitlyLocalized =
+    /(^|\/)(en|es)\//.test(path) || ["README.md", "README.es.md", "LEEME.md"].includes(trimmed);
+  if (page && sourceLang && !explicitlyLocalized) {
+    page = ctx.translations.get(page.id)?.[sourceLang] ?? page;
+  }
   if (page) return { kind: "page", url: page.url + hash, lang: page.lang, id: page.id };
   const isFolder = (dir: string) => [...tree.files.keys()].some((p) => p.startsWith(`${dir}/`));
   if (trimmed === "docs" || trimmed.startsWith("docs/")) {
@@ -406,12 +429,15 @@ export function resolveLink(href: string, from: string, ctx: LinkContext): Targe
     }
     if (trimmed.toLowerCase().endsWith(".md")) {
       // A twin that does not exist reaches the notice page the portal writes in its place.
-      const twin = trimmed.startsWith("docs/es/")
-        ? `docs/${trimmed.slice(8)}`
-        : `docs/es/${trimmed.slice(5)}`;
-      const other = ctx.pages.get(twin);
+      const rel = trimmed.replace(/^docs\/(?:(?:en|es)\/)?/, "");
+      const id = ctx.references.get(rel);
+      const other = id === undefined ? undefined : Object.values(ctx.translations.get(id) ?? {})[0];
       if (other) {
-        const lang: Lang = trimmed.startsWith("docs/es/") ? "es" : "en";
+        const lang: Lang = /^docs\/es\//.test(trimmed)
+          ? "es"
+          : /^docs\/en\//.test(trimmed)
+            ? "en"
+            : (sourceLang ?? "en");
         return {
           kind: "page",
           url: urlOf(tree.section, lang, other.id) + hash,
@@ -453,16 +479,31 @@ export function rewriteLinks(body: string, from: string, ctx: LinkContext): stri
         HTML_LINK,
         (_whole, start: string, href: string, end: string) => `${start}${resolve(href).url}${end}`,
       );
-  return fencedLines(body)
-    .map(({ line, code }) => {
-      if (code) return line;
-      const definition = DEFINITION.exec(line);
-      if (definition && !/^\s*\[!/.test(line)) {
-        return `${definition[1]}${resolve(definition[2]!).url}${definition[3] ?? ""}`;
-      }
-      return outsideCodeSpans(line, rewrite);
-    })
-    .join("\n");
+  const output: string[] = [];
+  let paragraph: string[] = [];
+  const flush = () => {
+    if (!paragraph.length) return;
+    const text = paragraph
+      .map((line) => {
+        const definition = DEFINITION.exec(line);
+        if (definition && !/^\s*\[!/.test(line)) {
+          return `${definition[1]}${resolve(definition[2]!).url}${definition[3] ?? ""}`;
+        }
+        return line;
+      })
+      .join("\n");
+    // Markdown permits a link label to wrap across lines within a paragraph.
+    output.push(outsideCodeSpans(text, rewrite));
+    paragraph = [];
+  };
+  for (const { line, code } of fencedLines(body)) {
+    if (code || !line.trim()) {
+      flush();
+      output.push(line);
+    } else paragraph.push(line);
+  }
+  flush();
+  return output.join("\n");
 }
 
 // ---------------------------------------------------------------------------------------------

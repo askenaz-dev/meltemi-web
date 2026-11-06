@@ -14,10 +14,16 @@ const INTERNAL_FOLDERS = new Set([
   "operations",
   "pilot",
   "launch",
+  "internal",
 ]);
 
 const INTERNAL_PAGES: Record<Section, ReadonlySet<string>> = {
-  diagrams: new Set(["quality.md", "roadmap-1.0.md", "central-administration-service.md"]),
+  diagrams: new Set([
+    "quality.md",
+    "performance.md",
+    "roadmap-1.0.md",
+    "central-administration-service.md",
+  ]),
   ide: new Set([
     "plan-de-cambios.md",
     "arquitectura.md",
@@ -29,11 +35,11 @@ const INTERNAL_PAGES: Record<Section, ReadonlySet<string>> = {
     "prueba-de-uno.md",
     "verificacion-fase-0.md",
   ]),
-  web: new Set(["central-administration.md"]),
+  web: new Set(["central-administration.md", "repositories.md", "documentation-ai.md"]),
 };
 
 /** Whether a Markdown source under docs/ is intended for a person using the product. */
 export function isUserGuide(section: Section, source: string): boolean {
-  const path = source.replace(/^docs\/(?:es\/)?/, "");
+  const path = source.replace(/^docs\/(?:(?:en|es)\/)?/, "");
   return !INTERNAL_FOLDERS.has(path.split("/")[0]!) && !INTERNAL_PAGES[section].has(path);
 }

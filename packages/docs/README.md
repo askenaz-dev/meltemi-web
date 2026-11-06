@@ -36,18 +36,20 @@ The steps, each a module of `scripts/` with its test:
    version, date), which the footers and the home name.
 2. `audience.ts` selects product guides before `convert.ts` creates pages. Decisions, QA and
    verification evidence, research, interface design, pilot/launch operations and explicit
-   implementation plans stay in GitHub; the policy applies to both languages and all source
+   implementation plans and generated benchmark reports stay in GitHub; the policy applies to both languages and all source
    modes. These sources create no route, locale notice, sidebar item, Pagefind result or Ask
    passage. Links to existing excluded files still reach GitHub at the source ref; missing
-   references still fail the build. Advanced product references, performance and installation
+   references still fail the build. Advanced product references, compatibility and installation
    verification remain public. `convert.ts` then applies one function per rule: the first
    `# Heading` is the title, the first paragraph
    the description, the first-line `[Español](…)` link is dropped, links to pages become portal
    routes (anchors kept), files outside `docs/` GitHub at the ref, `docs/media/` the copied files,
    pictures from other hosts their words; the sidebar follows the section's index (`docs/README.md`
    by its `##` headings, else the repository's readme), the unlinked pages after it; a guide in one
-   language is written to the other locale as a notice page. A repository without `docs/es/` has
-   each page's language read from its words (the IDE's guides are in both).
+   language is written to the other locale as a notice page for older releases. Explicit `docs/en/`
+   and `docs/es/` translations share the canonical page's route; the IDE can keep its original
+   mixed-language root filenames. Relative links prefer the reader's language when a genuine
+   translation exists; explicit locale links stay explicit. Duplicate translations fail the build.
 3. `pictures.ts` — every `text` fence is handed to `meltemi-diagrams export --stdout --fonts
 system`; one that draws is followed by its SVG, inline, in a `<figure>`; one that does not stays
    code. Cached in `.cache/pictures/` by the command line's version and the fence.
@@ -70,20 +72,27 @@ What the build writes is ignored by Git: `src/content/docs/`, `src/generated/`, 
 
 ## Ask the docs
 
+Search and Ask start with all products on the portal home, and the current product on a product
+page. Both dialogs show a labelled product selector, including an explicit all-guides option.
+Changing scope keeps the query. Search applies Pagefind's `product` filter, within the current
+language. Ask filters eligible passages before candidate selection and answer generation; an
+uncovered product never falls back to other products. Changing its selector aborts a pending
+request and clears the previous answer. Neither selector changes another page's route default.
+
 `POST /api/ask` (`src/ask.ts`, a plain function of the request and its dependencies;
 `src/bindings.ts` builds them from the Worker's bindings):
 
-| Request                                                                                                                      | Answer                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `{ "question": "…", "lang": "en" \| "es" }`, 1 to 500 characters, `Content-Type: application/json`, from the portal's origin | `200 { answer, sources: [{ n, title, url, lang }] }`; `[n]` in the answer names a source |
-| Anything else in the body                                                                                                    | `400 { reason, message }` (`json`, `fields`, `lang`, `question`, `size`)                 |
-| Another method / another `Origin`                                                                                            | `405` / `403`                                                                            |
-| Over ten questions a minute from one address                                                                                 | `429 { reason: "limit" }`, `Retry-After: 60`                                             |
-| The owner has paused documentation AI                                                                                        | `503 { reason: "disabled" }`, with no new AI call                                        |
-| The central control cannot be read or is invalid                                                                             | `503 { reason: "control" }`, with no new AI call                                         |
-| Workers AI refuses a request, or the index holds no passage                                                                  | `503 { reason: "allowance" }`                                                            |
-| An index of another embedding model, or none                                                                                 | `503 { reason: "index" }`                                                                |
-| The closest passage scores below `MIN_SCORE`                                                                                 | `200` with "The documentation does not cover this." and no source, and no model call     |
+| Request                                                                                                                                                                                                      | Answer                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| `{ "question": "…", "lang": "en" \| "es", "section"?: "diagrams" \| "ide" \| "web" }`, 1 to 500 characters, `Content-Type: application/json`, from the portal's origin; omitted `section` means all products | `200 { answer, sources: [{ n, title, url, lang }] }`; `[n]` in the answer names a source |
+| Anything else in the body                                                                                                                                                                                    | `400 { reason, message }` (`json`, `fields`, `lang`, `section`, `question`, `size`)      |
+| Another method / another `Origin`                                                                                                                                                                            | `405` / `403`                                                                            |
+| Over ten questions a minute from one address                                                                                                                                                                 | `429 { reason: "limit" }`, `Retry-After: 60`                                             |
+| The owner has paused documentation AI                                                                                                                                                                        | `503 { reason: "disabled" }`, with no new AI call                                        |
+| The central control cannot be read or is invalid                                                                                                                                                             | `503 { reason: "control" }`, with no new AI call                                         |
+| Workers AI refuses a request, or the index holds no passage                                                                                                                                                  | `503 { reason: "allowance" }`                                                            |
+| An index of another embedding model, or none                                                                                                                                                                 | `503 { reason: "index" }`                                                                |
+| The closest passage scores below `MIN_SCORE`                                                                                                                                                                 | `200` with "The documentation does not cover this." and no source, and no model call     |
 
 A covered question uses one embedding and one answer (`ASK_MODEL`, currently
 `@cf/zai-org/glm-4.7-flash`, with thinking disabled and at most 400 completion tokens). A failed

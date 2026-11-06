@@ -77,6 +77,73 @@ const post = (body: unknown, headers: Record<string, string> = {}) =>
 const QUESTION = "How do I export a story as a video?";
 
 describe("a question answered from the pages", () => {
+  it("filters products before choosing candidates and never cites a competing product", async () => {
+    const question = "How do I manage a session?";
+    const index = decodeIndex(
+      encodeIndex({
+        model: FAKE_MODEL,
+        dimensions: DIMENSIONS,
+        pages: [
+          { section: "ide", title: "IDE sessions", url: "/ide/sessions/", lang: "en" },
+          { section: "diagrams", title: "Live sessions", url: "/diagrams/sessions/", lang: "en" },
+        ],
+        passages: [
+          ...Array.from({ length: 70 }, () => ({
+            page: 0,
+            text: "IDE_ONLY_INSTRUCTIONS",
+            vector: fakeEmbed(question),
+          })),
+          {
+            page: 1,
+            text: "Live sessions\nManage a session with the diagram canvas. DIAGRAMS_ONLY_INSTRUCTIONS",
+            vector: fakeEmbed("How do I manage a session with a diagram canvas?"),
+          },
+        ],
+      }),
+    );
+    const { deps: d, calls } = deps({ index: async () => index });
+    const response = await ask(post({ question, lang: "en", section: "diagrams" }), d);
+    const body = (await response.json()) as { sources: { url: string }[] };
+    expect(response.status).toBe(200);
+    expect(body.sources.map((source) => source.url)).toEqual(["/diagrams/sessions/"]);
+    expect(calls.answer[0]!.user).toContain("DIAGRAMS_ONLY_INSTRUCTIONS");
+    expect(calls.answer[0]!.user).not.toContain("IDE_ONLY_INSTRUCTIONS");
+    expect(calls.answer[0]!.system).toContain("The reader selected Meltemi Diagrams");
+    expect(
+      rank(index, fakeEmbed(question), { candidates: 1, top: 1, section: "diagrams" })[0]!.passage,
+    ).toBe(70);
+  });
+
+  it("does not widen a product with no indexed guides or call the answer model", async () => {
+    const index = decodeIndex(
+      encodeIndex({
+        model: FAKE_MODEL,
+        dimensions: DIMENSIONS,
+        pages: [{ section: "ide", title: "Sessions", url: "/ide/sessions/", lang: "en" }],
+        passages: [{ page: 0, text: "IDE session", vector: fakeEmbed("session") }],
+      }),
+    );
+    const { deps: d, calls } = deps({ index: async () => index });
+    const response = await ask(post({ question: "session", lang: "es", section: "diagrams" }), d);
+    expect(await response.json()).toEqual({
+      answer: "La documentación no cubre esto.",
+      sources: [],
+    });
+    expect(calls.answer).toEqual([]);
+  });
+
+  it.each([null, "all", "unknown", 1, {}, ["diagrams"]])(
+    "rejects invalid section %j before an AI call",
+    async (section) => {
+      const { deps: d, calls } = deps();
+      const response = await ask(post({ question: QUESTION, lang: "en", section }), d);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ reason: "section" });
+      expect(calls.embed).toEqual([]);
+      expect(calls.answer).toEqual([]);
+    },
+  );
+
   it("answers with [1] and the Stories page as the first source, at its portal address", async () => {
     const { deps: d, calls } = deps();
     const response = await ask(post({ question: QUESTION, lang: "en" }), d);
