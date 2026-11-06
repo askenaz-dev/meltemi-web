@@ -1,8 +1,12 @@
 # MCP test credential bootstrap
 
-**Authorized Terraform operation; prepared, not yet executed.** The operator imported the four
-source secrets after verifying their two account identities on each host. No destination
-secret, branch publication or workflow dispatch has been performed by this preparation.
+**Authorized Terraform operation; executed successfully on 2026-11-06.** The operator imported
+the four source secrets after verifying both authorized account identities on each host.
+Run [42254707033](https://github.com/askenaz-dev/meltemi-web/actions/runs/42254707033), operation
+revision `6ea7bc9`, applied exactly four creates, zero updates and zero destroys. The second
+targeted plan reported no changes, all four destination metadata records were verified, and
+the run uploaded zero artifacts. This proves distribution and convergence; MCP acceptance
+is tracked separately below.
 
 This temporary branch, `codex/mcp-credentials-bootstrap-only`, starts at Web main
 `f2b1af34fb448f497a6dc741beae74dd94266661`, approved by successful push CI `42252346648`.

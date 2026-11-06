@@ -8,6 +8,6 @@
 ## 2. Authorized operator execution
 
 - [x] Verify both test accounts on each host and import only the four Web source secrets (operator-reported; receipts outside Git).
-- [ ] Review the exact operation revision/current main/CI, then publish only the operation branch.
-- [ ] Dispatch the constrained workflow and verify four destinations plus an unchanged second plan.
+- [x] Review the exact operation revision/current main/CI, then publish only the operation branch.
+- [x] Dispatch the constrained workflow and verify four destinations plus an unchanged second plan.
 - [ ] Coordinate Diagrams acceptance and record actual pass/fail/skip counts separately.
