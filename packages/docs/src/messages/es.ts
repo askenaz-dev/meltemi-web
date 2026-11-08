@@ -37,6 +37,8 @@ export const es: Messages = {
     searchHint: "Busca en todas las guías con",
     askHint: "o haz una pregunta con Pregunta a la documentación.",
     released: "Se muestra desde",
+    seaPause: "Pausar animación",
+    seaPlay: "Reanudar animación",
   },
   sidebar: {
     overview: "Resumen",

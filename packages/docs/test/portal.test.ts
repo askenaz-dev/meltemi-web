@@ -401,6 +401,38 @@ describe("the family's looks and motion", () => {
     expect(reduced).toMatch(/animation-duration: 0s !important/);
   });
 
+  it("writes the home's sea: the still picture, the canvases, six marks and a hidden pause button", () => {
+    for (const [url, pause, play] of [
+      ["/", "Pause animation", "Play animation"],
+      ["/es/", "Pausar animación", "Reanudar animación"],
+    ] as const) {
+      const markup = html(url);
+      const sea = /<div class="portal-sea not-content" data-sea="home">[\s\S]*?<\/button>/.exec(
+        markup,
+      )?.[0];
+      expect(sea, url).toBeDefined();
+      expect(sea).toMatch(/<div class="portal-sea-stage" aria-hidden="true">/);
+      expect(sea).toContain('src="/media/sea-home-light.svg"');
+      expect(sea).toContain('src="/media/sea-home-dark.svg"');
+      expect(sea).toContain('<canvas class="portal-sea-canvas">');
+      expect(sea).toContain('<canvas class="portal-sea-wind">');
+      expect(sea!.match(/class="portal-sea-boat[ "]/g)).toHaveLength(6);
+      expect(sea!.match(/id="portal-sea-m"/g)).toHaveLength(1);
+      expect(sea).toMatch(/<button class="portal-sea-pause" type="button" hidden/);
+      expect(sea).toContain(`data-label-pause="${pause}"`);
+      expect(sea).toContain(`data-label-play="${play}"`);
+      expect(markup).toMatch(/<script type="module" src="\/_astro\/HomeSea[^"]*\.js"><\/script>/);
+    }
+  });
+
+  it("adds no inline script for the home's sea", () => {
+    for (const url of ["/", "/es/"]) {
+      const inline = [...html(url).matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)];
+      for (const [, body] of inline)
+        expect(body, url).not.toMatch(/portal-sea|meltemiDocsSea|createSea|createWind/);
+    }
+  });
+
   it("offers Ask the docs beside the search, hidden until its script runs", () => {
     const markup = html("/diagrams/player/");
     expect(markup).toContain("<meltemi-ask");
