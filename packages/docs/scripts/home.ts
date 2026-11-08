@@ -1,6 +1,7 @@
 // The portal's home in each language (specification `docs-portal`, "One portal, three sections,
 // two languages"): the three products, each with its words and a link to its section, the family's
-// sea at rest, and the release each section is shown from. Written by the build from the typed
+// sea (its still picture, set in motion by `HomeSea.astro` where the reader allows motion,
+// "The home's sea in motion"), and the release each section is shown from. Written by the build from the typed
 // catalogs, as MDX so it can use Starlight's cards.
 
 import { messages, type Lang, type Section } from "../src/messages/index.js";
@@ -48,13 +49,13 @@ export function homePage(
     (section) =>
       `  <LinkCard title=${js(words.sections[section].name)} description=${js(words.sections[section].blurb)} href=${js(`${prefix}/${section}/`)} />`,
   );
+  // The home sits at `src/content/docs/index.mdx` or `es/index.mdx`; the component is under `src`.
+  const components = lang === "es" ? "../../../components" : "../../components";
   const body = [
     `import { CardGrid, LinkCard } from "@astrojs/starlight/components";`,
+    `import HomeSea from ${JSON.stringify(`${components}/HomeSea.astro`)};`,
     "",
-    `<div class="portal-sea not-content" aria-hidden="true">`,
-    `  <img class="portal-sea-light" src="/media/sea-home-light.svg" alt="" width="1600" height="640" />`,
-    `  <img class="portal-sea-dark" src="/media/sea-home-dark.svg" alt="" width="1600" height="640" />`,
-    `</div>`,
+    `<HomeSea lang=${js(lang)} />`,
     "",
     "<CardGrid>",
     ...cards,

@@ -1017,21 +1017,123 @@ site-search {
   height: auto;
 }
 
+/* The family's sea (docs-home-sea): the still picture of each scheme, and over it, once
+   `home-sea.ts` has drawn a frame (`is-playing`), the sea, the wind and the fleet in motion. The
+   colours are the ones the still pictures are drawn in (design D5); `--accent` and `--info`
+   follow the scheme themselves. */
 .portal-sea {
+  --sea-point: var(--mel-aegean);
+  --sea-crest: var(--mel-wind);
+  --sea-wind: var(--accent);
+  --mark-size: clamp(34px, 6.5vw, 76px);
   position: relative;
   margin: calc(-1 * var(--sp-8)) 0 var(--sp-4);
-  aspect-ratio: 1600 / 640;
-  max-height: 16rem;
+}
+:root[data-theme="dark"] .portal-sea {
+  --sea-point: var(--accent);
+  --sea-wind: var(--info);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .portal-sea {
+    --sea-point: var(--accent);
+    --sea-wind: var(--info);
+  }
+}
+/* A band across the content's width, as the site's hero sea is: the still picture covers it, and
+   the canvases fill it. */
+.portal-sea-stage {
+  position: relative;
+  width: 100%;
+  height: clamp(11rem, 22vw, 16rem);
   overflow: hidden;
   border-radius: calc(var(--radius-panel) * 1.5);
   -webkit-mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
   mask-image: linear-gradient(to bottom, transparent, black 30%, black 70%, transparent);
 }
-.portal-sea img {
+.portal-sea-still,
+.portal-sea-canvas,
+.portal-sea-wind {
+  position: absolute;
+  inset: 0;
+  display: block;
   width: 100%;
   height: 100%;
+}
+.portal-sea-still {
   object-fit: cover;
   object-position: 50% 60%;
+}
+/* Until the sea draws, the canvases and the fleet stay out of sight; once it does, the still
+   picture steps aside. Without a script, a drawing surface or motion, the picture remains. */
+.portal-sea-canvas,
+.portal-sea-wind,
+.portal-sea-boat,
+.portal-sea.is-playing .portal-sea-still {
+  visibility: hidden;
+}
+.portal-sea.is-playing .portal-sea-canvas,
+.portal-sea.is-playing .portal-sea-wind,
+.portal-sea.is-playing .portal-sea-boat {
+  visibility: visible;
+}
+/* The wind stays behind the fleet, as light as the still picture's few streamlines. */
+.portal-sea-wind {
+  pointer-events: none;
+  opacity: 0.45;
+}
+/* The fleet: the mark and its copies, placed by the package's transform from the stage's corner,
+   pivoting on their keels. */
+.portal-sea-boat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  transform-origin: 50% 86%;
+}
+.portal-sea-boat svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.portal-sea-pause {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: var(--sp-3);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+.portal-sea-pause[hidden] {
+  display: none;
+}
+@media (pointer: coarse) {
+  .portal-sea-pause {
+    width: 44px;
+    height: 44px;
+  }
+}
+.portal-sea-pause svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+.portal-sea-pause:hover,
+.portal-sea-pause:focus-visible {
+  border-color: var(--focus);
+  color: var(--text);
 }
 .portal-sea-dark {
   display: none;

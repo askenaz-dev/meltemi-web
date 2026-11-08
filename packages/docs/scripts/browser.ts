@@ -91,6 +91,8 @@ interface Visit {
   readonly reducedMotion?: boolean;
   readonly javaScript?: boolean;
   readonly width?: number;
+  /** A script run before the page's own, to take something away from the browser. */
+  readonly init?: string;
   readonly navigation?: () =>
     { body: unknown; status?: number } | Promise<{ body: unknown; status?: number }>;
 }
@@ -140,6 +142,7 @@ async function open(
     });
   }
   await context.addInitScript({ content: "globalThis.__name = (f) => f;" });
+  if (visit.init) await context.addInitScript({ content: visit.init });
   await context.addInitScript(() => {
     document.addEventListener("securitypolicyviolation", (e) =>
       console.error(`policy violation: ${e.violatedDirective} ${e.blockedURI}`),
@@ -1046,6 +1049,186 @@ const withoutScript: Check = async (browser, origin) => {
   return failures;
 };
 
+/** What `home-sea.ts` reports of the moving sea, or undefined where it never played. */
+interface SeaSeen {
+  readonly renderer: string;
+  readonly frames: number;
+  readonly paused: boolean;
+  readonly windFrames: number;
+}
+
+/** The home's block as the reader sees it, and the sea's report. */
+const seaOf = (page: Page) =>
+  page.evaluate(() => {
+    const shown = (selector: string) =>
+      [...document.querySelectorAll<HTMLElement>(selector)].filter(
+        (el) =>
+          getComputedStyle(el).display !== "none" && getComputedStyle(el).visibility !== "hidden",
+      ).length;
+    const button = document.querySelector<HTMLButtonElement>(".portal-sea-pause");
+    const report = (window as unknown as { meltemiDocsSea?: SeaSeen }).meltemiDocsSea;
+    return {
+      sea: report
+        ? {
+            renderer: report.renderer,
+            frames: report.frames,
+            paused: report.paused,
+            windFrames: report.windFrames,
+          }
+        : undefined,
+      stills: shown(".portal-sea-still"),
+      canvases: shown(".portal-sea-canvas"),
+      boats: shown(".portal-sea-boat"),
+      placed: [...document.querySelectorAll<HTMLElement>(".portal-sea-boat")].filter(
+        (boat) => boat.style.transform !== "",
+      ).length,
+      button: button && !button.hidden ? button.getAttribute("aria-label") : null,
+      pressed: button?.getAttribute("aria-pressed") ?? null,
+      point: getComputedStyle(document.querySelector(".portal-sea-canvas")!)
+        .getPropertyValue("--sea-point")
+        .trim(),
+    };
+  });
+
+/** Frames the sea draws over `ms`, read from its report. */
+async function framesOver(page: Page, ms: number): Promise<number> {
+  const before = (await seaOf(page)).sea?.frames ?? 0;
+  await page.waitForTimeout(ms);
+  return ((await seaOf(page)).sea?.frames ?? 0) - before;
+}
+
+/** The scripts a page fetched from the portal's `/_astro/`. */
+const scriptsOf = (requests: readonly string[]) =>
+  new Set(
+    requests.filter((url) => /\/_astro\/[^/]+\.js$/.test(url)).map((url) => new URL(url).pathname),
+  );
+
+/**
+ * The home's sea (specification `docs-portal`, docs-home-sea): it plays over the still picture
+ * with its six marks, stops on the button and out of view, follows the theme picker, fits a
+ * phone, and stays the still picture under reduced motion, without a script and without a drawing
+ * surface. With `MELTEMI_DOCS_SHOTS=<folder>` it saves what it saw there.
+ */
+const homeSea: Check = async (browser, origin) => {
+  const failures: string[] = [];
+  const shots = process.env["MELTEMI_DOCS_SHOTS"];
+  if (shots) await mkdir(shots, { recursive: true });
+  const shoot = async (page: Page, name: string) => {
+    if (!shots) return;
+    await page.screenshot({ path: join(shots, `${name}.png`) });
+    await page.locator(".portal-sea").screenshot({ path: join(shots, `${name}-sea.png`) });
+  };
+  const playing = async (page: Page, where: string) => {
+    await page
+      .waitForFunction(
+        () => ((window as unknown as { meltemiDocsSea?: SeaSeen }).meltemiDocsSea?.frames ?? 0) > 3,
+        undefined,
+        { timeout: 10_000 },
+      )
+      .catch(() => failures.push(`${where}: the sea drew no frames`));
+    return seaOf(page);
+  };
+
+  // At 1280 px, light: the sea plays, the still picture steps aside, six marks sail.
+  const desk = await open(browser, origin, "/");
+  const seen = await playing(desk.page, "/");
+  if (seen.sea && !["webgl2", "2d"].includes(seen.sea.renderer))
+    failures.push(`/: the sea draws with ${seen.sea.renderer}`);
+  if (seen.stills !== 0) failures.push(`/: ${seen.stills} still pictures shown over the sea`);
+  if (seen.canvases !== 1) failures.push(`/: ${seen.canvases} sea canvases shown`);
+  if (seen.boats !== 6 || seen.placed !== 6)
+    failures.push(`/: ${seen.boats} marks shown, ${seen.placed} placed, not 6`);
+  if (seen.button !== "Pause animation") failures.push(`/: the button is named ${seen.button}`);
+  if (seen.point !== "#2563eb") failures.push(`/: the light sea's points are ${seen.point}`);
+  if (!seen.sea || seen.sea.windFrames < 1) failures.push("/: the wind drew no frame");
+  await desk.page.waitForTimeout(1200);
+  await shoot(desk.page, "home-light-1280");
+
+  // The button stops the sea and starts it again.
+  await desk.page.click(".portal-sea-pause");
+  await desk.page.waitForTimeout(100);
+  const paused = await seaOf(desk.page);
+  if (paused.pressed !== "true" || paused.button !== "Play animation" || !paused.sea?.paused)
+    failures.push(`/: after a press the button is ${paused.pressed}, ${paused.button}`);
+  const stillFrames = await framesOver(desk.page, 600);
+  if (stillFrames !== 0) failures.push(`/: the paused sea drew ${stillFrames} frames`);
+  await desk.page.click(".portal-sea-pause");
+  const resumed = await framesOver(desk.page, 600);
+  if (resumed < 3) failures.push(`/: the resumed sea drew ${resumed} frames in 600 ms`);
+
+  // Out of view, no frame; back in view, frames again.
+  await desk.page.setViewportSize({ width: 1280, height: 320 });
+  await desk.page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+  await desk.page.waitForTimeout(200);
+  const away = await framesOver(desk.page, 600);
+  if (away !== 0) failures.push(`/: the sea drew ${away} frames out of view`);
+  await desk.page.evaluate(() => scrollTo(0, 0));
+  await desk.page.setViewportSize({ width: 1280, height: 860 });
+  const back = await framesOver(desk.page, 600);
+  if (back < 3) failures.push(`/: back in view the sea drew ${back} frames in 600 ms`);
+
+  // The theme picker recolours the moving sea.
+  await desk.page.selectOption("starlight-theme-select select", "dark");
+  await desk.page.waitForTimeout(300);
+  const dark = await seaOf(desk.page);
+  if (dark.point !== "#60a5fa") failures.push(`/: the dark sea's points are ${dark.point}`);
+  if (dark.stills !== 0) failures.push("/: the dark scheme brought the still picture back");
+  await shoot(desk.page, "home-dark-1280");
+  const withSea = scriptsOf(desk.requests);
+  failures.push(...desk.problems.map((p) => `/: ${p}`));
+  await desk.context.close();
+
+  // A phone, in Spanish and dark: within the screen, the button in Spanish.
+  const phoneVisit = await open(browser, origin, "/es/", { width: 375, scheme: "dark" });
+  const onPhone = await playing(phoneVisit.page, "/es/ at 375 px");
+  const wide = await phoneVisit.page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  if (wide > 1) failures.push(`/es/: ${wide} px wider than a 375 px screen`);
+  if (onPhone.button !== "Pausar animación")
+    failures.push(`/es/: the button is named ${onPhone.button}`);
+  const target = await phoneVisit.page.locator(".portal-sea-pause").boundingBox();
+  if (!target || target.width < 44 || target.height < 44)
+    failures.push(`/es/: the pause button is ${target?.width}×${target?.height} on a phone`);
+  await phoneVisit.page.waitForTimeout(1200);
+  await shoot(phoneVisit.page, "home-es-dark-375");
+  failures.push(...phoneVisit.problems.map((p) => `/es/ at 375 px: ${p}`));
+  await phoneVisit.context.close();
+
+  // Reduced motion: the still picture, no button, none of the sea's code.
+  const calm = await open(browser, origin, "/", { reducedMotion: true });
+  await calm.page.waitForTimeout(800);
+  await shoot(calm.page, "home-still-light-1280");
+  const rest = await seaOf(calm.page);
+  if (rest.sea) failures.push("/ under reduced motion: the sea plays");
+  if (rest.stills !== 1)
+    failures.push(`/ under reduced motion: ${rest.stills} still pictures shown`);
+  if (rest.boats !== 0) failures.push(`/ under reduced motion: ${rest.boats} marks shown`);
+  if (rest.button !== null) failures.push("/ under reduced motion: the pause button shows");
+  const without = scriptsOf(calm.requests);
+  const seaCode = [...withSea].filter((path) => !without.has(path));
+  if (!seaCode.length)
+    failures.push("/ under reduced motion: it fetched every script the moving sea did");
+  failures.push(...calm.problems.map((p) => `/ under reduced motion: ${p}`));
+  await calm.context.close();
+
+  // No drawing surface, and no script: the still picture stays and the marks stay hidden.
+  for (const visit of [
+    { name: "no drawing surface", init: "HTMLCanvasElement.prototype.getContext = () => null;" },
+    { name: "no script", javaScript: false },
+  ]) {
+    const bare = await open(browser, origin, "/", visit);
+    await bare.page.waitForTimeout(800);
+    const still = await seaOf(bare.page);
+    if (still.stills !== 1) failures.push(`/ with ${visit.name}: ${still.stills} still pictures`);
+    if (still.boats !== 0 || still.canvases !== 0)
+      failures.push(`/ with ${visit.name}: ${still.boats} marks, ${still.canvases} canvases shown`);
+    failures.push(...bare.problems.map((p) => `/ with ${visit.name}: ${p}`));
+    await bare.context.close();
+  }
+  return failures;
+};
+
 const CHECKS: readonly [string, Check][] = [
   ["every page is quiet: no error, no policy violation, nothing beyond localhost", quiet],
   ["the headers: the policy, no cookie, and the route's own", headers],
@@ -1081,6 +1264,10 @@ const CHECKS: readonly [string, Check][] = [
   ["a stale status check cannot override a reopened Ask dialog", staleStatus],
   ["the dialog moves over the motion token, and not at all under reduced motion", motion],
   ["light and dark schemes follow the system and the switch", schemes],
+  [
+    "the home's sea plays, pauses, rests out of view and follows the scheme; still under reduced motion",
+    homeSea,
+  ],
   ["a phone's width: no sideways scroll, touch targets, a full-screen dialog", phone],
   ["without JavaScript, every page reads", withoutScript],
 ];

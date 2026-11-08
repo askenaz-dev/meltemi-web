@@ -145,8 +145,13 @@ so Starlight's theme switch can choose a scheme against the system's; `pnpm docs
 `--sl-color-*` properties and holds the lockup with its pill, the Ask dialog, the footer, the
 pictures and the home; motion uses the IDE client's `--dur-*` and `--ease-out`, and nothing moves
 under reduced motion. The lockups and the mark are copied from `packages/site/public/media/`, and
-the home's sea is `@meltemi/ocean`'s still picture in the site's colours. The language picker is a
-link to the twin, and every page reads without JavaScript.
+the home's sea is `@meltemi/ocean`'s still picture in the site's colours. Where the reader allows
+motion, `src/components/HomeSea.astro` and `src/scripts/home-sea.ts` set it moving as meltemi.dev's
+does: the `home` state's waves, its six marks sailing and the wind, in the portal's `--sea-*`
+colours of the chosen scheme, with a pause button, and no frame out of view or in a hidden tab. The
+sea's code is a chunk of its own, fetched only then; under reduced motion, without a script or
+without WebGL2 and Canvas 2D the still picture stays. The language picker is a link to the twin,
+and every page reads without JavaScript.
 
 ## Deployment
 

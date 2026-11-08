@@ -1,0 +1,80 @@
+---
+// The home's sea (specification `docs-portal`, "The home's sea in motion"; design D1): the still
+// picture of each scheme, which is all a reader sees without a script, without a drawing surface
+// or under reduced motion, and over it the canvases and the fleet that `home-sea.ts` sets sailing
+// once the sea has drawn a frame. The marks are the brand's two paths, written once and used by
+// every boat. The pause button sits outside the hidden stage, itself hidden until the sea plays.
+import { fleetSize, MARK_GRADIENT, MARK_HULL, MARK_M, MARK_STROKE } from "../../../ocean/src/index.js";
+import { messagesOf } from "../messages/index.ts";
+
+interface Props {
+  readonly lang: string;
+}
+
+const words = messagesOf(Astro.props.lang).home;
+const boats = Array.from({ length: fleetSize("home") - 1 }, (_, i) => i);
+---
+
+<div class="portal-sea not-content" data-sea="home">
+  <div class="portal-sea-stage" aria-hidden="true">
+    <img class="portal-sea-still portal-sea-light" src="/media/sea-home-light.svg" alt="" width="1600" height="640" />
+    <img class="portal-sea-still portal-sea-dark" src="/media/sea-home-dark.svg" alt="" width="1600" height="640" />
+    <canvas class="portal-sea-canvas"></canvas>
+    <canvas class="portal-sea-wind"></canvas>
+    <div class="portal-sea-boat portal-sea-lead">
+      <svg viewBox="0 0 256 256" focusable="false">
+        <defs>
+          <linearGradient
+            id="portal-sea-gradient"
+            x1={MARK_GRADIENT.x1}
+            y1={MARK_GRADIENT.y1}
+            x2={MARK_GRADIENT.x2}
+            y2={MARK_GRADIENT.y2}
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stop-color={MARK_GRADIENT.from} />
+            <stop offset="1" stop-color={MARK_GRADIENT.to} />
+          </linearGradient>
+        </defs>
+        <path
+          id="portal-sea-m"
+          d={MARK_M}
+          fill="none"
+          stroke="url(#portal-sea-gradient)"
+          stroke-width={MARK_STROKE}
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path id="portal-sea-hull" d={MARK_HULL} fill="url(#portal-sea-gradient)" />
+      </svg>
+    </div>
+    {
+      boats.map(() => (
+        <div class="portal-sea-boat">
+          <svg viewBox="0 0 256 256" focusable="false">
+            <use href="#portal-sea-m" />
+            <use href="#portal-sea-hull" />
+          </svg>
+        </div>
+      ))
+    }
+  </div>
+  <button
+    class="portal-sea-pause"
+    type="button"
+    hidden
+    aria-pressed="false"
+    aria-label={words.seaPause}
+    title={words.seaPause}
+    data-label-pause={words.seaPause}
+    data-label-play={words.seaPlay}
+  >
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path d="M4 3h3v10H4zM9 3h3v10H9z"></path>
+    </svg>
+  </button>
+</div>
+
+<script>
+  import "../scripts/home-sea.ts";
+</script>

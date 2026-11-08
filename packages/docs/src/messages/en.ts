@@ -39,6 +39,8 @@ export const en = {
     searchHint: "Search every guide with",
     askHint: "or ask a question with Ask the docs.",
     released: "Shown from",
+    seaPause: "Pause animation",
+    seaPlay: "Play animation",
   },
   sidebar: {
     overview: "Overview",
